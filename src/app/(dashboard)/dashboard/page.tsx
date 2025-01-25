@@ -1,30 +1,67 @@
-import Link from 'next/link';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Overview } from '@/components/overview'
+import { RecentLeads } from '@/components/recent-leads'
 
-export default function Dashboard() {
-  const dashboardItems = [
-    { title: 'Analytics', href: '/analytics', description: 'View your performance metrics' },
-    { title: 'Chatbot', href: '/chatbot', description: 'Manage your AI chatbot' },
-    { title: 'Integrations', href: '/integrations', description: 'Connect your favorite tools' },
-    { title: 'Leads', href: '/leads', description: 'Track and manage leads' },
-    { title: 'Live Chat', href: '/live-chat', description: 'Real-time customer conversations' },
-    { title: 'Meetings', href: '/meetings', description: 'Schedule and manage meetings' },
-  ];
-
+export default function DashboardPage() {
   return (
-    <div className="min-h-screen p-8">
-      <h1 className="text-3xl font-bold mb-8">Dashboard Overview</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {dashboardItems.map((item) => (
-          <Link
-            key={item.title}
-            href={item.href}
-            className="p-6 border rounded-lg hover:shadow-lg transition-shadow"
-          >
-            <h2 className="text-xl font-semibold mb-2">{item.title}</h2>
-            <p className="text-gray-600">{item.description}</p>
-          </Link>
-        ))}
+    <div className="space-y-4 p-2">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Leads</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">1,234</div>
+            <p className="text-xs text-muted-foreground">+20.1% from last month</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Conversion Rate</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">15.2%</div>
+            <p className="text-xs text-muted-foreground">+2.3% from last month</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Active Campaigns</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">12</div>
+            <p className="text-xs text-muted-foreground">3 campaigns ending soon</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Revenue</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">$24,560</div>
+            <p className="text-xs text-muted-foreground">+15% from last month</p>
+          </CardContent>
+        </Card>
+      </div>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+        <Card className="col-span-4">
+          <CardHeader>
+            <CardTitle>Overview</CardTitle>
+          </CardHeader>
+          <CardContent className="pl-2">
+            <Overview />
+          </CardContent>
+        </Card>
+        <Card className="col-span-3">
+          <CardHeader>
+            <CardTitle>Recent Leads</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <RecentLeads />
+          </CardContent>
+        </Card>
       </div>
     </div>
-  );
-} 
+  )
+}
+
