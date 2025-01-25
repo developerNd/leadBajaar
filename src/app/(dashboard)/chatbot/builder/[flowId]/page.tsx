@@ -1,23 +1,9 @@
-import { Metadata } from 'next'
+'use client'
 
-// Define the correct type for page props
-type PageProps = {
-  params: Promise<{ flowId: string }>;
-  searchParams?: Promise<{ [key: string]: string | string[] | undefined }> | undefined;
-}
+import { use } from 'react'
+import FlowBuilder from '@/components/chatbot/flow-builder'
 
-export const metadata: Metadata = {
-  title: 'Flow Editor',
-};
-
-export default async function ChatbotBuilderPage({ params }: PageProps) {
-  const { flowId } = await params; // Await the params promise
-
-  // Flow editor logic and JSX
-  return (
-    <div className="p-8">
-      <h1 className="text-3xl font-bold mb-8">Flow Editor: {flowId}</h1>
-      {/* Additional content here */}
-    </div>
-  );
+export default function ChatbotBuilderPage({ params }: { params: Promise<{ flowId: string }> }) {
+  const { flowId } = use(params)
+  return <FlowBuilder flowId={flowId} />
 }

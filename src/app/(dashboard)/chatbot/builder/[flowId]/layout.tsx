@@ -1,11 +1,15 @@
+'use client'
+
+import { Suspense } from 'react'
+
 export default function ChatbotBuilderLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: React.ReactNode
 }) {
   return (
-    <div className="flex h-screen">
-      <main className="flex-1">{children}</main>
-    </div>
-  );
-} 
+    <Suspense fallback={<div>Loading...</div>}>
+      {children}
+    </Suspense>
+  )
+}
