@@ -1,19 +1,24 @@
 'use client';
 
-import { useState } from 'react';
-import SignIn from './signin/page';
-import Dashboard from './dashboard/page';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { getSession } from '@/lib/auth';
 
 export default function Home() {
-  const [isLoggedIn] = useState(false);
+  const router = useRouter();
 
-  return (
-    <div className="min-h-screen flex items-center justify-center">
-      {isLoggedIn ? (
-        <Dashboard />
-      ) : (
-        <SignIn />
-      )}
-    </div>
-  );
+  useEffect(() => {
+    const checkAuth = async () => {
+      const session = await getSession();
+      if (!session) {
+        router.push('/register');
+      }else{
+        router.push('/dashboard');
+      }
+    };
+    
+    checkAuth();
+  }, [router]);
+
+  return null;
 }

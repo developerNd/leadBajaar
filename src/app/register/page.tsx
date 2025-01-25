@@ -46,8 +46,6 @@ export default function RegisterPage() {
   const handleGoogleRegister = async () => {
     setIsLoading(true)
     try {
-      // In a real application, you would use a proper OAuth flow here
-      // This is just a placeholder to show how it would integrate with the API
       const token = await fakeGoogleAuth()
       await loginWithGoogle(token)
       router.push('/dashboard')
