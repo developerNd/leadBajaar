@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server'
+import { type NextRequest } from 'next/server'
 
 const API_URL = process.env.API_URL || 'http://localhost:8000/api'
 
 export async function GET(
-  request: Request,
-  { params }: { params: { flowId: string } }
+  request: NextRequest,
+  context: { params: { flowId: string } }
 ) {
   try {
-    const response = await fetch(`${API_URL}/chatbot/flows/${params.flowId}`, {
+    const response = await fetch(`${API_URL}/chatbot/flows/${context.params.flowId}`, {
       headers: {
         'Cookie': request.headers.get('cookie') || '',
         'Accept': 'application/json',
@@ -30,13 +31,13 @@ export async function GET(
 }
 
 export async function PUT(
-  request: Request,
-  { params }: { params: { flowId: string } }
+  request: NextRequest,
+  context: { params: { flowId: string } }
 ) {
   try {
     const body = await request.json()
     
-    const response = await fetch(`${API_URL}/chatbot/flows/${params.flowId}`, {
+    const response = await fetch(`${API_URL}/chatbot/flows/${context.params.flowId}`, {
       method: 'PUT',
       headers: {
         'Cookie': request.headers.get('cookie') || '',
@@ -62,11 +63,11 @@ export async function PUT(
 }
 
 export async function DELETE(
-  request: Request,
-  { params }: { params: { flowId: string } }
+  request: NextRequest,
+  context: { params: { flowId: string } }
 ) {
   try {
-    const response = await fetch(`${API_URL}/chatbot/flows/${params.flowId}`, {
+    const response = await fetch(`${API_URL}/chatbot/flows/${context.params.flowId}`, {
       method: 'DELETE',
       headers: {
         'Cookie': request.headers.get('cookie') || '',
