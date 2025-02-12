@@ -1,11 +1,10 @@
 import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
 
 const API_URL = process.env.API_URL || 'http://localhost:8000/api'
 
 export async function GET(
-  request: NextRequest,
-  { params }: { params: { flowId: string } }
+  request: Request,
+  { params }: { params: { flowId: string | number } }
 ) {
   try {
     const response = await fetch(`${API_URL}/chatbot/flows/${params.flowId}`, {
