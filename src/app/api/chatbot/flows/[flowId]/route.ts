@@ -5,10 +5,10 @@ const API_URL = process.env.API_URL || 'http://localhost:8000/api'
 
 export async function GET(
   request: NextRequest,
-  context: { params: Record<'flowId', string> }
+  { params }: { params: { flowId: string } }
 ) {
   try {
-    const response = await fetch(`${API_URL}/chatbot/flows/${context.params.flowId}`, {
+    const response = await fetch(`${API_URL}/chatbot/flows/${params.flowId}`, {
       headers: {
         'Cookie': request.headers.get('cookie') || '',
         'Accept': 'application/json',
