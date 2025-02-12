@@ -33,11 +33,29 @@ export interface ApiNodeData extends BaseNodeData {
 }
 
 export interface FunctionNodeData extends BaseNodeData {
+  functionType?: keyof typeof PREDEFINED_FUNCTIONS
   functionBody?: string
+  description?: string
 }
 
 export interface FlowNodeData extends BaseNodeData {
   description?: string
+}
+
+export interface TriggerConfig {
+  type: string
+  value: string
+  metadata?: Record<string, any>
+}
+
+export interface ChatbotFlow {
+  id: string
+  name: string
+  description: string
+  trigger: TriggerConfig
+  updatedAt: string
+  nodes: ChatbotNode[]
+  edges: ChatbotEdge[]
 }
 
 export type NodeData = 

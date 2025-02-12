@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Label } from '@/components/ui/label'
@@ -10,14 +10,23 @@ import { Switch } from '@/components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { Textarea } from "@/components/ui/textarea"
+import Image from 'next/image'
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 export default function SettingsPage() {
   // Profile Settings
-  const [profileSettings, setProfileSettings] = useState({
+  const [profileSettings, setProfileSettings] = useState<{
+    name: string;
+    email: string;
+    company: string;
+    phone: string;
+    image: string | null;
+  }>({
     name: 'John Doe',
     email: 'john@example.com',
     company: 'Acme Inc',
-    phone: '+1 234 567 890'
+    phone: '+1 234 567 890',
+    image: null
   })
 
   // Notification Settings
@@ -44,6 +53,33 @@ export default function SettingsPage() {
     defaultTemplate: 'welcome'
   })
 
+  // Add state for image preview
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Handle image selection
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      // Create preview URL
+      const previewUrl = URL.createObjectURL(file)
+      setImagePreview(previewUrl)
+      
+      // Here you would typically upload the file to your server
+      // For now, we'll just store the preview URL
+      setProfileSettings(prev => ({ ...prev, image: previewUrl }))
+    }
+  }
+
+  // Clean up preview URL on unmount
+  useEffect(() => {
+    return () => {
+      if (imagePreview) {
+        URL.revokeObjectURL(imagePreview)
+      }
+    }
+  }, [imagePreview])
+
   return (
     <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
@@ -67,7 +103,75 @@ export default function SettingsPage() {
                 Manage your personal and company information
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
+              {/* Image Upload Section */}
+              <div className="flex items-center space-x-6">
+                <div className="relative">
+                  <Avatar className="w-24 h-24">
+                    {(imagePreview || profileSettings.image) ? (
+                      <AvatarImage 
+                        src={imagePreview || profileSettings.image || undefined} 
+                        alt="Profile" 
+                      />
+                    ) : null}
+                    <AvatarFallback>
+                      {profileSettings.name.split(' ').map(n => n[0]).join('')}
+                    </AvatarFallback>
+                  </Avatar>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="absolute bottom-0 right-0 rounded-full w-8 h-8 p-0"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="17 8 12 3 7 8" />
+                      <line x1="12" y1="3" x2="12" y2="15" />
+                    </svg>
+                  </Button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="font-medium">Profile Picture</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Upload a picture to make your profile stand out
+                  </p>
+                  {imagePreview && (
+                    <Button 
+                      variant="destructive" 
+                      size="sm"
+                      onClick={() => {
+                        setImagePreview(null)
+                        setProfileSettings(prev => ({ ...prev, image: null }))
+                        if (fileInputRef.current) {
+                          fileInputRef.current.value = ''
+                        }
+                      }}
+                    >
+                      Remove Photo
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* Rest of the form fields */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Full Name</Label>
@@ -103,7 +207,9 @@ export default function SettingsPage() {
                   />
                 </div>
               </div>
-              <div className="flex justify-end">
+
+              <div className="flex justify-end space-x-4">
+                <Button variant="outline">Cancel</Button>
                 <Button>Save Changes</Button>
               </div>
             </CardContent>

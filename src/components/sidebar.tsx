@@ -1,7 +1,7 @@
 "use client"
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -19,6 +19,8 @@ import {
   Link as LinkIcon,
   MessagesSquare
 } from 'lucide-react'
+import { logout } from '@/lib/api'
+import { clearSession } from '@/lib/auth'
 
 const sidebarItems = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -33,6 +35,17 @@ const sidebarItems = [
 
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false)
+  const router = useRouter()
+
+  const handleLogout = async () => {
+    try {
+      await logout()
+      clearSession()
+      router.push('/signin')
+    } catch (error) {
+      console.error('Logout failed:', error)
+    }
+  }
   
   return (
     <div className={cn(
@@ -82,6 +95,7 @@ export function Sidebar() {
               "w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-100 dark:hover:bg-red-900/50",
               collapsed && "justify-center px-0"
             )}
+            onClick={handleLogout}
           >
             <LogOut className="mr-2 h-4 w-4" />
             {!collapsed && <span>Logout</span>}

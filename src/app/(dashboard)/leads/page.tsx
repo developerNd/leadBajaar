@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -13,25 +13,49 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
 import { 
-  User, Mail, Phone, Building2, Tag, Globe, Calendar,
+  User, Mail, Phone, Building2, Tag, Globe,
   CheckCircle, Clock, Star, AlertCircle, Globe2, 
   Facebook, Linkedin, MonitorSmartphone, MessageSquare,
-  Pencil, Trash, FileUp, FileDown, Search, Filter,
+  Pencil, Trash, FileDown, Search,
   Settings2, Plus, Loader2, X, FileSpreadsheet,
-  CheckCircle2, Flame, ThermometerSun, Snowflake, Thermometer
+  CheckCircle2, Flame, ThermometerSun, Snowflake, Thermometer,
+  XCircle, RefreshCcw, Calendar as CalendarIcon
 } from 'lucide-react'
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
+import { 
+  createLead, 
+  type CreateLeadDto, 
+  getLeads, 
+  deleteLead, 
+  // updateLead, 
+  bulkDeleteLeads, 
+  bulkUpdateLeadStatus,
+  updateLeadStage,
+  importLeads,
+  exportLeads,
+  integrationApi  // Add this
+} from '@/lib/api'
+import { useToast } from '@/hooks/use-toast'
+import { useRouter } from 'next/navigation'
+// import axios from 'axios'
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { format } from 'date-fns'
+import { DateRange } from "react-day-picker"
+import { Calendar } from "@/components/ui/calendar"
+// import { addDays } from "date-fns" // Add this import
 
 const columns = [
   { id: 'name', label: 'Name', icon: User },
   { id: 'email', label: 'Email', icon: Mail },
   { id: 'phone', label: 'Phone', icon: Phone },
   { id: 'company', label: 'Company', icon: Building2 },
-  { id: 'status', label: 'Stage', icon: Tag },
-  { id: 'temperature', label: 'Temperature', icon: Thermometer },
+  { id: 'stage', label: 'Stage', icon: Tag },
+  { id: 'status', label: 'Temperature', icon: Thermometer },
   { id: 'source', label: 'Source', icon: Globe },
-  { id: 'lastContact', label: 'Last Contact', icon: Calendar },
+  { id: 'lastContact', label: 'Last Contact', icon: CalendarIcon },
+  { id: 'created_at', label: 'Created At', icon: CalendarIcon }, // Add this line
   { id: 'actions', label: 'Actions' },
 ]
 
@@ -56,47 +80,14 @@ interface Lead {
   email: string;
   phone: string;
   company: string;
+  stage: string;
   status: string;
-  temperature: TemperatureType;
   source: string;
-  lastContact: string;
+  last_contact: string;
+  created_at: string;
+  updated_at: string;
+  // Remove last_page and total as they belong to metadata
 }
-
-const initialLeads: Lead[] = [
-  {
-    id: 1,
-    name: 'John Doe',
-    email: 'john@example.com',
-    phone: '+1 234 567 890',
-    company: 'Tech Corp',
-    status: 'New',
-    temperature: 'Warm',
-    source: 'Website',
-    lastContact: '2024-03-15',
-  },
-  {
-    id: 2,
-    name: 'Sarah Wilson',
-    email: 'sarah@example.com',
-    phone: '+1 234 567 891',
-    company: 'Design Co',
-    status: 'Contacted',
-    temperature: 'Hot',
-    source: 'Referral',
-    lastContact: '2024-03-14',
-  },
-  {
-    id: 3,
-    name: 'Michael Brown',
-    email: 'michael@example.com',
-    phone: '+1 234 567 892',
-    company: 'Marketing Inc',
-    status: 'Qualified',
-    temperature: 'Cold',
-    source: 'LinkedIn',
-    lastContact: '2024-03-13',
-  },
-]
 
 // Add interfaces for error tracking
 interface ImportError {
@@ -115,13 +106,13 @@ interface ImportStats {
 }
 
 // Add a function to generate unique IDs
-function generateUniqueId(): number {
-  return Date.now()
-}
+// function generateUniqueId(): number {
+//   return Date.now()
+// }
 
 const defaultStages = {
   'Lead': { color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100', icon: User },
-  'Appointment Booked': { color: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100', icon: Calendar },
+  'Appointment Booked': { color: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100', icon: CalendarIcon },
   'Qualified': { color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100', icon: CheckCircle },
   'Disqualified': { color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100', icon: AlertCircle },
   'Not Connected': { color: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-100', icon: Phone },
@@ -153,7 +144,7 @@ const iconMapping = {
   Building2,
   Tag,
   Globe,
-  Calendar,
+  CalendarIcon, // Replace Calendar with CalendarIcon
   CheckCircle,
   Clock,
   Star,
@@ -166,21 +157,175 @@ const iconMapping = {
 }
 
 // Type guard for temperature
-const isTemperatureType = (value: string): value is TemperatureType => {
-  return ['Hot', 'Warm', 'Cold'].includes(value as TemperatureType)
-}
+// const isTemperatureType = (value: string): value is TemperatureType => {
+//   return ['Hot', 'Warm', 'Cold'].includes(value as TemperatureType)
+// }
 
 // Type guard for lead fields
-type LeadField = keyof Omit<Lead, 'id' | 'temperature'>
-const isLeadField = (field: string): field is LeadField => {
-  return ['name', 'email', 'phone', 'company', 'status', 'source', 'lastContact'].includes(field)
+// type LeadField = keyof Omit<Lead, 'id' | 'temperature'>
+// const isLeadField = (field: string): field is LeadField => {
+//   return ['name', 'email', 'phone', 'company', 'status', 'source', 'last_contact'].includes(field)
+// }
+
+// Add this interface if you don't have it already
+interface NewLead {
+  name: string;
+  email: string;
+  phone?: string;
+  company?: string;
+  stage: string;
+  status: 'Hot' | 'Warm' | 'Cold';
+  source?: string;
 }
 
+// Add this interface for form validation
+interface LeadFormErrors {
+  name?: string;
+  email?: string;
+  phone?: string;
+  company?: string;
+}
+
+const ErrorAlert = ({ message }: { message: string }) => (
+  <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-4">
+    <div className="flex items-center gap-3">
+      <AlertCircle className="h-5 w-5 text-red-500" />
+      <p className="text-sm text-red-700">{message}</p>
+    </div>
+  </div>
+);
+
+// Add new interfaces
+interface MessageTemplate {
+  id: number;
+  name: string;
+  category: string;
+  language: string;
+  status: string;
+  components: TemplateComponent[];
+}
+
+interface TemplateComponent {
+  type: 'HEADER' | 'BODY' | 'FOOTER' | 'BUTTONS';
+  text?: string;
+  format?: 'TEXT' | 'IMAGE' | 'VIDEO' | 'DOCUMENT';
+  example?: {
+    header_handle: string[];
+  };
+  buttons?: Array<{
+    type: 'QUICK_REPLY' | 'URL' | 'PHONE_NUMBER' | 'COPY_CODE';
+    text: string;
+    url?: string;
+    phone_number?: string;
+    code?: string;
+  }>;
+}
+
+// Update the LeadsTableSkeleton component to accept props
+interface LeadsTableSkeletonProps {
+  columns: typeof columns;
+  visibleColumns: string[];
+}
+
+const LeadsTableSkeleton = ({ columns, visibleColumns }: LeadsTableSkeletonProps) => (
+  <div className="w-full animate-pulse">
+    <div className="flex items-center justify-between mb-4">
+      <div className="h-8 w-32 bg-gray-200 rounded"></div>
+      <div className="flex gap-2">
+        <div className="h-8 w-24 bg-gray-200 rounded"></div>
+        <div className="h-8 w-24 bg-gray-200 rounded"></div>
+      </div>
+    </div>
+    
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead className="w-[50px]">
+            <div className="h-4 w-4 bg-gray-200 rounded"></div>
+          </TableHead>
+          {columns
+            .filter(column => visibleColumns.includes(column.id))
+            .map(column => (
+              <TableHead key={column.id}>
+                <div className="h-4 w-20 bg-gray-200 rounded"></div>
+              </TableHead>
+            ))}
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {[...Array(5)].map((_, index) => (
+          <TableRow key={index}>
+            <TableCell>
+              <div className="h-4 w-4 bg-gray-200 rounded"></div>
+            </TableCell>
+            {columns
+              .filter(column => visibleColumns.includes(column.id))
+              .map((column, cellIndex) => (
+                <TableCell key={cellIndex}>
+                  <div className="flex items-center gap-2">
+                    {column.icon && (
+                      <div className="h-4 w-4 bg-gray-200 rounded"></div>
+                    )}
+                    <div className="h-4 w-24 bg-gray-200 rounded"></div>
+                  </div>
+                </TableCell>
+              ))}
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  </div>
+);
+
+// Add this type for the date picker
+type DatePickerProps = {
+  date?: Date;
+  onChange: (date?: Date) => void;
+}
+
+// // Add this component for the date picker
+// const DatePicker = ({ date, onChange }: DatePickerProps) => {
+//   return (
+//     <Popover>
+//       <PopoverTrigger asChild>
+//         <Button
+//           variant="outline"
+//           className={cn(
+//             "w-[240px] justify-start text-left font-normal",
+//             !date && "text-muted-foreground"
+//           )}
+//         >
+//           <CalendarIcon className="mr-2 h-4 w-4" />
+//           {date ? format(date, "PPP") : <span>Pick a date</span>}
+//         </Button>
+//       </PopoverTrigger>
+//       <PopoverContent className="w-auto p-0" align="start">
+//         <Calendar
+//           mode="single"
+//           selected={date}
+//           onSelect={onChange}
+//           initialFocus
+//         />
+//       </PopoverContent>
+//     </Popover>
+//   )
+// }
+
+// Add this type near your other type definitions
+// type SourceType = keyof typeof sourceConfig;
+
 export default function LeadsPage() {
-  const [leads, setLeads] = useState<Lead[]>(initialLeads)
+  const [leads, setLeads] = useState<Lead[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
-  const [visibleColumns, setVisibleColumns] = useState(['name', 'email', 'status', 'source', 'actions'])
+  const [visibleColumns, setVisibleColumns] = useState([
+    'name', 
+    'email', 
+    'stage',
+    'status',
+    'source', 
+    'actions'
+  ])
   
   // Add states for import functionality
   const [file, setFile] = useState<File | null>(null)
@@ -211,6 +356,285 @@ export default function LeadsPage() {
   const [editedStageColor, setEditedStageColor] = useState('')
   const [showEditLead, setShowEditLead] = useState(false)
   const [editedLead, setEditedLead] = useState<Lead | null>(null)
+  const [showNewLead, setShowNewLead] = useState(false);
+  const [newLead, setNewLead] = useState<NewLead>({
+    name: '',
+    email: '',
+    phone: '',
+    company: '',
+    stage: 'New',
+    status: 'Warm',
+    source: 'Website'
+  });
+
+  // Add these to your state variables at the top of LeadsPage component
+  const [selectedLeads, setSelectedLeads] = useState<number[]>([]);
+  const [isLoading, setIsLoading] = useState(true)
+  const [totalItems, setTotalItems] = useState(0)
+  const [totalPages, setTotalPages] = useState(1)
+  const { toast } = useToast()
+
+  // Add this at the top of your component
+  const fetchLeadsConfig = React.useMemo(() => ({
+    page: currentPage,
+    search: searchTerm,
+    status: statusFilter,
+    perPage: itemsPerPage
+  }), [currentPage, searchTerm, statusFilter, itemsPerPage]);
+
+  // Add this to your state variables
+  const [error, setError] = useState<string | null>(null);
+
+  const router = useRouter();
+
+  // Add this state for delete confirmation
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{
+    isOpen: boolean;
+    leadId: number | null;
+    leadName: string;
+  }>({
+    isOpen: false,
+    leadId: null,
+    leadName: ''
+  });
+
+  // Add state for export dialog
+  const [showExportDialog, setShowExportDialog] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+
+  // Add new state variables
+  const [showBroadcastDialog, setShowBroadcastDialog] = useState(false)
+  const [templates, setTemplates] = useState<MessageTemplate[]>([])
+  const [selectedTemplate, setSelectedTemplate] = useState<MessageTemplate | null>(null)
+  const [variables, setVariables] = useState<Record<string, string>>({})
+  const [variableColumnMapping, setVariableColumnMapping] = useState<Record<string, string>>({})
+
+  // Add new state for templates loading
+  const [isLoadingTemplates, setIsLoadingTemplates] = useState(false);
+
+  // Add these new state variables at the top of your component
+  const [filters, setFilters] = useState<{
+    search: string;
+    status: string;
+    stage: string;
+    source: string;
+    dateRange: DateRange | undefined;
+    createdAt: DateRange | undefined;
+  }>({
+    search: '',
+    status: 'all',
+    stage: 'all',
+    source: 'all',
+    dateRange: undefined,
+    createdAt: undefined
+  });
+
+  // Add these state variables near your other states
+  const [isSendingBroadcast, setIsSendingBroadcast] = useState(false);
+  const [broadcastResponse, setBroadcastResponse] = useState<{
+    success?: boolean;
+    message?: string;
+    error?: string;
+  } | null>(null);
+
+  // Move all function definitions here
+  const handleFilterChange = (key: string, value: any) => {
+    setFilters(prev => ({
+      ...prev,
+      [key]: value
+    }));
+    setCurrentPage(1);
+  };
+
+  const clearFilters = () => {
+    setFilters({
+      search: '',
+      status: 'all',
+      stage: 'all',
+      source: 'all',
+      dateRange: undefined,
+      createdAt: undefined
+    });
+    setCurrentPage(1);
+  };
+
+  // Update the fetchLeads function to properly handle all filters
+  const fetchLeads = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      const params = {
+        page: currentPage,
+        per_page: itemsPerPage,
+        ...(filters.search && { search: filters.search }),
+        ...(filters.status !== 'all' && { status: filters.status }),
+        ...(filters.stage !== 'all' && { stage: filters.stage }),
+        ...(filters.source !== 'all' && { source: filters.source }),
+        ...(filters.dateRange?.from && { 
+          last_contact_from: format(filters.dateRange.from, 'yyyy-MM-dd') 
+        }),
+        ...(filters.dateRange?.to && { 
+          last_contact_to: format(filters.dateRange.to, 'yyyy-MM-dd') 
+        }),
+        ...(filters.createdAt?.from && { 
+          created_from: format(filters.createdAt.from, 'yyyy-MM-dd') 
+        }),
+        ...(filters.createdAt?.to && { 
+          created_to: format(filters.createdAt.to, 'yyyy-MM-dd') 
+        })
+      };
+
+      // Log the params being sent to API
+      console.log('Fetching leads with params:', params);
+
+      const response = await getLeads(params);
+      
+      if (response?.data && Array.isArray(response.data)) {
+        setLeads(response.data);
+        setTotalItems(response.total || 0);
+        setTotalPages(response.last_page || 1);
+      } else {
+        throw new Error('Invalid response format from API');
+      }
+    } catch (error) {
+      console.error('Failed to fetch leads:', error);
+      setError(error instanceof Error ? error.message : 'An error occurred');
+      setLeads([]);
+      setTotalItems(0);
+      setTotalPages(1);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Remove the old fetchLeadsConfig since we're not using it
+  useEffect(() => {
+    fetchLeads();
+  }, [currentPage, filters, itemsPerPage]);
+
+  // Update handleAddLead
+  const handleAddLead = async () => {
+    try {
+      setIsSubmitting(true);
+      setSubmitError(null);
+
+      const response = await createLead({
+        name: newLead.name,
+        email: newLead.email,
+        phone: newLead.phone,
+        company: newLead.company,
+        stage: newLead.stage,
+        status: newLead.status,
+        source: newLead.source
+      });
+      
+      // Refresh leads list
+      await fetchLeads();
+      
+      setShowNewLead(false);
+      toast({
+        title: "Success",
+        description: "Lead created successfully",
+        variant: "default",
+      });
+      
+      // Reset form
+      setNewLead({
+        name: '',
+        email: '',
+        phone: '',
+        company: '',
+        stage: 'New',
+        status: 'Warm',
+        source: 'Website'
+      });
+    } catch (error: any) {
+      console.error('Failed to create lead:', error);
+      
+      // Set the error message to be displayed in the form
+      setSubmitError(error.message || 'Failed to create lead. Please try again.');
+      
+      // Don't close the modal, let the user see the error
+      setIsSubmitting(false);
+    }
+  };
+
+  // Update bulk actions
+  const handleBulkDelete = async () => {
+    if (!confirm('Are you sure you want to delete the selected leads?')) return
+
+    try {
+      await bulkDeleteLeads(selectedLeads)
+      await fetchLeads() // Refresh the list
+      setSelectedLeads([])
+      toast({
+        title: "Success",
+        description: "Leads deleted successfully"
+      })
+    } catch (error) {
+      console.error('Failed to delete leads:', error)
+      toast({
+        title: "Error",
+        description: "Failed to delete leads",
+        variant: "destructive"
+      })
+    }
+  }
+
+  const handleBulkStageChange = async (newStatus: string) => {
+    try {
+      await bulkUpdateLeadStatus(selectedLeads, newStatus)
+      await fetchLeads() // Refresh the list
+      setSelectedLeads([])
+      setShowStageChange(false)
+      toast({
+        title: "Success",
+        description: "Lead stages updated successfully"
+      })
+    } catch (error) {
+      console.error('Failed to update lead stages:', error)
+      toast({
+        title: "Error",
+        description: "Failed to update lead stages",
+        variant: "destructive"
+      })
+    }
+  }
+
+  // Update single lead delete
+  const handleDelete = (lead: Lead) => {
+    setDeleteConfirmation({
+      isOpen: true,
+      leadId: lead.id,
+      leadName: lead.name
+    });
+  };
+
+  // Add this new function to handle the actual deletion
+  const confirmDelete = async () => {
+    if (!deleteConfirmation.leadId) return;
+    
+    try {
+      await deleteLead(deleteConfirmation.leadId);
+      await fetchLeads();
+      
+      toast({
+        title: "Success",
+        description: "Lead deleted successfully",
+        variant: "default",
+      });
+    } catch (error) {
+      console.error('Failed to delete lead:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete lead. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setDeleteConfirmation({ isOpen: false, leadId: null, leadName: '' });
+    }
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0]
@@ -305,125 +729,109 @@ export default function LeadsPage() {
     return errors
   }
 
-  const handleImport = () => {
-    if (!file || !preview.length) return
+  const handleImport = async () => {
+    if (!file || isImporting) return;
     
-    // First show the generating report UI
-    setShowGeneratingReport(true)
-    
-    // Scroll to the report section first
-    setTimeout(() => {
-      resultsSectionRef.current?.scrollIntoView({ behavior: 'smooth' })
-      
-      // Start the import process after scrolling
-      setTimeout(() => {
-        startImport()
-      }, 800) // Wait for scroll animation
-    }, 100)
-  }
+    setIsImporting(true);
+    setShowGeneratingReport(true);
 
-  const startImport = () => {
-    if (!file) return
-    
-    setIsImporting(true)
-    setImportError(null)
-    setImportStats(null)
+    try {
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        try {
+          const csv = event.target?.result as string;
+          const lines = csv.split('\n');
+          const headers = lines[0].split(',').map(h => h.trim());
+          const dataRows = lines.slice(1)
+            .filter(line => line.trim())
+            .map(line => line.split(',').map(cell => cell.trim()));
 
-    const csvHeaders = preview[0]
-    const reader = new FileReader()
-    
-    reader.onload = (event) => {
-      try {
-        const csv = event.target?.result as string
-        const lines = csv.split('\n')
-        const allRows = lines
-          .map(line => line.split(',').map(cell => cell.trim()))
-          .filter((row, index) => {
-            // Skip empty rows or rows with only empty cells
-            if (index === 0) return true // Keep header row
-            return row.some(cell => cell !== '')
-          })
-        const dataRows = allRows.slice(1) // Skip header row
+          const leads = dataRows.map(row => {
+            const lead: CreateLeadDto = {
+              name: '',
+              email: '',
+              stage: 'New',
+              status: 'Warm',
+            };
 
-        const stats: ImportStats = {
-          totalRows: dataRows.length,
-          successfulRows: 0,
-          skippedRows: 0,
-          errors: [],
-          skippedColumns: columnMapping
-            .filter(m => m.leadField === 'skip')
-            .map(m => m.csvHeader)
-        }
-
-        const newLeads = dataRows.map((row, rowIndex) => {
-          const rowErrors = validateRow(row, csvHeaders, rowIndex)
-          if (rowErrors.length > 0) {
-            stats.errors.push(...rowErrors)
-            stats.skippedRows++
-            return null
-          }
-
-          const lead: Lead = {
-            id: generateUniqueId(),
-            name: '',
-            email: '',
-            phone: '',
-            company: '',
-            status: 'New',
-            temperature: 'Warm',
-            source: '',
-            lastContact: new Date().toISOString().split('T')[0],
-          }
-
-          columnMapping.forEach((mapping) => {
-            if (mapping.leadField && mapping.leadField !== 'skip') {
-              const csvIndex = csvHeaders.indexOf(mapping.csvHeader)
-              if (csvIndex !== -1) {
-                const value = row[csvIndex]
-                if (mapping.leadField === 'temperature' && isTemperatureType(value)) {
-                  lead.temperature = value as TemperatureType
-                } else if (isLeadField(mapping.leadField)) {
-                  lead[mapping.leadField] = value
+            columnMapping.forEach(mapping => {
+              if (mapping.leadField !== 'skip') {
+                const index = headers.indexOf(mapping.csvHeader);
+                if (index !== -1) {
+                  const value = row[index];
+                  switch (mapping.leadField) {
+                    case 'name':
+                    case 'email':
+                    case 'phone':
+                    case 'company':
+                    case 'stage':
+                    case 'source':
+                      lead[mapping.leadField] = value;
+                      break;
+                    case 'status':
+                      if (['Hot', 'Warm', 'Cold'].includes(value)) {
+                        lead.status = value as 'Hot' | 'Warm' | 'Cold';
+                      }
+                      break;
+                  }
                 }
               }
-            }
-          })
+            });
 
-          stats.successfulRows++
-          return lead
-        }).filter((lead): lead is Lead => lead !== null)
+            return lead;
+          });
 
-        setImportStats(stats)
-        if (newLeads.length > 0) {
-          setLeads(current => [...current, ...newLeads])
+          // Send to backend
+          const response = await importLeads({ leads });
+          
+          setImportStats({
+            totalRows: leads.length,
+            successfulRows: response.successful || 0,
+            skippedRows: response.skipped || 0,
+            errors: response.errors || [],
+            skippedColumns: columnMapping
+              .filter(m => m.leadField === 'skip')
+              .map(m => m.csvHeader)
+          });
+
+          // Refresh leads list
+          await fetchLeads();
+          
+          toast({
+            title: "Import Complete",
+            description: `Successfully imported ${response.successful} leads`,
+            variant: "default",
+          });
+
+        } catch (error: any) {
+          console.error('Import failed:', error);
+          setImportError(error.message || 'Failed to import leads');
+          toast({
+            title: "Import Failed",
+            description: error.message || "Failed to import leads",
+            variant: "destructive",
+          });
         }
-        
-        // Delay hiding the generating animation slightly
-        setTimeout(() => {
-          setShowGeneratingReport(false)
-          // Scroll to results after the generating animation
-          setTimeout(() => {
-            resultsSectionRef.current?.scrollIntoView({ behavior: 'smooth' })
-          }, 100)
-        }, 1000)
 
-      } catch (err) {
-        console.error('Failed to process CSV data:', err)
-        setImportError('Failed to process CSV data')
-        setShowGeneratingReport(false)
-      } finally {
-        setIsImporting(false)
-      }
+        setIsImporting(false);
+        setShowGeneratingReport(false);
+      };
+
+      reader.onerror = () => {
+        setImportError('Failed to read the file');
+        setIsImporting(false);
+        setShowGeneratingReport(false);
+      };
+
+      reader.readAsText(file);
+
+    } catch (error: any) {
+      console.error('Import failed:', error);
+      setImportError(error.message || 'Failed to import leads');
+      setIsImporting(false);
+      setShowGeneratingReport(false);
     }
-
-    reader.onerror = () => {
-      setImportError('Failed to read the file')
-      setIsImporting(false)
-      setShowGeneratingReport(false)
-    }
-
-    reader.readAsText(file)
-  }
+  };
 
   const handleColumnToggle = (columnId: string) => {
     setVisibleColumns(current =>
@@ -433,144 +841,61 @@ export default function LeadsPage() {
     )
   }
 
-  const filteredLeads = leads.filter(lead =>
-    (statusFilter === 'all' || lead.status === statusFilter) &&
-    Object.values(lead).some(value =>
-      value.toString().toLowerCase().includes(searchTerm.toLowerCase())
-    )
-  )
-
   const resetImport = () => {
-    setFile(null)
-    setPreview([])
-    setShowMapping(false)
-    setColumnMapping([])
-    setImportError(null)
-    setImportStats(null)
-  }
+    setFile(null);
+    setPreview([]);
+    setShowMapping(false);
+    setColumnMapping([]);
+    setImportError(null);
+    setImportStats(null);
+  };
 
-  const handleImportClick = () => {
-    fileInputRef.current?.click()
-  }
-
-  // Add pagination calculation
-  const totalItems = filteredLeads.length
-  const totalPages = Math.ceil(totalItems / itemsPerPage)
-  const startIndex = (currentPage - 1) * itemsPerPage
-  const endIndex = startIndex + itemsPerPage
-  const currentItems = filteredLeads.slice(startIndex, endIndex)
+  // const handleImportClick = () => {
+  //   fileInputRef.current?.click()
+  // }
 
   // Update pagination controls
-  const PaginationControls = () => {
-    const pageNumbers: number[] = []
-    const maxVisiblePages = 5
-    const safeTotalPages = Math.max(1, totalPages || 1)
-    const safeCurrentPage = Math.min(currentPage, safeTotalPages)
-    let startPage = Math.max(1, safeCurrentPage - Math.floor(maxVisiblePages / 2))
-    const endPage = Math.min(safeTotalPages, startPage + maxVisiblePages - 1)
-
-    if (endPage - startPage + 1 < maxVisiblePages) {
-      startPage = Math.max(1, endPage - maxVisiblePages + 1)
-    }
-
-    for (let i = startPage; i <= endPage; i++) {
-      pageNumbers.push(i)
-    }
-
-    const handlePageChange = (page: number) => {
-      setCurrentPage(Math.min(Math.max(1, page), safeTotalPages))
-    }
-
-    return (
-      <div className="flex items-center justify-between px-2 py-4">
-        <div className="text-sm text-gray-600">
-          Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems} entries
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => handlePageChange(1)}
-            disabled={safeCurrentPage === 1}
-            className="hidden sm:flex"
-          >
-            <ChevronsLeft className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => handlePageChange(safeCurrentPage - 1)}
-            disabled={safeCurrentPage === 1}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-
-          <div className="flex gap-1">
-            {startPage > 1 && (
-              <>
-                <Button
-                  variant={safeCurrentPage === 1 ? "default" : "outline"}
-                  size="icon"
-                  onClick={() => handlePageChange(1)}
-                  className="hidden sm:flex"
-                >
-                  1
-                </Button>
-                {startPage > 2 && (
-                  <div className="flex items-center px-2">...</div>
-                )}
-              </>
-            )}
-
-            {pageNumbers.map(number => (
-              <Button
-                key={number}
-                variant={safeCurrentPage === number ? "default" : "outline"}
-                size="icon"
-                onClick={() => handlePageChange(number)}
-              >
-                {number}
-              </Button>
-            ))}
-
-            {endPage < safeTotalPages && (
-              <>
-                {endPage < safeTotalPages - 1 && (
-                  <div className="flex items-center px-2">...</div>
-                )}
-                <Button
-                  variant={safeCurrentPage === safeTotalPages ? "default" : "outline"}
-                  size="icon"
-                  onClick={() => handlePageChange(safeTotalPages)}
-                  className="hidden sm:flex"
-                >
-                  {safeTotalPages}
-                </Button>
-              </>
-            )}
-          </div>
-
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => handlePageChange(safeCurrentPage + 1)}
-            disabled={safeCurrentPage === safeTotalPages}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => handlePageChange(safeTotalPages)}
-            disabled={safeCurrentPage === safeTotalPages}
-            className="hidden sm:flex"
-          >
-            <ChevronsRight className="h-4 w-4" />
-          </Button>
-        </div>
+  const PaginationControls = () => (
+    <div className="flex items-center justify-between px-2">
+      <div className="flex w-[100px] items-center justify-center text-sm font-medium">
+        Page {currentPage} of {totalPages}
       </div>
-    )
-  }
+      <div className="flex items-center space-x-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setCurrentPage(1)}
+          disabled={currentPage === 1}
+        >
+          <ChevronsLeft className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+          disabled={currentPage === 1}
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+          disabled={currentPage === totalPages}
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setCurrentPage(totalPages)}
+          disabled={currentPage === totalPages}
+        >
+          <ChevronsRight className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
 
   const handleAddStage = () => {
     if (newStageName && !stages[newStageName]) {
@@ -585,15 +910,40 @@ export default function LeadsPage() {
     }
   }
 
-  const handleStageChange = (leadId: number | undefined, newStage: string) => {
-    if (typeof leadId === 'number') {
+  const handleStageChange = async (leadId: number | undefined, newStage: string) => {
+    if (typeof leadId !== 'number') return;
+    
+    try {
+      await updateLeadStage(leadId, newStage);
+      
+      // Update the lead locally instead of fetching
       setLeads(prev => prev.map(lead => 
-        lead.id === leadId ? { ...lead, status: newStage } : lead
-      ))
-      setShowStageChange(false)
-      setEditingLead(null)
+        lead.id === leadId 
+          ? { ...lead, stage: newStage }
+          : lead
+      ));
+      
+      setShowStageChange(false);
+      setEditingLead(null);
+      
+      toast({
+        title: "Stage Updated",
+        description: "Lead stage has been updated successfully",
+        duration: 2000,
+        variant: "default",
+      });
+
+    } catch (error) {
+      console.error('Failed to update lead stage:', error);
+      
+      toast({
+        title: "Update Failed",
+        description: "Failed to update lead stage. Please try again.",
+        duration: 4000,
+        variant: "destructive",
+      });
     }
-  }
+  };
 
   const handleEditStage = (stageName: string) => {
     setEditingStage(stageName)
@@ -644,6 +994,199 @@ export default function LeadsPage() {
     setEditedLead(null)
   }
 
+  // Add this function to handle bulk selection
+  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.checked) {
+      setSelectedLeads(leads.map(lead => lead.id));
+    } else {
+      setSelectedLeads([]);
+    }
+  };
+
+  // Add this function to handle individual selection
+  const handleSelectLead = (leadId: number) => {
+    setSelectedLeads(prev => 
+      prev.includes(leadId) 
+        ? prev.filter(id => id !== leadId)
+        : [...prev, leadId]
+    );
+  };
+
+  // Add this before the return statement
+  console.log('Current leads state:', leads);
+  console.log('Visible columns:', visibleColumns);
+
+  const [formErrors, setFormErrors] = useState<LeadFormErrors>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const validateAndSubmit = async () => {
+    // Reset errors
+    setFormErrors({});
+    
+    // Validate required fields
+    const errors: LeadFormErrors = {};
+    
+    if (!newLead.name?.trim()) {
+      errors.name = 'Name is required';
+    }
+    
+    if (!newLead.email?.trim()) {
+      errors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newLead.email)) {
+      errors.email = 'Invalid email format';
+    }
+    
+    if (newLead.phone && !/^\+?[\d\s-]{10,}$/.test(newLead.phone)) {
+      errors.phone = 'Invalid phone number format';
+    }
+    
+    // If there are errors, show them and stop
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+    
+    // Submit the form
+    setIsSubmitting(true);
+    try {
+      await handleAddLead();
+      // Success! Modal will be closed by handleAddLead
+    } catch (error) {
+      console.error('Failed to add lead:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to add lead",
+        variant: "destructive",
+      });
+      // Error handling is done in handleAddLead
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Add export handler
+  const handleExport = async (exportAll: boolean = false) => {
+    try {
+      setIsExporting(true);
+      await exportLeads(exportAll ? undefined : selectedLeads);
+      
+      toast({
+        title: "Success",
+        description: "Leads exported successfully",
+        variant: "default",
+      });
+      
+      setShowExportDialog(false);
+    } catch (error) {
+      console.error('Export failed:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to export leads",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  // Add function to extract variables from template
+  const extractVariables = (template: MessageTemplate) => {
+    const variableRegex = /{{([^}]+)}}/g
+    const variables = new Set<string>()
+    
+    template.components.forEach(component => {
+      if (component.text) {
+        let match
+        while ((match = variableRegex.exec(component.text)) !== null) {
+          variables.add(match[1])
+        }
+      }
+    })
+    
+    return Array.from(variables)
+  }
+
+  // Add function to handle broadcast
+  const handleBroadcast = async () => {
+    if (!selectedTemplate || selectedLeads.length === 0) return;
+
+    setIsSendingBroadcast(true);
+    setBroadcastResponse(null);
+
+    try {
+        // Prepare the data to be sent
+        const broadcastData = {
+            template_id: String(selectedTemplate.id),
+            lead_ids: selectedLeads,
+            variables: variables,
+            variable_column_mapping: variableColumnMapping
+        };
+
+        // Log the data being sent
+        console.log('Sending broadcast data:', broadcastData);
+
+        // Call your API to send broadcast
+        const response = await integrationApi.sendBroadcast(broadcastData);
+        
+        setBroadcastResponse({
+            success: true,
+            message: `Successfully initiated broadcast to ${selectedLeads.length} leads`
+        });
+        
+    } catch (error: any) {
+        setBroadcastResponse({
+            success: false,
+            error: error.message || "Failed to send broadcast"
+        });
+    } finally {
+        setIsSendingBroadcast(false);
+    }
+};
+
+  // Add useEffect to fetch templates when dialog opens
+  useEffect(() => {
+    if (showBroadcastDialog) {
+      fetchTemplates();
+    }
+  }, [showBroadcastDialog]);
+
+  // Add function to fetch templates
+  const fetchTemplates = async () => {
+    setIsLoadingTemplates(true);
+    try {
+      const response = await integrationApi.getWhatsAppAccounts();
+      if (response.accounts && response.accounts.length > 0) {
+        setTemplates(response.accounts[0].templates || []);
+      } else {
+        toast({
+          title: "Error",
+          description: "No WhatsApp account found",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to fetch templates",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingTemplates(false);
+    }
+  };
+
+  // Add debug logging for leads state changes
+  useEffect(() => {
+    console.log('Leads state changed:', leads);
+  }, [leads]);
+
+  // Update the fetchLeadsConfig dependency array
+  useEffect(() => {
+    console.log('Fetching leads with config:', fetchLeadsConfig);
+    fetchLeads();
+  }, [currentPage, filters, itemsPerPage]);
+
   return (
     <div className="space-y-4 p-2 h-full overflow-scroll">
       <Card>
@@ -667,46 +1210,159 @@ export default function LeadsPage() {
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
+            <Button onClick={() => setShowNewLead(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Lead
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 px-2 lg:px-3"
+              onClick={() => setShowExportDialog(true)}
+            >
+              <FileDown className="h-4 w-4 lg:mr-2" />
+              <span className="hidden lg:inline">Export</span>
+            </Button>
           </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="flex gap-2">
-              <div className="relative max-w-sm">
+            {/* Move the filter section here */}
+            <div className="flex flex-wrap gap-2 mb-4">
+              {/* Search input */}
+              <div className="relative flex-1 max-w-sm">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
                 <Input
                   placeholder="Search leads..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-8 max-w-sm"
+                  value={filters.search}
+                  onChange={(e) => handleFilterChange('search', e.target.value)}
+                  className="pl-8"
                 />
               </div>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[180px]">
-                  <Filter className="mr-2 h-4 w-4" />
-                  <SelectValue placeholder="Filter by status" />
+            </div>
+            <div className="flex flex-wrap gap-2 mb-4">
+
+              {/* Status filter */}
+              <Select 
+                value={filters.status} 
+                onValueChange={(value) => handleFilterChange('status', value)}
+              >
+                <SelectTrigger className="w-[140px]">
+                  <Thermometer className="mr-2 h-4 w-4" />
+                  <SelectValue placeholder="Temperature" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="New">New</SelectItem>
-                  <SelectItem value="Contacted">Contacted</SelectItem>
-                  <SelectItem value="Qualified">Qualified</SelectItem>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="Hot">Hot</SelectItem>
+                  <SelectItem value="Warm">Warm</SelectItem>
+                  <SelectItem value="Cold">Cold</SelectItem>
                 </SelectContent>
               </Select>
-              <input 
-                ref={fileInputRef}
-                type="file" 
-                accept=".csv" 
-                onChange={handleFileChange} 
-                className="hidden"
-              />
-              <Button onClick={handleImportClick}>
-                <FileUp className="mr-2 h-4 w-4" />
-                Import CSV
-              </Button>
-              <Button>
-                <FileDown className="mr-2 h-4 w-4" />
-                Export
+
+              {/* Stage filter */}
+              <Select 
+                value={filters.stage} 
+                onValueChange={(value) => handleFilterChange('stage', value)}
+              >
+                <SelectTrigger className="w-[140px]">
+                  <Tag className="mr-2 h-4 w-4" />
+                  <SelectValue placeholder="Stage" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Stages</SelectItem>
+                  {Object.keys(defaultStages).map((stage) => (
+                    <SelectItem key={stage} value={stage}>
+                      {stage}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Add back the source filter */}
+              <Select 
+                value={filters.source} 
+                onValueChange={(value) => handleFilterChange('source', value)}
+              >
+                <SelectTrigger className="w-[140px]">
+                  <Globe className="mr-2 h-4 w-4" />
+                  <SelectValue placeholder="Source" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Sources</SelectItem>
+                  {Object.keys(sourceConfig).map((source) => (
+                    <SelectItem key={source} value={source}>
+                      {source}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Date Range filter */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-[240px] justify-start text-left font-normal">
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {filters.dateRange?.from ? (
+                      filters.dateRange.to ? (
+                        <>Last Contact: {format(filters.dateRange.from, "LLL dd, y")} -{" "}
+                          {format(filters.dateRange.to, "LLL dd, y")}
+                        </>
+                      ) : (
+                        <>Last Contact: {format(filters.dateRange.from, "LLL dd, y")}</>
+                      )
+                    ) : (
+                      <span>Last Contact Date</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="range"
+                    defaultMonth={filters.dateRange?.from}
+                    selected={filters.dateRange}
+                    onSelect={(range) => handleFilterChange('dateRange', range)}
+                    numberOfMonths={2}
+                  />
+                </PopoverContent>
+              </Popover>
+
+              {/* Created At Date Range filter */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-[240px] justify-start text-left font-normal">
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {filters.createdAt?.from ? (
+                      filters.createdAt.to ? (
+                        <>Created: {format(filters.createdAt.from, "LLL dd, y")} -{" "}
+                          {format(filters.createdAt.to, "LLL dd, y")}
+                        </>
+                      ) : (
+                        <>Created: {format(filters.createdAt.from, "LLL dd, y")}</>
+                      )
+                    ) : (
+                      <span>Created Date</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="range"
+                    defaultMonth={filters.createdAt?.from}
+                    selected={filters.createdAt}
+                    onSelect={(range) => handleFilterChange('createdAt', range)}
+                    numberOfMonths={2}
+                  />
+                </PopoverContent>
+              </Popover>
+
+              {/* Clear filters button */}
+              <Button 
+                variant="ghost" 
+                onClick={clearFilters}
+                className="h-10"
+              >
+                <X className="mr-2 h-4 w-4" />
+                Clear Filters
               </Button>
             </div>
 
@@ -1089,7 +1745,7 @@ export default function LeadsPage() {
                         variant="outline"
                         className={cn(
                           "justify-start",
-                          editingLead?.status === name && "border-blue-500"
+                          editingLead?.stage === name && "border-blue-500"
                         )}
                         onClick={() => {
                           if (editingLead?.id !== undefined) {
@@ -1149,8 +1805,8 @@ export default function LeadsPage() {
                   <div className="grid gap-2">
                     <Label>Stage</Label>
                     <Select
-                      value={editedLead?.status || ''}
-                      onValueChange={(value) => setEditedLead(prev => prev ? { ...prev, status: value } : null)}
+                      value={editedLead?.stage || ''}
+                      onValueChange={(value) => setEditedLead(prev => prev ? { ...prev, stage: value } : null)}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select stage" />
@@ -1168,12 +1824,12 @@ export default function LeadsPage() {
                     </Select>
                   </div>
                   <div className="grid gap-2">
-                    <Label>Temperature</Label>
+                    <Label htmlFor="temperature">Temperature</Label>
                     <Select
-                      value={editedLead?.temperature || ''}
+                      value={editedLead?.status || ''}
                       onValueChange={(value) => {
                         if (value in temperatureConfig) {
-                          setEditedLead(prev => prev ? { ...prev, temperature: value as TemperatureType } : null)
+                          setEditedLead(prev => prev ? { ...prev, status: value as 'Hot' | 'Warm' | 'Cold' } : null)
                         }
                       }}
                     >
@@ -1181,11 +1837,11 @@ export default function LeadsPage() {
                         <SelectValue placeholder="Select temperature" />
                       </SelectTrigger>
                       <SelectContent>
-                        {(Object.keys(temperatureConfig) as TemperatureType[]).map((name) => (
-                          <SelectItem key={name} value={name}>
+                        {(Object.keys(temperatureConfig) as Array<'Hot' | 'Warm' | 'Cold'>).map((temp) => (
+                          <SelectItem key={temp} value={temp}>
                             <div className="flex items-center gap-2">
-                              {React.createElement(temperatureConfig[name].icon, { className: "h-4 w-4" })}
-                              <span>{name}</span>
+                              {React.createElement(temperatureConfig[temp].icon, { className: "h-4 w-4" })}
+                              <span>{temp}</span>
                             </div>
                           </SelectItem>
                         ))}
@@ -1204,7 +1860,10 @@ export default function LeadsPage() {
                       <SelectContent>
                         {Object.keys(sourceConfig).map((source) => (
                           <SelectItem key={source} value={source}>
-                            {source}
+                            <div className="flex items-center gap-2">
+                              {React.createElement(sourceConfig[source as keyof typeof sourceConfig].icon, { className: "h-4 w-4" })}
+                              <span>{source}</span>
+                            </div>
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -1222,10 +1881,273 @@ export default function LeadsPage() {
               </DialogContent>
             </Dialog>
 
-            <div className="rounded-md border">
+            {/* Add New Lead Dialog */}
+            <Dialog open={showNewLead} onOpenChange={setShowNewLead}>
+              <DialogContent className="max-w-[500px] max-h-[85vh] flex flex-col">
+                <DialogHeader className="px-6 py-4 border-b">
+                  <DialogTitle>Add New Lead</DialogTitle>
+                  <DialogDescription>
+                    Enter the details for the new lead.
+                  </DialogDescription>
+                </DialogHeader>
+
+                {/* Make the form body scrollable */}
+                <div className="flex-1 overflow-y-auto px-6 py-4">
+                  {/* Show error alert if there's a submit error */}
+                  {submitError && <ErrorAlert message={submitError} />}
+
+                  <div className="grid gap-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="name">
+                        Name <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="name"
+                        value={newLead.name}
+                        onChange={(e) => {
+                          setNewLead(prev => ({ ...prev, name: e.target.value }));
+                          // Clear error when user types
+                          if (formErrors.name) {
+                            setFormErrors(prev => ({ ...prev, name: undefined }));
+                          }
+                        }}
+                        placeholder="John Doe"
+                        className={cn(formErrors.name && "border-red-500")}
+                      />
+                      {formErrors.name && (
+                        <p className="text-sm text-red-500">{formErrors.name}</p>
+                      )}
+                    </div>
+
+                    <div className="grid gap-2">
+                      <Label htmlFor="email">
+                        Email <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={newLead.email}
+                        onChange={(e) => {
+                          setNewLead(prev => ({ ...prev, email: e.target.value }));
+                          if (formErrors.email) {
+                            setFormErrors(prev => ({ ...prev, email: undefined }));
+                          }
+                        }}
+                        placeholder="john@example.com"
+                        className={cn(formErrors.email && "border-red-500")}
+                      />
+                      {formErrors.email && (
+                        <p className="text-sm text-red-500">{formErrors.email}</p>
+                      )}
+                    </div>
+
+                    <div className="grid gap-2">
+                      <Label htmlFor="phone">Phone</Label>
+                      <Input
+                        id="phone"
+                        value={newLead.phone}
+                        onChange={(e) => {
+                          setNewLead(prev => ({ ...prev, phone: e.target.value }));
+                          if (formErrors.phone) {
+                            setFormErrors(prev => ({ ...prev, phone: undefined }));
+                          }
+                        }}
+                        placeholder="+1234567890"
+                        className={cn(formErrors.phone && "border-red-500")}
+                      />
+                      {formErrors.phone && (
+                        <p className="text-sm text-red-500">{formErrors.phone}</p>
+                      )}
+                    </div>
+
+                    <div className="grid gap-2">
+                      <Label htmlFor="company">Company</Label>
+                      <Input
+                        id="company"
+                        value={newLead.company}
+                        onChange={(e) => setNewLead(prev => ({ ...prev, company: e.target.value }))}
+                        placeholder="Company Name"
+                      />
+                    </div>
+
+                    <div className="grid gap-2">
+                      <Label htmlFor="stage">Stage</Label>
+                      <Select
+                        value={newLead.stage}
+                        onValueChange={(value) => setNewLead(prev => ({ ...prev, stage: value }))}>
+                        <SelectTrigger id="stage">
+                          <SelectValue placeholder="Select stage" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.entries(stages).map(([name, config]) => (
+                            <SelectItem key={name} value={name}>
+                              <div className="flex items-center gap-2">
+                                {React.createElement(config.icon, { className: "h-4 w-4" })}
+                                <span>{name}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="grid gap-2">
+                      <Label htmlFor="temperature">Temperature</Label>
+                      <Select
+                        value={newLead.status}
+                        onValueChange={(value) => setNewLead(prev => ({ ...prev, status: value as 'Hot' | 'Warm' | 'Cold' }))}>
+                        <SelectTrigger id="temperature">
+                          <SelectValue placeholder="Select temperature" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(Object.keys(temperatureConfig) as Array<'Hot' | 'Warm' | 'Cold'>).map((temp) => (
+                            <SelectItem key={temp} value={temp}>
+                              <div className="flex items-center gap-2">
+                                {React.createElement(temperatureConfig[temp].icon, { className: "h-4 w-4" })}
+                                <span>{temp}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="grid gap-2">
+                      <Label htmlFor="source">Source</Label>
+                      <Select
+                        value={newLead.source}
+                        onValueChange={(value) => setNewLead(prev => ({ ...prev, source: value }))}>
+                        <SelectTrigger id="source">
+                          <SelectValue placeholder="Select source" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.keys(sourceConfig).map((source) => (
+                            <SelectItem key={source} value={source}>
+                              <div className="flex items-center gap-2">
+                                {React.createElement(sourceConfig[source as keyof typeof sourceConfig].icon, { className: "h-4 w-4" })}
+                                <span>{source}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+
+                <DialogFooter className="px-6 py-4 border-t">
+                  <Button variant="outline" onClick={() => {
+                    setShowNewLead(false);
+                    setFormErrors({});
+                  }}>
+                    Cancel
+                  </Button>
+                  <Button 
+                    onClick={validateAndSubmit}
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Adding...
+                      </>
+                    ) : (
+                      'Add Lead'
+                    )}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            {/* Add bulk actions above the table when leads are selected */}
+            {selectedLeads.length > 0 && (
+              <div className="mb-4 p-4 bg-gray-50 rounded-lg border flex items-center justify-between">
+                <div className="text-sm text-gray-600">
+                  {selectedLeads.length} lead{selectedLeads.length > 1 ? 's' : ''} selected
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowBroadcastDialog(true)}
+                  >
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                    Send Message
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      // Handle bulk stage change
+                      setShowStageChange(true);
+                    }}
+                  >
+                    Change Stage
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-red-600 hover:text-red-700"
+                    onClick={handleBulkDelete}
+                  >
+                    Delete Selected
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {error ? (
+              <div className="p-8 flex flex-col items-center justify-center text-center">
+                <div className="rounded-full bg-red-100 p-3 mb-4">
+                  <XCircle className="h-6 w-6 text-red-600" />
+                </div>
+                <h3 className="text-lg font-medium text-red-900 mb-2">Error Loading Leads</h3>
+                <p className="text-sm text-red-600 max-w-md mb-4">{error}</p>
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setError(null);
+                    fetchLeads();
+                  }}
+                >
+                  <RefreshCcw className="mr-2 h-4 w-4" />
+                  Try Again
+                </Button>
+              </div>
+            ) : isLoading ? (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Search leads..."
+                      className="w-64 bg-gray-50"
+                      disabled
+                    />
+                    <Select disabled>
+                      <SelectTrigger className="w-36 bg-gray-50">
+                        <SelectValue placeholder="All Statuses" />
+                      </SelectTrigger>
+                    </Select>
+                  </div>
+                </div>
+                <LeadsTableSkeleton columns={columns} visibleColumns={visibleColumns} />
+              </div>
+            ) : leads.length === 0 ? (
+              <div className="p-8 text-center">
+                <p className="text-gray-500">No leads found</p>
+              </div>
+            ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-[50px]">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 rounded border-gray-300"
+                        checked={selectedLeads.length > 0 && selectedLeads.length === leads.length}
+                        onChange={handleSelectAll}
+                      />
+                    </TableHead>
                     {columns
                       .filter(column => visibleColumns.includes(column.id))
                       .map(column => (
@@ -1234,12 +2156,20 @@ export default function LeadsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {currentItems.map((lead) => (
-                    <TableRow key={lead.id}>
+                  {leads.map((lead) => (
+                    <TableRow key={`lead-${lead.id}`}>
+                      <TableCell>
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 rounded border-gray-300"
+                          checked={selectedLeads.includes(lead.id)}
+                          onChange={() => handleSelectLead(lead.id)}
+                        />
+                      </TableCell>
                       {columns
                         .filter(column => visibleColumns.includes(column.id))
                         .map(column => (
-                          <TableCell key={column.id}>
+                          <TableCell key={`${lead.id}-${column.id}`}>
                             {column.id === 'actions' ? (
                               <div className="flex gap-2">
                                 <TooltipProvider>
@@ -1267,6 +2197,7 @@ export default function LeadsPage() {
                                         variant="ghost" 
                                         size="sm" 
                                         className="h-8 w-8 p-0"
+                                        onClick={() => handleDelete(lead)}
                                       >
                                         <Trash className="h-4 w-4 text-red-600" />
                                       </Button>
@@ -1277,53 +2208,56 @@ export default function LeadsPage() {
                                   </Tooltip>
                                 </TooltipProvider>
                               </div>
+                            ) : column.id === 'stage' ? (
+                              <Badge 
+                                className={cn(
+                                  defaultStages[lead.stage as keyof typeof defaultStages]?.color || 'bg-gray-100 text-gray-800',
+                                  'flex items-center gap-1'
+                                )}
+                              >
+                                {React.createElement(defaultStages[lead.stage as keyof typeof defaultStages]?.icon || Tag, { 
+                                  className: "h-3 w-3" 
+                                })}
+                                {lead.stage}
+                              </Badge>
                             ) : column.id === 'status' ? (
-                              <div className="flex items-center gap-2">
-                                <Badge 
-                                  className={cn(
-                                    "flex w-fit items-center gap-1 cursor-pointer",
-                                    stages[lead.status]?.color
-                                  )}
-                                  onClick={() => {
-                                    setEditingLead(lead)
-                                    setShowStageChange(true)
-                                  }}
-                                >
-                                  {React.createElement(
-                                    stages[lead.status]?.icon || Tag,
-                                    { className: "h-3 w-3" }
-                                  )}
-                                  {lead.status}
-                                </Badge>
-                              </div>
-                            ) : column.id === 'temperature' ? (
-                              <div className="flex items-center gap-2">
-                                <Badge 
-                                  className={cn(
-                                    "flex w-fit items-center gap-1",
-                                    temperatureConfig[lead.temperature as TemperatureType]?.color
-                                  )}
-                                >
-                                  {React.createElement(
-                                    temperatureConfig[lead.temperature as TemperatureType]?.icon || Thermometer,
-                                    { className: "h-3 w-3" }
-                                  )}
-                                  {lead.temperature}
-                                </Badge>
-                              </div>
+                              <Badge 
+                                className={cn(
+                                  temperatureConfig[lead.status as TemperatureType]?.color || 'bg-gray-100 text-gray-800',
+                                  'flex items-center gap-1'
+                                )}
+                              >
+                                {React.createElement(temperatureConfig[lead.status as TemperatureType]?.icon || Thermometer, { 
+                                  className: "h-3 w-3" 
+                                })}
+                                {lead.status}
+                              </Badge>
                             ) : column.id === 'source' ? (
                               <Badge 
                                 className={cn(
-                                  "flex w-fit items-center gap-1",
-                                  sourceConfig[lead.source as keyof typeof sourceConfig]?.color
+                                  sourceConfig[lead.source as keyof typeof sourceConfig]?.color || 'bg-gray-100 text-gray-800',
+                                  'flex items-center gap-1'
                                 )}
                               >
-                                {React.createElement(
-                                  sourceConfig[lead.source as keyof typeof sourceConfig]?.icon || Globe,
-                                  { className: "h-3 w-3" }
-                                )}
+                                {React.createElement(sourceConfig[lead.source as keyof typeof sourceConfig]?.icon || Globe, { 
+                                  className: "h-3 w-3" 
+                                })}
                                 {lead.source}
                               </Badge>
+                            ) : column.id === 'lastContact' ? (
+                              <div className="flex items-center gap-2">
+                                {column.icon && React.createElement(column.icon, { 
+                                  className: "h-4 w-4 text-gray-500" 
+                                })}
+                                <span>{format(new Date(lead.last_contact), "MMM dd, yyyy")}</span>
+                              </div>
+                            ) : column.id === 'created_at' ? (
+                              <div className="flex items-center gap-2">
+                                {column.icon && React.createElement(column.icon, { 
+                                  className: "h-4 w-4 text-gray-500" 
+                                })}
+                                <span>{format(new Date(lead.created_at), "MMM dd, yyyy")}</span>
+                              </div>
                             ) : (
                               <div className="flex items-center gap-2">
                                 {column.icon && React.createElement(column.icon, { 
@@ -1338,11 +2272,403 @@ export default function LeadsPage() {
                   ))}
                 </TableBody>
               </Table>
-              {totalItems > 0 && <PaginationControls />}
-            </div>
+            )}
+            {totalItems > 0 && <PaginationControls />}
           </div>
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog 
+        open={deleteConfirmation.isOpen} 
+        onOpenChange={(isOpen) => 
+          setDeleteConfirmation(prev => ({ ...prev, isOpen }))
+        }
+      >
+        <DialogContent className="max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Delete Lead</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete {deleteConfirmation.leadName}? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setDeleteConfirmation({ 
+                isOpen: false, 
+                leadId: null, 
+                leadName: '' 
+              })}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDelete}
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Export Dialog */}
+      <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
+        <DialogContent className="max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Export Leads</DialogTitle>
+            <DialogDescription>
+              Choose how you want to export your leads.
+            </DialogDescription>
+            {selectedLeads.length > 0 && (
+              <div className="mt-2 text-sm text-muted-foreground">
+                You have {selectedLeads.length} leads selected.
+              </div>
+            )}
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <Button
+              onClick={() => handleExport(true)}
+              disabled={isExporting}
+              className="w-full"
+            >
+              {isExporting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Exporting...
+                </>
+              ) : (
+                <>
+                  <FileDown className="mr-2 h-4 w-4" />
+                  Export All Leads
+                </>
+              )}
+            </Button>
+            {selectedLeads.length > 0 && (
+              <Button
+                onClick={() => handleExport(false)}
+                disabled={isExporting}
+                variant="outline"
+                className="w-full"
+              >
+                {isExporting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Exporting...
+                  </>
+                ) : (
+                  <>
+                    <FileDown className="mr-2 h-4 w-4" />
+                    Export Selected ({selectedLeads.length})
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowExportDialog(false)}
+              disabled={isExporting}
+            >
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Broadcast Dialog */}
+      <Dialog open={showBroadcastDialog} onOpenChange={setShowBroadcastDialog}>
+        <DialogContent className="max-w-[900px] max-h-[85vh]">
+          <DialogHeader>
+            <DialogTitle>Send Broadcast Message</DialogTitle>
+            <DialogDescription>
+              Select a template and customize variables to send to {selectedLeads.length} leads.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {/* Add ScrollArea for the content */}
+          <ScrollArea className="flex-1 h-[calc(85vh-180px)]">
+            <div className="flex gap-6 p-4">
+              {/* Left side - Template selection and variables */}
+              <div className="flex-1 space-y-4">
+                <div className="space-y-2">
+                  <Label>Select Template</Label>
+                  {isLoadingTemplates ? (
+                    <div className="flex items-center justify-center py-4">
+                      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : templates.length === 0 ? (
+                    <div className="text-center py-4 text-muted-foreground">
+                      No templates available
+                    </div>
+                  ) : (
+                    <Select
+                      value={selectedTemplate?.id.toString()}
+                      onValueChange={(value) => {
+                        const template = templates.find(t => t.id.toString() === value);
+                        setSelectedTemplate(template || null);
+                        setVariables({});
+                        setVariableColumnMapping({});
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choose a template" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {templates.map(template => (
+                          <SelectItem 
+                            key={template.id} 
+                            value={template.id?.toString() || 'default'}
+                          >
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className="font-normal">
+                                {template.status}
+                              </Badge>
+                              <span>{template.name}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+
+                {selectedTemplate && (
+                  <div className="space-y-4">
+                    <div className="rounded-lg border p-4">
+                      <h4 className="font-medium mb-3">Template Variables</h4>
+                      {extractVariables(selectedTemplate).map(variable => (
+                        <div key={variable} className="space-y-2 mb-4">
+                          <Label>{variable}</Label>
+                          <div className="flex gap-2">
+                            <Input
+                              placeholder="Enter value"
+                              value={variables[variable] || ''}
+                              onChange={(e) => setVariables(prev => ({
+                                ...prev,
+                                [variable]: e.target.value
+                              }))}
+                              className="flex-1"
+                            />
+                            <Select
+                              value={variableColumnMapping[variable] || '_manual'}
+                              onValueChange={(value) => {
+                                setVariableColumnMapping(prev => ({
+                                  ...prev,
+                                  [variable]: value === '_manual' ? '' : value
+                                }))
+                                // Clear manual input if column is selected
+                                if (value !== '_manual') {
+                                  setVariables(prev => ({
+                                    ...prev,
+                                    [variable]: ''
+                                  }))
+                                }
+                              }}
+                            >
+                              <SelectTrigger className="w-[180px]">
+                                <SelectValue placeholder="Use column value" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="_manual">Manual Input</SelectItem>
+                                {columns
+                                  .filter(col => col.id !== 'actions')
+                                  .map(col => (
+                                    <SelectItem key={col.id} value={col.id}>
+                                      {col.label}
+                                    </SelectItem>
+                                  ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Right side - Template preview */}
+              <div className="w-[350px] border-l pl-6">
+                <h4 className="font-medium mb-3">Preview</h4>
+                {selectedTemplate ? (
+                  <div className="bg-muted rounded-lg p-4 space-y-3">
+                    {selectedTemplate.components.map((component, idx) => {
+                      if (component.type === 'HEADER') {
+                        return (
+                          <div key={idx} className="space-y-2">
+                            {component.format === 'TEXT' && (
+                              <p className="font-semibold">
+                                {component.text?.replace(/{{([^}]+)}}/g, (_, variable) => 
+                                  variables[variable] || `{{${variable}}}`
+                                )}
+                              </p>
+                            )}
+                            {component.format === 'IMAGE' && (
+                              <div className="bg-background rounded-lg p-3">
+                                <div className="aspect-video bg-muted-foreground/10 rounded-md flex items-center justify-center">
+                                  {component.example?.header_handle?.[0] ? (
+                                    <img 
+                                      src={component.example.header_handle[0]} 
+                                      alt="Header" 
+                                      className="max-h-full rounded-md object-contain"
+                                    />
+                                  ) : (
+                                    <p className="text-sm text-muted-foreground">Image Header</p>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                            {component.format === 'VIDEO' && (
+                              <div className="bg-background rounded-lg p-3">
+                                <div className="aspect-video bg-muted-foreground/10 rounded-md flex items-center justify-center">
+                                  {component.example?.header_handle?.[0] ? (
+                                    <video 
+                                      src={component.example.header_handle[0]} 
+                                      controls 
+                                      className="max-h-full rounded-md"
+                                    />
+                                  ) : (
+                                    <p className="text-sm text-muted-foreground">Video Header</p>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                            {component.format === 'DOCUMENT' && (
+                              <div className="bg-background rounded-lg p-3">
+                                <div className="bg-muted-foreground/10 rounded-md p-4 flex items-center justify-center">
+                                  <p className="text-sm text-muted-foreground">
+                                    📄 Document Attachment
+                                    {component.example?.header_handle?.[0] && (
+                                      <span className="block text-xs mt-1">
+                                        {component.example.header_handle[0].split('/').pop()}
+                                      </span>
+                                    )}
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      }
+
+                      if (component.type === 'BODY') {
+                        return (
+                          <div key={idx} className="text-sm whitespace-pre-line">
+                            {component.text?.replace(/{{([^}]+)}}/g, (_, variable) => 
+                              variables[variable] || `{{${variable}}}`
+                            )}
+                          </div>
+                        );
+                      }
+
+                      if (component.type === 'FOOTER') {
+                        return (
+                          <div key={idx} className="text-xs text-muted-foreground">
+                            {component.text?.replace(/{{([^}]+)}}/g, (_, variable) => 
+                              variables[variable] || `{{${variable}}}`
+                            )}
+                          </div>
+                        );
+                      }
+
+                      if (component.type === 'BUTTONS' && component.buttons) {
+                        return (
+                          <div key={idx} className="space-y-2 pt-2 border-t">
+                            {component.buttons.map((button, buttonIdx) => (
+                              <div
+                                key={buttonIdx}
+                                className="bg-primary/10 hover:bg-primary/20 transition-colors rounded-md p-2 text-sm text-center cursor-pointer"
+                              >
+                                {button.type === 'URL' && (
+                                  <div className="flex items-center justify-center gap-1">
+                                    <span>🔗</span>
+                                    <span>{button.text}</span>
+                                  </div>
+                                )}
+                                {button.type === 'PHONE_NUMBER' && (
+                                  <div className="flex items-center justify-center gap-1">
+                                    <span>📞</span>
+                                    <span>{button.text}</span>
+                                  </div>
+                                )}
+                                {button.type === 'QUICK_REPLY' && (
+                                  <span>{button.text}</span>
+                                )}
+                                {button.type === 'COPY_CODE' && (
+                                  <div className="flex items-center justify-center gap-1">
+                                    <span>📋</span>
+                                    <span>{button.text}</span>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      }
+
+                      return null;
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-6 text-gray-500">
+                    Select a template to see preview
+                  </div>
+                )}
+              </div>
+            </div>
+          </ScrollArea>
+
+          <DialogFooter className="border-t p-4 mt-4">
+            {broadcastResponse && (
+              <div className={cn(
+                "mb-4 p-4 rounded-lg w-full",
+                broadcastResponse.success 
+                  ? "bg-green-50 border border-green-200 text-green-800"
+                  : "bg-red-50 border border-red-200 text-red-800"
+              )}>
+                <div className="flex items-center gap-2">
+                  {broadcastResponse.success ? (
+                    <CheckCircle className="h-5 w-5 text-green-500" />
+                  ) : (
+                    <AlertCircle className="h-5 w-5 text-red-500" />
+                  )}
+                  <p className="text-sm">
+                    {broadcastResponse.message || broadcastResponse.error}
+                  </p>
+                </div>
+              </div>
+            )}
+            
+            <div className="flex justify-between w-full">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setShowBroadcastDialog(false);
+                  setBroadcastResponse(null);
+                }}
+              >
+                Close
+              </Button>
+              <Button 
+                onClick={handleBroadcast}
+                disabled={!selectedTemplate || selectedLeads.length === 0 || isSendingBroadcast}
+              >
+                {isSendingBroadcast ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  `Send to ${selectedLeads.length} Leads`
+                )}
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
