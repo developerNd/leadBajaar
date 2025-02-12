@@ -32,7 +32,7 @@
     "axios": "^1.7.9",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "date-fns": "^3.6.0",
+    "date-fns": "^4.1.0",
     "googleapis": "^144.0.0",
     "laravel-echo": "^1.19.0",
     "lucide-react": "^0.474.0",
@@ -41,7 +41,7 @@
     "next-themes": "^0.4.4",
     "pusher-js": "^8.4.0",
     "react": "^19.0.0",
-    "react-day-picker": "^8.10.1",
+    "react-day-picker": "^9.5.1",
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.54.2",
     "recharts": "^2.15.0",
@@ -59,8 +59,5 @@
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
     "typescript": "^5"
-  },
-  "overrides": {
-    "date-fns": "^3.6.0"
   }
 }
