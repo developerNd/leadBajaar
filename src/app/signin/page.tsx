@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -12,32 +12,65 @@ import { Icons } from '@/components/icons'
 import Link from 'next/link'
 import { login, loginWithGoogle } from '@/lib/api'
 import { useToast } from "@/hooks/use-toast"
+import { cn } from "@/lib/utils"
 
 
 type LoginFormData = {
   email: string
   password: string
-  remember: boolean
+  remember?: boolean
 }
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
   const { toast } = useToast()
-  const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>()
+  const { register, handleSubmit, formState: { errors }, setValue, setError } = useForm<LoginFormData>()
+
+  // Load saved credentials on component mount
+  useEffect(() => {
+    const savedCredentials = localStorage.getItem('rememberedCredentials')
+    if (savedCredentials) {
+      const { email, password } = JSON.parse(savedCredentials)
+      setValue('email', email)
+      setValue('password', password)
+      setValue('remember', true)
+    }
+  }, [setValue])
 
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true)
     try {
-      await login(data.email, data.password, data.remember)
+      const { email, password, remember } = data
+      
+      if (remember) {
+        localStorage.setItem('rememberedCredentials', JSON.stringify({ email, password }))
+      } else {
+        localStorage.removeItem('rememberedCredentials')
+      }
+
+      await login(email, password)
+      toast({
+        title: "Success",
+        description: "You have been logged in successfully.",
+      })
       router.push('/dashboard')
     } catch (error) {
-      console.error('Login failed:', error)
-      toast({
-        title: "Login failed",
-        description: "Please check your credentials and try again.",
-        variant: "destructive",
-      })
+      // Don't log expected errors
+      setValue('password', '')
+      if (error instanceof Error) {
+        setError('root', {
+          type: 'manual',
+          message: error.message
+        })
+      } else {
+        // Only log unexpected errors
+        console.error('Unexpected login error:', error)
+        setError('root', {
+          type: 'manual',
+          message: 'An unexpected error occurred'
+        })
+      }
     } finally {
       setIsLoading(false)
     }
@@ -68,6 +101,14 @@ export default function LoginPage() {
     })
   }
 
+  // Function to clear saved credentials
+  const clearSavedCredentials = () => {
+    localStorage.removeItem('rememberedCredentials')
+    setValue('email', '')
+    setValue('password', '')
+    setValue('remember', false)
+  }
+
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900">
       <Card className="w-full max-w-md">
@@ -83,22 +124,54 @@ export default function LoginPage() {
                 id="email"
                 type="email"
                 placeholder="name@example.com"
-                {...register('email', { required: 'Email is required' })}
+                className={cn(
+                  errors.email && "border-red-500 focus-visible:ring-red-500"
+                )}
+                {...register('email', { 
+                  required: 'Email is required',
+                  pattern: {
+                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                    message: "Invalid email address"
+                  }
+                })}
               />
-              {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
+              {errors.email && (
+                <p className="text-sm text-red-500">{errors.email.message}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
                 type="password"
+                className={cn(
+                  errors.password && "border-red-500 focus-visible:ring-red-500"
+                )}
                 {...register('password', { required: 'Password is required' })}
               />
-              {errors.password && <p className="text-sm text-red-500">{errors.password.message}</p>}
+              {errors.password && (
+                <p className="text-sm text-red-500">{errors.password.message}</p>
+              )}
             </div>
-            <div className="flex items-center space-x-2">
-              <Checkbox id="remember" {...register('remember')} />
-              <Label htmlFor="remember">Remember me</Label>
+            {errors.root && (
+              <div className="rounded-md bg-red-50 p-3">
+                <p className="text-sm text-red-500">{errors.root.message}</p>
+              </div>
+            )}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Checkbox id="remember" {...register('remember')} />
+                <Label htmlFor="remember">Remember me</Label>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={clearSavedCredentials}
+                className="text-sm text-muted-foreground hover:text-primary"
+              >
+                Clear saved credentials
+              </Button>
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading && <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />}

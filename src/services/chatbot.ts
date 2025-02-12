@@ -20,62 +20,122 @@ export interface ChatbotFlow {
 }
 
 class ChatbotService {
-  private baseUrl = '/api/chatbot'
+  private baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
+
+  private async fetchApi(url: string, options: RequestInit = {}) {
+    const response = await fetch(url, {
+      ...options,
+      credentials: 'include',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        ...options.headers,
+      },
+    })
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'An error occurred' }))
+      throw new Error(error.message || 'Request failed')
+    }
+
+    return response
+  }
 
   async getFlows(): Promise<ChatbotFlow[]> {
-    const response = await fetch(`${this.baseUrl}/flows`)
-    if (!response.ok) {
-      throw new Error('Failed to fetch flows')
+    try {
+      const response = await this.fetchApi(`${this.baseUrl}/chatbot/flows`)
+      const data = await response.json()
+      const flowsData = data.data || data
+
+      // Ensure we return data in the correct format
+      return (Array.isArray(flowsData) ? flowsData : []).map(flow => ({
+        id: flow.id,
+        name: flow.name || '',
+        description: flow.description || '',
+        trigger: flow.trigger || 'message',
+        updatedAt: flow.updated_at || flow.updatedAt || new Date().toISOString(),
+        nodes: flow.nodes || [],
+        edges: flow.edges || [],
+      }))
+    } catch (error) {
+      console.error('Error fetching flows:', error)
+      throw error
     }
-    return response.json()
   }
 
   async getFlow(id: string): Promise<ChatbotFlow> {
-    const response = await fetch(`${this.baseUrl}/flows/${id}`)
-    if (!response.ok) {
-      throw new Error('Failed to fetch flow')
+    try {
+      const response = await this.fetchApi(`${this.baseUrl}/chatbot/flows/${id}`)
+      const data = await response.json()
+      const flowData = data.data || data
+
+      // Ensure we return data in the correct format
+      return {
+        id: flowData.id,
+        name: flowData.name || '',
+        description: flowData.description || '',
+        trigger: flowData.trigger || 'message',
+        updatedAt: flowData.updated_at || flowData.updatedAt || new Date().toISOString(),
+        nodes: flowData.nodes || [],
+        edges: flowData.edges || [],
+      }
+    } catch (error) {
+      console.error('Error fetching flow:', error)
+      throw error
     }
-    return response.json()
   }
 
   async saveFlow(flow: SaveFlowPayload): Promise<ChatbotFlow> {
-    const response = await fetch(`${this.baseUrl}/flows${flow.id ? `/${flow.id}` : ''}`, {
-      method: flow.id ? 'PUT' : 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(flow),
-    })
-    if (!response.ok) {
-      throw new Error('Failed to save flow')
+    const url = `${this.baseUrl}/chatbot/flows${flow.id ? `/${flow.id}` : ''}`
+    const method = flow.id ? 'PUT' : 'POST'
+
+    try {
+      const response = await this.fetchApi(url, {
+        method,
+        body: JSON.stringify({
+          name: flow.name,
+          description: flow.description,
+          trigger: flow.trigger,
+          nodes: flow.nodes,
+          edges: flow.edges,
+        }),
+      })
+
+      const data = await response.json()
+      const flowData = data.data || data
+
+      // Ensure we return data in the correct format
+      return {
+        id: flowData.id,
+        name: flowData.name || '',
+        description: flowData.description || '',
+        trigger: flowData.trigger || 'message',
+        updatedAt: flowData.updated_at || flowData.updatedAt || new Date().toISOString(),
+        nodes: flowData.nodes || [],
+        edges: flowData.edges || [],
+      }
+    } catch (error) {
+      console.error('Error saving flow:', error)
+      throw error
     }
-    return response.json()
   }
 
   async deleteFlow(id: string): Promise<void> {
-    const response = await fetch(`${this.baseUrl}/flows/${id}`, {
+    await this.fetchApi(`${this.baseUrl}/chatbot/flows/${id}`, {
       method: 'DELETE',
     })
-    if (!response.ok) {
-      throw new Error('Failed to delete flow')
-    }
   }
 
   async duplicateFlow(id: string): Promise<ChatbotFlow> {
-    const response = await fetch(`${this.baseUrl}/flows/${id}/duplicate`, {
+    const response = await this.fetchApi(`${this.baseUrl}/chatbot/flows/${id}/duplicate`, {
       method: 'POST',
     })
-    if (!response.ok) {
-      throw new Error('Failed to duplicate flow')
-    }
     return response.json()
   }
 
   async exportFlow(id: string): Promise<Blob> {
-    const response = await fetch(`${this.baseUrl}/flows/${id}/export`)
-    if (!response.ok) {
-      throw new Error('Failed to export flow')
-    }
+    const response = await this.fetchApi(`${this.baseUrl}/chatbot/flows/${id}/export`)
     return response.blob()
   }
 
@@ -83,13 +143,21 @@ class ChatbotService {
     const formData = new FormData()
     formData.append('file', file)
 
-    const response = await fetch(`${this.baseUrl}/flows/import`, {
+    const response = await fetch(`${this.baseUrl}/chatbot/flows/import`, {
       method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      },
       body: formData,
     })
+
     if (!response.ok) {
-      throw new Error('Failed to import flow')
+      const error = await response.json().catch(() => ({ message: 'An error occurred' }))
+      throw new Error(error.message || 'Failed to import flow')
     }
+
     return response.json()
   }
 }
