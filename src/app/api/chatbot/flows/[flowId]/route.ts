@@ -3,18 +3,12 @@ import type { NextRequest } from 'next/server'
 
 const API_URL = process.env.API_URL || 'http://localhost:8000/api'
 
-type RouteContext = {
-  params: {
-    flowId: string
-  }
-}
-
 export async function GET(
   request: NextRequest,
-  { params }: RouteContext
+  context: { params: Record<'flowId', string> }
 ) {
   try {
-    const response = await fetch(`${API_URL}/chatbot/flows/${params.flowId}`, {
+    const response = await fetch(`${API_URL}/chatbot/flows/${context.params.flowId}`, {
       headers: {
         'Cookie': request.headers.get('cookie') || '',
         'Accept': 'application/json',
