@@ -1,10 +1,17 @@
 import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 
 const API_URL = process.env.API_URL || 'http://localhost:8000/api'
 
+type RouteContext = {
+  params: {
+    flowId: string
+  }
+}
+
 export async function GET(
-  request: Request,
-  { params }: { params: { flowId: string } }
+  request: NextRequest,
+  { params }: RouteContext
 ) {
   try {
     const response = await fetch(`${API_URL}/chatbot/flows/${params.flowId}`, {
