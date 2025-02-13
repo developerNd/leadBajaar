@@ -1,36 +1,50 @@
 import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 
 const API_URL = process.env.API_URL || 'http://localhost:8000/api'
 
+export const runtime = 'edge'
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
+type RouteProps = {
+  params: {
+    flowId: string;
+  };
+}
+
 export async function GET(
-  request: Request,
-  { params }: { params: { flowId: string | number } }
+  request: NextRequest,
+  props: RouteProps
 ) {
   try {
-    const response = await fetch(`${API_URL}/chatbot/flows/${params.flowId}`, {
+    const { flowId } = props.params;
+    const response = await fetch(`${API_URL}/chatbot/flows/${flowId}`, {
       headers: {
-        'Cookie': request.headers.get('cookie') || '',
         'Accept': 'application/json',
       },
+      next: { revalidate: 0 }
     })
 
     if (!response.ok) {
-      throw new Error(`API responded with status: ${response.status}`)
+      return NextResponse.json(
+        { error: 'Failed to fetch flow' },
+        { status: response.status }
+      )
     }
 
     const data = await response.json()
     return NextResponse.json(data)
   } catch (error) {
-    console.error('Error fetching flow:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch flow' },
+      { error: 'Internal server error' },
       { status: 500 }
     )
   }
 }
 
 export async function PUT(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { flowId: string } }
 ) {
   try {
@@ -39,50 +53,54 @@ export async function PUT(
     const response = await fetch(`${API_URL}/chatbot/flows/${params.flowId}`, {
       method: 'PUT',
       headers: {
-        'Cookie': request.headers.get('cookie') || '',
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
       body: JSON.stringify(body),
+      cache: 'no-store'
     })
 
     if (!response.ok) {
-      throw new Error(`API responded with status: ${response.status}`)
+      return NextResponse.json(
+        { error: 'Failed to update flow' },
+        { status: response.status }
+      )
     }
 
     const data = await response.json()
     return NextResponse.json(data)
   } catch (error) {
-    console.error('Error updating flow:', error)
     return NextResponse.json(
-      { error: 'Failed to update flow' },
+      { error: 'Internal server error' },
       { status: 500 }
     )
   }
 }
 
 export async function DELETE(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { flowId: string } }
 ) {
   try {
     const response = await fetch(`${API_URL}/chatbot/flows/${params.flowId}`, {
       method: 'DELETE',
       headers: {
-        'Cookie': request.headers.get('cookie') || '',
         'Accept': 'application/json',
       },
+      cache: 'no-store'
     })
 
     if (!response.ok) {
-      throw new Error(`API responded with status: ${response.status}`)
+      return NextResponse.json(
+        { error: 'Failed to delete flow' },
+        { status: response.status }
+      )
     }
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Error deleting flow:', error)
     return NextResponse.json(
-      { error: 'Failed to delete flow' },
+      { error: 'Internal server error' },
       { status: 500 }
     )
   }
