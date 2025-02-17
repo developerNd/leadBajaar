@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
 import { Send, Phone, Video, Search, Loader2 } from 'lucide-react'
-import useEcho from '@/hooks/echo'
+// import useEcho from '@/hooks/echo'
 // import { axios } from '@/lib/axios'
 import { getMessages, sendMessage, getLeadsWithLatestMessages, getConversationMessages } from '@/lib/api'
 
@@ -111,10 +111,11 @@ export default function LiveChatPage() {
   const [messages, setMessages] = useState<Message[]>([])
   const [unreadMessages, setUnreadMessages] = useState(0)
   const [isLoadingChats, setIsLoadingChats] = useState(true)
-  const echo = useEcho()
+  // const echo = useEcho()
   const user = { id: 1 } // Mocked user for testing
   const [activeConversations, setActiveConversations] = useState<any[]>([])
   const [error, setError] = useState<string | null>(null)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const initializeChat = async () => {
@@ -165,7 +166,8 @@ export default function LiveChatPage() {
       // echo?.private(`chat.${user.id}`)?.stopListening('MessageSent')
       // echo?.private(`whatsapp.chat.${user.id}`)?.stopListening('WhatsAppMessageEvent') // Cleanup for WhatsAppMessageEvent
     }
-  }, [echo, user?.id])
+  // }, [echo, user?.id])
+  }, [ user?.id])
 
   // const sendTestMessage = async () => {
   //   try {
@@ -341,6 +343,33 @@ export default function LiveChatPage() {
     return () => clearInterval(interval);
   }, []);
 
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
+
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages])
+
+  const groupMessagesByDate = (messages: Message[]) => {
+    const groups = messages.reduce((groups: { [key: string]: Message[] }, message) => {
+      const date = new Date(message.created_at).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+      if (!groups[date]) {
+        groups[date] = [];
+      }
+      groups[date].push(message);
+      return groups;
+    }, {});
+
+    return Object.entries(groups).sort((a, b) => 
+      new Date(a[0]).getTime() - new Date(b[0]).getTime()
+    );
+  };
+
   return (
     <div className="h-full flex gap-4 p-2">
       <Card className="w-80 flex flex-col">
@@ -476,28 +505,49 @@ export default function LiveChatPage() {
         <Separator />
         <CardContent className="flex-1 overflow-hidden p-0">
           <ScrollArea className="h-full">
-            <div className="space-y-4 p-4">
-              {messages && messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={cn(
-                    "flex",
-                    message.sender === 'user' ? "justify-end" : "justify-start"
-                  )}
-                >
-                  <div
-                    className={cn(
-                      "rounded-lg px-4 py-2 max-w-[50%] shadow-sm",
-                      message.sender === 'user'
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted"
-                    )}
-                  >
-                    <p className="whitespace-pre-line">{message.content}</p>
-                    <p className="text-xs mt-1 opacity-70">{message.time}</p>
+            <div className="space-y-6 p-4">
+              {groupMessagesByDate(messages).map(([date, dateMessages]) => (
+                <div key={date} className="space-y-4">
+                  <div className="flex justify-center">
+                    <div className="bg-muted px-3 py-1 rounded-full text-xs text-muted-foreground">
+                      {date === new Date().toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      }) ? 'Today' : date}
+                    </div>
                   </div>
+                  
+                  {dateMessages.sort((a, b) => 
+                    new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+                  ).map((message) => (
+                    <div
+                      key={message.id}
+                      className={cn(
+                        "flex",
+                        message.sender === 'user' ? "justify-end" : "justify-start"
+                      )}
+                    >
+                      <div className={cn(
+                        "rounded-lg px-4 py-2 max-w-[50%] shadow-sm",
+                        message.sender === 'user'
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted"
+                      )}>
+                        <p className="whitespace-pre-line">{message.content}</p>
+                        <p className="text-xs mt-1 opacity-70">
+                          {new Date(message.created_at).toLocaleTimeString('en-US', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hour12: true
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               ))}
+              <div ref={messagesEndRef} />
             </div>
           </ScrollArea>
         </CardContent>
