@@ -13,9 +13,9 @@ const api = axios.create({
 
 // Add request interceptor to include token in headers
 api.interceptors.request.use(async (config) => {
-  const session = await getSession();
-  if (session?.token) {
-    config.headers.Authorization = `Bearer ${session.token}`;
+  const token = localStorage.getItem('token') // or get from your auth system
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });
@@ -465,13 +465,31 @@ export const initializeChat = async (data: {
 };
 
 export const getLeadsWithLatestMessages = async () => {
-  const response = await api.get('/conversations');
-  return response.data;
+  try {
+    const response = await api.get('/conversations', {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching conversations:', error);
+    throw error;
+  }
 };
 
 export const getConversationMessages = async (conversationId: number) => {
-  const response = await api.get(`/conversations/${conversationId}/messages`);
-  return response.data;
+  try {
+    const response = await api.get(`/conversations/${conversationId}/messages`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching messages:', error);
+    throw error;
+  }
 };
 
 export default api;

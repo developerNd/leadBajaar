@@ -145,12 +145,12 @@ export default function LiveChatPage() {
         // }
 
         // Fetch messages
-        const response = await getMessages({
-          user_id: user.id,
-        })
-        console.log('response: ', response);
-        setMessages(response.data)
-        setUnreadMessages(response.data.length)
+        // const response = await getMessages({
+        //   user_id: user.id,
+        // })
+        // console.log('response: ', response);
+        // setMessages(response.data)
+        // setUnreadMessages(response.data.length)
       } catch (error) {
         console.error('Error initializing chat:', error)
       }
