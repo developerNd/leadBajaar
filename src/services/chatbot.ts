@@ -23,33 +23,35 @@ class ChatbotService {
   private baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
 
   private async fetchApi(url: string, options: RequestInit = {}) {
+    const token = localStorage.getItem('token') // or get from your auth system
+    
     const response = await fetch(url, {
       ...options,
       credentials: 'include',
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Authorization': `Bearer ${token}`,
         ...options.headers,
       },
     })
 
+    const data = await response.json()
+    
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'An error occurred' }))
-      throw new Error(error.message || 'Request failed')
+      throw new Error(data.message || 'Request failed')
     }
 
-    return response
+    return data
   }
 
   async getFlows(): Promise<ChatbotFlow[]> {
     try {
       const response = await this.fetchApi(`${this.baseUrl}/chatbot/flows`)
-      const data = await response.json()
-      const flowsData = data.data || data
+      const data = await response.data || response
 
       // Ensure we return data in the correct format
-      return (Array.isArray(flowsData) ? flowsData : []).map(flow => ({
+      return (Array.isArray(data) ? data : []).map(flow => ({
         id: flow.id,
         name: flow.name || '',
         description: flow.description || '',
@@ -67,18 +69,17 @@ class ChatbotService {
   async getFlow(id: string): Promise<ChatbotFlow> {
     try {
       const response = await this.fetchApi(`${this.baseUrl}/chatbot/flows/${id}`)
-      const data = await response.json()
-      const flowData = data.data || data
+      const data = await response.data || response
 
       // Ensure we return data in the correct format
       return {
-        id: flowData.id,
-        name: flowData.name || '',
-        description: flowData.description || '',
-        trigger: flowData.trigger || 'message',
-        updatedAt: flowData.updated_at || flowData.updatedAt || new Date().toISOString(),
-        nodes: flowData.nodes || [],
-        edges: flowData.edges || [],
+        id: data.id,
+        name: data.name || '',
+        description: data.description || '',
+        trigger: data.trigger || 'message',
+        updatedAt: data.updated_at || data.updatedAt || new Date().toISOString(),
+        nodes: data.nodes || [],
+        edges: data.edges || [],
       }
     } catch (error) {
       console.error('Error fetching flow:', error)
@@ -102,8 +103,7 @@ class ChatbotService {
         }),
       })
 
-      const data = await response.json()
-      const flowData = data.data || data
+      const flowData = response.data || response
 
       // Ensure we return data in the correct format
       return {
@@ -131,7 +131,7 @@ class ChatbotService {
     const response = await this.fetchApi(`${this.baseUrl}/chatbot/flows/${id}/duplicate`, {
       method: 'POST',
     })
-    return response.json()
+    return response.data || response
   }
 
   async exportFlow(id: string): Promise<Blob> {
