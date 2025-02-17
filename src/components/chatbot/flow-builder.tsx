@@ -22,6 +22,7 @@ import FunctionNode from '@/components/reactflow/FunctionNode'
 import FlowNode from '@/components/reactflow/FlowNode'
 import { ChatbotFlow, chatbotService } from '@/services/chatbot'
 import { useToast } from '@/components/ui/use-toast'
+import { integrationApi } from '@/lib/api'
 
 const nodeTypes: NodeTypes = {
   message: MessageNode,
@@ -113,6 +114,7 @@ const initialNodes: ChatbotNode[] = [
       label: 'Welcome Flow',
       content: 'Main welcome flow for new users',
       trigger: 'message',
+      messageType: 'text',
     }
   },
   { 
@@ -122,6 +124,7 @@ const initialNodes: ChatbotNode[] = [
     data: { 
       label: 'Welcome Message', 
       content: 'Welcome! How can I help you today?',
+      messageType: 'text',
       buttons: [
         { id: 'btn1', text: 'Pricing Info', action: 'show_pricing' },
         { id: 'btn2', text: 'Get Support', action: 'get_support' }
@@ -134,7 +137,7 @@ const initialEdges: ChatbotEdge[] = [
   { id: 'e1-2', source: 'flow-1', target: '1' },
 ]
 
-const isMessageNode = (node: ChatbotNode): node is ChatbotNode & { data: MessageNodeData } => {
+const isMessageNode = (node: ChatbotNode): node is ChatbotNode & { data: ExtendedMessageNodeData } => {
   return node.type === 'message';
 }
 
@@ -143,6 +146,133 @@ interface FlowBuilderProps {
   isNew?: boolean
   onSave?: (flow: ChatbotFlow) => void
 }
+
+interface TemplateComponent {
+  type: 'HEADER' | 'BODY' | 'FOOTER' | 'BUTTONS';
+  text?: string;
+  format?: 'TEXT' | 'IMAGE' | 'VIDEO' | 'DOCUMENT';
+  example?: {
+    header_handle: string[];
+  };
+  buttons?: Array<{
+    type: 'QUICK_REPLY' | 'URL' | 'PHONE_NUMBER' | 'COPY_CODE';
+    text: string;
+    url?: string;
+    phone_number?: string;
+    code?: string;
+  }>;
+}
+
+interface MessageTemplate {
+  id: number;
+  name: string;
+  category: string;
+  language: string;
+  status: string;
+  components: TemplateComponent[];
+}
+
+interface ExtendedMessageNodeData extends MessageNodeData {
+  templateComponents?: TemplateComponent[];
+}
+
+const NodeProperties = ({ node, onChange }: { 
+  node: ChatbotNode & { data: ExtendedMessageNodeData }, 
+  onChange: (data: ExtendedMessageNodeData) => void 
+}) => {
+  const [templates, setTemplates] = useState<MessageTemplate[]>([]);
+  const [isLoadingTemplates, setIsLoadingTemplates] = useState(false);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const loadTemplates = async () => {
+      if (node.type === 'message') {
+        setIsLoadingTemplates(true);
+        try {
+          const response = await integrationApi.getWhatsAppTemplates(3);
+          setTemplates(response.templates);
+        } catch (error) {
+          console.error('Failed to load templates:', error);
+          toast({
+            title: "Error",
+            description: "Failed to load WhatsApp templates",
+            variant: "destructive",
+          });
+        } finally {
+          setIsLoadingTemplates(false);
+        }
+      }
+    };
+    loadTemplates();
+  }, [node.type]);
+
+  if (node.type !== 'message') return null;
+
+  return (
+    <div className="space-y-4">
+      {isLoadingTemplates ? (
+        <div>Loading templates...</div>
+      ) : (
+        <>
+          <div>
+            <Label>Select Template</Label>
+            <Select
+              value={node.data.templateId?.toString()}
+              onValueChange={(value) => {
+                const template = templates.find(t => t.id.toString() === value);
+                if (template) {
+                  onChange({
+                    ...node.data,
+                    templateId: template.id,
+                    content: template.components.find((c: any) => c.type === 'BODY')?.text || '',
+                    templateComponents: template.components,
+                    buttons: template.components
+                      .find((c: any) => c.type === 'BUTTONS')
+                      ?.buttons?.map((b: any, i: number) => ({
+                        id: `btn${i}`,
+                        text: b.text,
+                        action: b.type.toLowerCase()
+                      })) || []
+                  });
+                }
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Choose a template" />
+              </SelectTrigger>
+              <SelectContent>
+                {templates.map(template => (
+                  <SelectItem key={template.id} value={template.id.toString()}>
+                    {template.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {node.data.templateComponents && (
+            <div className="space-y-4">
+              {node.data.templateComponents.map((component: any, index: number) => (
+                <div key={index} className="border p-3 rounded-md">
+                  <Label>{component.type}</Label>
+                  {component.text && (
+                    <Textarea
+                      value={component.text}
+                      readOnly
+                      className="mt-2"
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+};
+
+type TriggerType = keyof typeof TRIGGER_TYPES;
 
 export default function FlowBuilder({ flowId, isNew = false, onSave }: FlowBuilderProps) {
   const router = useRouter()
@@ -191,7 +321,7 @@ export default function FlowBuilder({ flowId, isNew = false, onSave }: FlowBuild
         : ['message', flow.trigger]
 
       setFlowTrigger({
-        type: triggerType as keyof typeof TRIGGER_TYPES,
+        type: (triggerType as TriggerType) || 'message',  // Cast to TriggerType and provide default
         value: triggerValue || ''
       })
     } catch (err) {
@@ -237,7 +367,7 @@ export default function FlowBuilder({ flowId, isNew = false, onSave }: FlowBuild
       setFlowName(savedFlow.name || '')
       setFlowDescription(savedFlow.description || '')
       setFlowTrigger({
-        type: triggerType as keyof typeof TRIGGER_TYPES,
+        type: (triggerType as TriggerType) || 'message',  // Cast to TriggerType and provide default
         value: triggerValue || ''
       })
       setNodes(savedFlow.nodes || [])
@@ -382,12 +512,12 @@ export default function FlowBuilder({ flowId, isNew = false, onSave }: FlowBuild
               </SelectContent>
             </Select>
             <Input
-              value={flowTrigger?.value || ''}
-              onChange={(e) => setFlowTrigger(prev => ({
-                ...prev,
+              value={flowTrigger?.value}
+              onChange={(e) => setFlowTrigger({
+                type: (flowTrigger?.type as TriggerType) || 'message',
                 value: e.target.value
-              }))}
-              placeholder={getTriggerPlaceholder(flowTrigger?.type)}
+              })}
+              placeholder={getTriggerPlaceholder(flowTrigger?.type as TriggerType)}
             />
           </div>
         </div>
@@ -424,7 +554,7 @@ export default function FlowBuilder({ flowId, isNew = false, onSave }: FlowBuild
               <Background gap={12} size={1} />
             </ReactFlow>
           </div>
-          <div className="w-1/4 p-4 bg-gray-100 dark:bg-gray-800 overflow-y-auto">
+          <div className="w-1/4 p-4 bg-gray-100 dark:bg-gray-800 overflow-y-auto mb-10">
             <Card>
               <CardHeader>
                 <CardTitle>Flow Builder</CardTitle>
@@ -441,6 +571,47 @@ export default function FlowBuilder({ flowId, isNew = false, onSave }: FlowBuild
                 {selectedNode && (
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold">Edit Node</h3>
+                    {selectedNode.type === 'message' && (
+                      <>
+                        <div>
+                          <Label>Message Type</Label>
+                          <Select
+                            value={selectedNode.data.messageType || 'text'}
+                            onValueChange={(value) => updateNodeData(selectedNode.id, {
+                              ...selectedNode.data,
+                              messageType: value,
+                              content: '',
+                              templateId: undefined,
+                              templateVariables: undefined
+                            })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select message type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="text">Text Message</SelectItem>
+                              <SelectItem value="template">WhatsApp Template</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {selectedNode.data.messageType === 'template' ? (
+                          <NodeProperties 
+                            node={selectedNode} 
+                            onChange={(data) => updateNodeData(selectedNode.id, data)} 
+                          />
+                        ) : (
+                          <div>
+                            <Label>Message Text</Label>
+                            <Textarea
+                              value={selectedNode.data.content}
+                              onChange={(e) => updateNodeData(selectedNode.id, { content: e.target.value })}
+                              className="min-h-[100px]"
+                            />
+                          </div>
+                        )}
+                      </>
+                    )}
                     <div>
                       <Label>Label</Label>
                       <Input
@@ -586,7 +757,7 @@ export default function FlowBuilder({ flowId, isNew = false, onSave }: FlowBuild
   )
 }
 
-function getTriggerPlaceholder(triggerType?: keyof typeof TRIGGER_TYPES): string {
+function getTriggerPlaceholder(triggerType?: TriggerType): string {
   switch (triggerType) {
     case 'message':
       return 'Enter keywords (comma separated)'
