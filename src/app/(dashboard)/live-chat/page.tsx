@@ -14,14 +14,32 @@ import { Send, Phone, Video, Search, Loader2 } from 'lucide-react'
 // import { axios } from '@/lib/axios'
 import { getMessages, sendMessage, getLeadsWithLatestMessages, getConversationMessages } from '@/lib/api'
 
+interface WhatsAppInteractive {
+  type: string;
+  body: {
+    text: string;
+  };
+  action: {
+    buttons: Array<{
+      type: string;
+      reply: {
+        id: string;
+        title: string;
+      };
+    }>;
+  };
+}
+
 interface Message {
   id: number;
   content: string;
+  metadata?: string | null;
   sender: 'user' | 'agent';
   time: string;
   created_at: string;
   sender_id: number;
   receiver_id: number;
+  direction?: 'inbound' | 'outbound';
 }
 
 interface ChatUser {
@@ -192,31 +210,28 @@ export default function LiveChatPage() {
   //   }
   // }
 
-  const handleSend = async () => {
-    if (!message.trim()) return
-    
-    try {
-      setIsSending(true)
-      
-      // Ensure CSRF token is fresh
-      // await axios.get('/sanctum/csrf-cookie')
-      
-      const response = await sendMessage({
-        receiver_id: activeChat?.user.id ?? 0,
-        sender_id: user.id ?? 0,
-        message: message.trim(),
-      })
+  const handleSend = async (predefinedText?: string) => {
+    const messageText = predefinedText || message;
+    if (!messageText.trim() || !activeChat) return;
 
-      if (response.status === 200) {
-        console.log('Message sent successfully')
-        setMessage('')
+    try {
+      setIsSending(true);
+      const response = await sendMessage({
+        receiver_id: activeChat.user.id,
+        sender_id: 1, // Use your actual agent/user ID
+        message: messageText
+      });
+
+      if (response?.message) {
+        setMessages(prev => [...prev, response.message]);
+        if (!predefinedText) setMessage(''); // Only clear input if not a quick reply
       }
     } catch (error) {
-      console.error('Error sending message:', error)
+      console.error('Error sending message:', error);
     } finally {
-      setIsSending(false)
+      setIsSending(false);
     }
-  }
+  };
 
   // const filteredChats = chats.filter(chat => 
   //   chat.user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -305,17 +320,19 @@ export default function LiveChatPage() {
   const fetchChatMessages = async (chatId: number) => {
     try {
       const response = await getConversationMessages(chatId);
-      console.log('response: ', response);
+      console.log('Messages response:', response);
       
       if (response?.messages && Array.isArray(response.messages)) {
         const formattedMessages = response.messages.map((msg: any) => ({
           id: msg.id,
-          content: msg.content,
+          content: msg.content || '',
+          metadata: msg.metadata, // Keep metadata as is, don't try to parse yet
           sender: msg.direction === 'outbound' ? 'agent' : 'user',
           time: formatMessageTime(msg.created_at || msg.timestamp),
           created_at: msg.created_at || msg.timestamp,
           sender_id: msg.sender?.id || 0,
-          receiver_id: msg.receiver?.id || 0
+          receiver_id: msg.receiver?.id || 0,
+          direction: msg.direction
         }));
         setMessages(formattedMessages);
       }
@@ -368,6 +385,86 @@ export default function LiveChatPage() {
     return Object.entries(groups).sort((a, b) => 
       new Date(a[0]).getTime() - new Date(b[0]).getTime()
     );
+  };
+
+  const handleButtonClick = (buttonId: string, buttonTitle: string) => {
+    if (!activeChat) return;
+    handleSend(buttonTitle);
+  };
+
+  const MessageDisplay = ({ message }: { message: Message }) => {
+    // Function to format text with emojis and quick replies
+    const formatContent = (content: string) => {
+      // Split content by "Quick Reply:" to separate main message and quick replies
+      const parts = content.split('Quick Reply:');
+      const mainMessage = parts[0];
+      const quickReplies = parts.slice(1).map(reply => reply.trim());
+
+      return (
+        <div className="space-y-2">
+          <p className="whitespace-pre-line">{mainMessage}</p>
+          {quickReplies.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {quickReplies.map((reply, index) => (
+                <Button
+                  key={index}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleButtonClick(`quick-reply-${index}`, reply)}
+                  className="text-xs"
+                >
+                  {reply}
+                </Button>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    // Handle interactive messages (WhatsApp)
+    if (message.metadata) {
+      try {
+        const metadata = typeof message.metadata === 'string' 
+          ? JSON.parse(message.metadata) 
+          : message.metadata;
+
+        if (metadata.type === 'interactive' && metadata.interactive) {
+          const { body, action } = metadata.interactive as WhatsAppInteractive;
+          
+          return (
+            <div className="space-y-2">
+              <p className="whitespace-pre-line">{body.text}</p>
+              {action?.buttons && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {action.buttons.map((btn) => (
+                    <Button
+                      key={btn.reply.id}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleButtonClick(btn.reply.id, btn.reply.title)}
+                      className="text-xs"
+                    >
+                      {btn.reply.title}
+                    </Button>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        }
+      } catch (e) {
+        console.error('Error handling message metadata:', e);
+      }
+    }
+
+    // Handle regular messages with quick replies
+    if (message.content && message.content.includes('Quick Reply:')) {
+      return formatContent(message.content);
+    }
+
+    // Default message display
+    return <p className="whitespace-pre-line">{message.content}</p>;
   };
 
   return (
@@ -534,7 +631,7 @@ export default function LiveChatPage() {
                           ? "bg-primary text-primary-foreground"
                           : "bg-muted"
                       )}>
-                        <p className="whitespace-pre-line">{message.content}</p>
+                        <MessageDisplay message={message} />
                         <p className="text-xs mt-1 opacity-70">
                           {new Date(message.created_at).toLocaleTimeString('en-US', {
                             hour: '2-digit',
