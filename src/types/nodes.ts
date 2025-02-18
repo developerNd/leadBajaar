@@ -14,7 +14,23 @@ export interface BaseNodeData extends Record<string, unknown> {
 }
 
 export interface MessageNodeData extends BaseNodeData {
-  buttons?: ButtonData[]
+  messageType?: 'text' | 'template' | 'cta_url'
+  buttons?: Array<{
+    id: string
+    text: string
+    action?: string
+  }>
+  templateId?: number
+  templateComponents?: TemplateComponent[]
+  ctaUrl?: {
+    header?: string
+    body: string
+    footer?: string
+    button: {
+      display_text: string
+      url: string
+    }
+  }
 }
 
 export interface InputNodeData extends BaseNodeData {
@@ -73,3 +89,26 @@ export interface ChatbotEdge extends Edge {
   condition?: string
   action?: string
 }
+
+interface TemplateComponent {
+  type: 'HEADER' | 'BODY' | 'FOOTER' | 'BUTTONS';
+  text?: string;
+  format?: 'TEXT' | 'IMAGE' | 'VIDEO' | 'DOCUMENT';
+  example?: {
+    header_handle: string[];
+  };
+  buttons?: Array<{
+    type: 'QUICK_REPLY' | 'URL' | 'PHONE_NUMBER' | 'COPY_CODE';
+    text: string;
+    url?: string;
+    phone_number?: string;
+    code?: string;
+  }>;
+}
+
+export const PREDEFINED_FUNCTIONS = {
+  'save_name': 'Save Name',
+  'save_email': 'Save Email',
+  'save_phone': 'Save Phone',
+  'custom': 'Custom Function',
+} as const;

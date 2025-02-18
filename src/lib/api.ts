@@ -1,14 +1,56 @@
 import axios, { AxiosError } from 'axios';
 import { setSession, clearSession, getSession } from './auth';
 
-const api = axios.create({
-  // baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://leadbajar-backend.developernd.fun/api',
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api',
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
+
+// Export both httpClient and api
+export const httpClient = {
+  async get(url: string) {
+    const response = await fetch(`${API_BASE_URL}${url}`)
+    if (!response.ok) throw new Error('API Error')
+    return response.json()
+  },
+
+  async post(url: string, data?: any) {
+    const response = await fetch(`${API_BASE_URL}${url}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    })
+    if (!response.ok) throw new Error('API Error')
+    return response.json()
+  },
+
+  async put(url: string, data?: any) {
+    const response = await fetch(`${API_BASE_URL}${url}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    })
+    if (!response.ok) throw new Error('API Error')
+    return response.json()
+  },
+
+  async delete(url: string) {
+    const response = await fetch(`${API_BASE_URL}${url}`, {
+      method: 'DELETE',
+    })
+    if (!response.ok) throw new Error('API Error')
+    return response.json()
+  },
+}
+
+export const api = axios.create({
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
   },
-  withCredentials: true, // This is important for handling cookies/sessions
+  withCredentials: true,
 });
 
 // Add request interceptor to include token in headers

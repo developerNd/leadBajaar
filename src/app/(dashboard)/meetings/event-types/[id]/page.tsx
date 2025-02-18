@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -34,11 +34,14 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import { useToast } from "@/components/ui/use-toast"
+import { LoadingSpinner } from "@/components/ui/loading-spinner"
 
 import { BasicInfoTab } from './components/BasicInfoTab'
 import { QuestionsTab } from './components/QuestionsTab'
 import { SchedulingTab } from './components/SchedulingTab'
 import { TeamTab } from './components/TeamTab'
+import { eventTypeService } from '@/services/event-types'
 
 // Add interfaces for form state
 interface Question {
@@ -344,8 +347,11 @@ interface QuestionSection {
 export default function EventTypeForm() {
   const params = useParams()
   const router = useRouter()
+  const { toast } = useToast()
   const isNew = params.id === 'new'
 
+  // Move all hooks to the top
+  const [loading, setLoading] = useState(!isNew)
   const [eventType, setEventType] = useState({
     title: '',
     description: '',
@@ -368,6 +374,68 @@ export default function EventTypeForm() {
     teamMembers: [] as TeamMember[],
     sections: [] as QuestionSection[],
   })
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
+
+  useEffect(() => {
+    if (isNew) {
+      setLoading(false)
+      return
+    }
+
+    const loadEventType = async () => {
+      try {
+        setLoading(true)
+        const data = await eventTypeService.getById(params.id as string)
+        
+        // Create a new state object with defaults for missing properties
+        const newEventType = {
+          title: data.title || '',
+          description: data.description || '',
+          duration: data.duration || 30,
+          location: data.location || 'video',
+          questions: data.questions || [],
+          scheduling: {
+            bufferBefore: data.scheduling?.bufferBefore || 0,
+            bufferAfter: data.scheduling?.bufferAfter || 0,
+            minimumNotice: data.scheduling?.minimumNotice || 24,
+            dailyLimit: data.scheduling?.dailyLimit || 0,
+            weeklyLimit: data.scheduling?.weeklyLimit || 0,
+            availableDays: data.scheduling?.availableDays || ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+            dateRange: data.scheduling?.dateRange || 60,
+            timezone: data.scheduling?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
+            timeSlots: data.scheduling?.timeSlots || [],
+            recurring: data.scheduling?.recurring
+          },
+          slots: data.slots || [],
+          teamMembers: data.teamMembers || [],
+          sections: data.sections || [],
+        }
+        
+        setEventType(newEventType)
+      } catch (error) {
+        console.error('Error loading event type:', error)
+        toast({
+          title: "Error",
+          description: "Failed to load event type",
+          variant: "destructive",
+        })
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadEventType()
+  }, [isNew, params.id]) // Remove toast from dependencies
+
+  if (loading) {
+    return <LoadingSpinner />
+  }
 
   // Questions tab handlers
   const addQuestion = () => {
@@ -474,19 +542,31 @@ export default function EventTypeForm() {
     }))
   }
 
-  const handleSave = () => {
-    // Implementation for saving event type
-    console.log('Saving event type:', eventType)
-    router.push('/meetings/event-types')
+  const handleSave = async () => {
+    try {
+      if (isNew) {
+        await eventTypeService.create(eventType)
+        toast({
+          title: "Success",
+          description: "Event type created successfully",
+        })
+      } else {
+        await eventTypeService.update(params.id as string, eventType)
+        toast({
+          title: "Success",
+          description: "Event type updated successfully",
+        })
+      }
+      router.push('/meetings/event-types')
+    } catch (error) {
+      console.error('Error saving event type:', error)
+      toast({
+        title: "Error",
+        description: "Failed to save event type",
+        variant: "destructive",
+      })
+    }
   }
-
-  // Add sensors for drag and drop
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  )
 
   return (
     <React.Fragment>

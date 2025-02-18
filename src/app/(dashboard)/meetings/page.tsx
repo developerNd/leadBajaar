@@ -621,7 +621,7 @@ export default function MeetingsPage() {
       try {
         setIsLoading(true)
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_LARAVEL_API_URL}/api/bookings`,
+          `${process.env.NEXT_PUBLIC_LARAVEL_API_URL}api/bookings`,
           {
             headers: {
               'Content-Type': 'application/json',

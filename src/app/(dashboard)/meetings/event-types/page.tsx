@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -19,200 +19,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-
-// Add TypeScript interfaces
-interface EventType {
-  id: string
-  title: string
-  description?: string
-  duration: number
-  location: 'video' | 'phone' | 'in-person'
-  questions: EventQuestion[]
-  scheduling: SchedulingSettings
-  redirectUrl?: string
-  slots: TimeSlot[]
-  teamMembers: TeamMember[]
-  createdAt: string
-  updatedAt: string
-}
-
-interface EventQuestion {
-  id: string
-  question: string
-  type: 'text' | 'select' | 'multiselect'
-  required: boolean
-  options?: string[]
-}
-
-interface SchedulingSettings {
-  bufferBefore: number
-  bufferAfter: number
-  minimumNotice: number
-  availableDays: string[]
-  dateRange: number
-  timezone: string
-}
-
-interface TimeSlot {
-  day: string
-  startTime: string
-  endTime: string
-}
-
-interface TeamMember {
-  id: number
-  name: string
-  email: string
-  avatar: string
-  role: string
-}
-
-const dummyTeamMembers: TeamMember[] = [
-  {
-    id: 1,
-    name: "John Smith",
-    email: "john@example.com",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=john",
-    role: "Sales Representative"
-  },
-  {
-    id: 2,
-    name: "Sarah Wilson",
-    email: "sarah@example.com",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=sarah",
-    role: "Product Specialist"
-  }
-]
-
-// Update the dummy event type with more realistic data
-const dummyEventTypes: EventType[] = [
-  {
-    id: '1',
-    title: 'Product Demo',
-    description: '30-minute product demonstration and Q&A session to understand your needs and show you how our product can help.',
-    duration: 30,
-    location: 'video',
-    questions: [
-      {
-        id: '1',
-        question: 'What specific features are you interested in?',
-        type: 'text',
-        required: true
-      },
-      {
-        id: '2',
-        question: 'Company Size',
-        type: 'select',
-        required: true,
-        options: ['1-10', '11-50', '51-200', '201-500', '500+']
-      },
-      {
-        id: '3',
-        question: 'Current challenges you want to solve?',
-        type: 'text',
-        required: false
-      }
-    ],
-    scheduling: {
-      bufferBefore: 5,
-      bufferAfter: 5,
-      minimumNotice: 24,
-      availableDays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
-      dateRange: 60,
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
-    },
-    slots: [
-      {
-        day: 'Monday',
-        startTime: '09:00',
-        endTime: '17:00'
-      },
-      {
-        day: 'Tuesday',
-        startTime: '09:00',
-        endTime: '17:00'
-      },
-      {
-        day: 'Wednesday',
-        startTime: '09:00',
-        endTime: '17:00'
-      },
-      {
-        day: 'Thursday',
-        startTime: '09:00',
-        endTime: '17:00'
-      },
-      {
-        day: 'Friday',
-        startTime: '09:00',
-        endTime: '17:00'
-      }
-    ],
-    teamMembers: dummyTeamMembers,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  },
-  {
-    id: '2',
-    title: 'Discovery Call',
-    description: '15-minute introductory call to understand your needs and see if we\'re a good fit.',
-    duration: 15,
-    location: 'phone',
-    questions: [
-      {
-        id: '1',
-        question: 'What is your phone number?',
-        type: 'text',
-        required: true
-      },
-      {
-        id: '2',
-        question: 'How did you hear about us?',
-        type: 'select',
-        required: true,
-        options: ['Google', 'LinkedIn', 'Referral', 'Other']
-      }
-    ],
-    scheduling: {
-      bufferBefore: 5,
-      bufferAfter: 5,
-      minimumNotice: 1,
-      availableDays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
-      dateRange: 30,
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
-    },
-    slots: [
-      {
-        day: 'Monday',
-        startTime: '09:00',
-        endTime: '17:00'
-      },
-      {
-        day: 'Tuesday',
-        startTime: '09:00',
-        endTime: '17:00'
-      },
-      {
-        day: 'Wednesday',
-        startTime: '09:00',
-        endTime: '17:00'
-      },
-      {
-        day: 'Thursday',
-        startTime: '09:00',
-        endTime: '17:00'
-      },
-      {
-        day: 'Friday',
-        startTime: '09:00',
-        endTime: '17:00'
-      }
-    ],
-    teamMembers: [dummyTeamMembers[0]], // Only John Smith handles discovery calls
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  }
-]
+import { eventTypeService } from '@/services/event-types'
+import { EventType, EventQuestion, SchedulingSettings, TimeSlot, TeamMember } from '@/types/events'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
 
 const locationIcons = {
   video: Video,
@@ -222,9 +31,38 @@ const locationIcons = {
 
 export default function EventTypesPage() {
   const { toast } = useToast()
-  const [eventTypes, setEventTypes] = useState<EventType[]>(dummyEventTypes)
+  const [eventTypes, setEventTypes] = useState<EventType[]>([])
+  const [loading, setLoading] = useState(true)
   const [showShareDialog, setShowShareDialog] = useState(false)
   const [selectedEventType, setSelectedEventType] = useState<EventType | null>(null)
+
+  useEffect(() => {
+    const loadEventTypes = async () => {
+      try {
+        setLoading(true)
+        const data = await eventTypeService.getAll()
+        const processedData = (data || []).map(eventType => ({
+          ...eventType,
+          teamMembers: eventType.teamMembers || [],
+          questions: eventType.questions || [],
+          location: eventType.location || 'video'
+        }))
+        setEventTypes(processedData)
+      } catch (error) {
+        console.error('Error loading event types:', error)
+        toast({
+          title: "Error",
+          description: "Failed to load event types",
+          variant: "destructive",
+        })
+        setEventTypes([])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadEventTypes()
+  }, [])
 
   const copyBookingLink = (eventType: EventType) => {
     const bookingLink = `${window.location.origin}/book/${eventType.id}`
@@ -237,6 +75,27 @@ export default function EventTypesPage() {
 
   const openPreview = (eventType: EventType) => {
     window.open(`/book/${eventType.id}`, '_blank')
+  }
+
+  const deleteEventType = async (id: string) => {
+    try {
+      await eventTypeService.delete(id)
+      setEventTypes(eventTypes.filter(et => et.id !== id))
+      toast({
+        title: "Success",
+        description: "Event type deleted successfully",
+      })
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete event type",
+        variant: "destructive",
+      })
+    }
+  }
+
+  if (loading) {
+    return <LoadingSpinner />
   }
 
   return (
@@ -260,75 +119,88 @@ export default function EventTypesPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {eventTypes.map((eventType) => (
-          <Card key={eventType.id} className="hover:shadow-lg transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="font-semibold text-lg">{eventType.title}</h3>
-                  <p className="text-sm text-muted-foreground">{eventType.description}</p>
+      {eventTypes.length === 0 ? (
+        <div className="text-center py-12">
+          <h3 className="text-lg font-semibold mb-2">No event types yet</h3>
+          <p className="text-muted-foreground mb-4">Create your first event type to start scheduling meetings</p>
+          <Link href="/meetings/event-types/new">
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              Create Event Type
+            </Button>
+          </Link>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {eventTypes.map((eventType) => (
+            <Card key={eventType.id} className="hover:shadow-lg transition-shadow">
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h3 className="font-semibold text-lg">{eventType.title}</h3>
+                    <p className="text-sm text-muted-foreground">{eventType.description}</p>
+                  </div>
+                  {React.createElement(locationIcons[eventType.location], {
+                    className: "h-5 w-5 text-muted-foreground"
+                  })}
                 </div>
-                {React.createElement(locationIcons[eventType.location], {
-                  className: "h-5 w-5 text-muted-foreground"
-                })}
-              </div>
 
-              <div className="mt-4 space-y-2">
-                <div className="flex items-center text-sm text-muted-foreground">
-                  <Clock className="mr-2 h-4 w-4" />
-                  {eventType.duration} minutes
-                </div>
-                
-                <div className="flex items-center text-sm text-muted-foreground">
-                  <Users className="mr-2 h-4 w-4" />
-                  {eventType.teamMembers.length} team members
+                <div className="mt-4 space-y-2">
+                  <div className="flex items-center text-sm text-muted-foreground">
+                    <Clock className="mr-2 h-4 w-4" />
+                    {eventType.duration} minutes
+                  </div>
+                  
+                  <div className="flex items-center text-sm text-muted-foreground">
+                    <Users className="mr-2 h-4 w-4" />
+                    {(eventType.teamMembers || []).length} team members
+                  </div>
+
+                  <div className="flex items-center text-sm text-muted-foreground">
+                    <LinkIcon className="mr-2 h-4 w-4" />
+                    <span className="truncate">/book/{eventType.id}</span>
+                  </div>
                 </div>
 
-                <div className="flex items-center text-sm text-muted-foreground">
-                  <LinkIcon className="mr-2 h-4 w-4" />
-                  <span className="truncate">/book/{eventType.id}</span>
-                </div>
-              </div>
-
-              <div className="mt-4 flex gap-2">
-                {eventType.questions.length > 0 && (
-                  <Badge variant="secondary">
-                    {eventType.questions.length} Questions
+                <div className="mt-4 flex gap-2">
+                  {(eventType.questions || []).length > 0 && (
+                    <Badge variant="secondary">
+                      {eventType.questions.length} Questions
+                    </Badge>
+                  )}
+                  <Badge variant="outline">
+                    {eventType.location}
                   </Badge>
-                )}
-                <Badge variant="outline">
-                  {eventType.location}
-                </Badge>
-              </div>
-
-              <div className="mt-4 flex justify-between items-center border-t pt-4">
-                <Link href={`/meetings/event-types/${eventType.id}`}>
-                  <Button variant="ghost" size="sm">
-                    Edit
-                  </Button>
-                </Link>
-                <div className="flex gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => copyBookingLink(eventType)}
-                  >
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => openPreview(eventType)}
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                  </Button>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+
+                <div className="mt-4 flex justify-between items-center border-t pt-4">
+                  <Link href={`/meetings/event-types/${eventType.id}`}>
+                    <Button variant="ghost" size="sm">
+                      Edit
+                    </Button>
+                  </Link>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => copyBookingLink(eventType)}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => openPreview(eventType)}
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
       <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
         <DialogContent>

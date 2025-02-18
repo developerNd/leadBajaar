@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Calendar } from "@/components/ui/calendar"
-import { format } from "date-fns"
+import { format, addDays, isBefore, isAfter, startOfDay, endOfDay, isWithinInterval } from "date-fns"
 import { ChevronLeft, ChevronRight, Clock, Globe, CheckCircle2 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select"
 import { validateQuestionResponse } from '@/lib/validations/questions'
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogHeader, DialogFooter } from "@/components/ui/dialog"
+import { cn } from "@/lib/utils"
 
 interface EventType {
   id: string
@@ -38,6 +39,22 @@ interface TimeSlot {
   endTime: string
   available: boolean
 }
+
+const isDateAvailable = (date: Date, eventType: EventType) => {
+  const today = startOfDay(new Date());
+  const maxDate = addDays(today, eventType.scheduling.dateRange);
+  
+  // Check if date is within allowed range
+  if (isBefore(date, today) || isAfter(date, maxDate)) {
+    return false;
+  }
+
+  // Get day of week (0 = Sunday, 1 = Monday, etc.)
+  const dayOfWeek = format(date, 'EEEE');
+  
+  // Check if day is in available days
+  return eventType.scheduling.availableDays.includes(dayOfWeek);
+};
 
 export default function BookingPage() {
   const params = useParams()
@@ -58,32 +75,65 @@ export default function BookingPage() {
   useEffect(() => {
     const fetchEventType = async () => {
       try {
+        console.log('Fetching event type with ID:', params.eventTypeId);
+        
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_LARAVEL_API_URL}/api/event-types/${params.eventTypeId}`,
+          `${process.env.NEXT_PUBLIC_LARAVEL_API_URL}api/event-types/${params.eventTypeId}`,
           {
             headers: {
               'Content-Type': 'application/json',
-              // Add auth header if needed
-              // 'Authorization': `Bearer ${session?.accessToken}`
             }
           }
-        )
+        );
         
         if (!response.ok) {
-          throw new Error('Failed to fetch event type')
+          const errorData = await response.json();
+          console.error('API Error Response:', errorData);
+          throw new Error('Failed to fetch event type');
         }
-        const data = await response.json()
-        setEventType(data)
+
+        const data = await response.json();
+        console.log('Event Type Data:', data);
+        
+        // Map API response to frontend model with proper scheduling data
+        const mappedEventType = {
+          id: data.id,
+          title: data.title,
+          description: data.description,
+          duration: data.duration,
+          location: data.location,
+          questions: data.questions || [],
+          scheduling: {
+            bufferBefore: data.scheduling?.bufferBefore || data.buffer_before || 0,
+            bufferAfter: data.scheduling?.bufferAfter || data.buffer_after || 0,
+            minimumNotice: data.scheduling?.minimumNotice || data.minimum_notice_time || 24,
+            dailyLimit: data.scheduling?.dailyLimit || data.daily_meeting_limit || 0,
+            weeklyLimit: data.scheduling?.weeklyLimit || data.weekly_meeting_limit || 0,
+            availableDays: data.scheduling?.availableDays || ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+            dateRange: data.scheduling?.dateRange || data.date_range_booking || 60,
+            timezone: data.scheduling?.timezone || data.timezone || 'UTC',
+            timeSlots: data.scheduling?.timeSlots || [],
+            startTime: data.scheduling?.startTime || '09:00',
+            endTime: data.scheduling?.endTime || '17:00',
+            recurring: data.scheduling?.recurring || null
+          },
+          teamMembers: data.team_members ? 
+            (Array.isArray(data.team_members) ? data.team_members : [data.team_members]) 
+            : []
+        };
+
+        console.log('Mapped Event Type:', mappedEventType);
+        setEventType(mappedEventType);
       } catch (error) {
-        console.error('Error fetching event type:', error)
-        setError('Failed to fetch event type')
+        console.error('Error fetching event type:', error);
+        setError(error instanceof Error ? error.message : 'Failed to fetch event type');
       }
-    }
+    };
 
     if (params.eventTypeId) {
-      fetchEventType()
+      fetchEventType();
     }
-  }, [params.eventTypeId])
+  }, [params.eventTypeId]);
 
   useEffect(() => {
     // Fetch available time slots when date is selected
@@ -94,20 +144,45 @@ export default function BookingPage() {
 
   const fetchAvailableSlots = async (date: Date) => {
     try {
+      console.log('Fetching slots for date:', format(date, 'yyyy-MM-dd'));
+      
+      const params = new URLSearchParams({
+        date: format(date, 'yyyy-MM-dd'),
+        timezone: eventType?.scheduling.timezone || 'UTC',
+        duration: eventType?.duration.toString() || '30',
+        buffer_before: eventType?.scheduling.bufferBefore.toString() || '0',
+        buffer_after: eventType?.scheduling.bufferAfter.toString() || '0'
+      });
+      
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_LARAVEL_API_URL}/api/event-types/${params.eventTypeId}/availability?date=${format(date, 'yyyy-MM-dd')}`,
+        `${process.env.NEXT_PUBLIC_LARAVEL_API_URL}api/event-types/${params.eventTypeId}/availability?${params.toString()}`,
         {
           headers: {
             'Content-Type': 'application/json',
           }
         }
-      )
-      if (!response.ok) throw new Error('Failed to fetch availability')
-      const data = await response.json()
-      console.log(data);
-      setAvailableSlots(data.slots)
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('API Error Response:', errorData);
+        throw new Error('Failed to fetch availability');
+      }
+
+      const data = await response.json();
+      console.log('Available Slots:', data);
+
+      // Ensure slots are in the correct format and filtered for availability
+      const formattedSlots = (data.slots || []).map((slot: any) => ({
+        startTime: slot.startTime,
+        endTime: slot.endTime,
+        available: slot.available !== false // default to true if not specified
+      }));
+
+      setAvailableSlots(formattedSlots);
     } catch (error) {
-      console.error('Error fetching availability:', error)
+      console.error('Error fetching availability:', error);
+      setAvailableSlots([]);
     }
   }
 
@@ -248,43 +323,56 @@ export default function BookingPage() {
     setIsSubmitting(true)
     
     try {
+      const bookingData = {
+        eventTypeId: params.eventTypeId,
+        date: format(selectedDate!, 'yyyy-MM-dd'),
+        time: format(new Date(selectedTime!), 'HH:mm:ss'),
+        duration: eventType?.duration,
+        answers
+      };
+
+      console.log('Submitting booking with data:', bookingData);
+
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_LARAVEL_API_URL}/api/bookings`, 
+        `${process.env.NEXT_PUBLIC_LARAVEL_API_URL}api/bookings`, 
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            eventTypeId: params.eventTypeId,
-            date: format(selectedDate!, 'yyyy-MM-dd'),
-            time: format(new Date(selectedTime!), 'HH:mm:ss'),
-            duration: eventType?.duration,
-            answers
-          })
+          body: JSON.stringify(bookingData)
         }
-      )
+      );
 
       if (!response.ok) {
-        throw new Error('Failed to create booking')
+        const errorData = await response.json();
+        console.error('API Error Response:', errorData);
+        throw new Error('Failed to create booking');
       }
 
-      const data = await response.json()
-      setBookingDetails(data.booking)
-      setShowSuccess(true)
+      const data = await response.json();
+      console.log('Booking Response:', data);
+
+      if (!data.booking) {
+        console.error('Invalid booking response:', data);
+        throw new Error('Invalid booking response');
+      }
+
+      setBookingDetails(data.booking);
+      setShowSuccess(true);
       
-      // Optional: Reset form
-      setAnswers({})
-      setSelectedDate(undefined)
-      setSelectedTime(null)
-      setStep(1)
-      setCurrentQuestionIndex(0)
+      // Reset form
+      setAnswers({});
+      setSelectedDate(undefined);
+      setSelectedTime(null);
+      setStep(1);
+      setCurrentQuestionIndex(0);
       
     } catch (error) {
-      console.error('Error creating booking:', error)
-      // Show error toast or message
+      console.error('Error creating booking:', error);
+      // Show error toast
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
   }
 
@@ -388,56 +476,139 @@ export default function BookingPage() {
             <div className="p-6">
               {step === 1 ? (
                 <>
-                  <h3 className="text-xl font-semibold mb-6">Select a Date & Time</h3>
-                  <div className="space-y-6">
-                    {/* Calendar */}
-                    <Calendar
-                      mode="single"
-                      selected={selectedDate}
-                      onSelect={setSelectedDate}
-                      className="rounded-md border p-4"
-                      disabled={(date) => date < new Date()}
-                    />
-
-                    {/* Time Slots */}
-                    {selectedDate && (
-                      <div className="space-y-4">
-                        <Label>Available Times</Label>
-                        <div className="grid grid-cols-3 gap-2">
-                          {availableSlots.map((slot) => (
-                            <Button
-                              key={slot.startTime}
-                              variant={selectedTime === slot.startTime ? "default" : "outline"}
-                              className="w-full"
-                              disabled={!slot.available}
-                              onClick={() => setSelectedTime(slot.startTime)}
-                            >
-                              {format(new Date(slot.startTime), 'h:mm a')}
-                            </Button>
-                          ))}
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-xl font-semibold">Select Date & Time</h3>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Globe className="h-4 w-4" />
+                      <span>{eventType.scheduling.timezone}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="grid gap-8">
+                    {/* Calendar Section */}
+                    <div className="space-y-4">
+                      <div className="p-6 bg-muted/20 rounded-lg">
+                        <Calendar
+                          mode="single"
+                          selected={selectedDate}
+                          onSelect={setSelectedDate}
+                          disabled={(date) => !isDateAvailable(date, eventType)}
+                          modifiers={{
+                            available: (date) => isDateAvailable(date, eventType)
+                          }}
+                          modifiersClassNames={{
+                            available: "bg-primary/10 hover:bg-primary/15 font-medium",
+                            selected: "bg-primary !text-primary-foreground font-medium",
+                            today: "bg-muted font-medium"
+                          }}
+                          fromDate={new Date()}
+                          toDate={addDays(new Date(), eventType.scheduling.dateRange)}
+                          className="rounded-md w-full"
+                          classNames={{
+                            months: "flex flex-col space-y-4",
+                            month: "space-y-4",
+                            caption: "flex justify-between items-center pt-1 pb-4 px-2",
+                            caption_label: "text-base font-medium text-center",
+                            nav: "flex items-center gap-1",
+                            nav_button: "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 transition-opacity",
+                            nav_button_previous: "absolute left-1",
+                            nav_button_next: "absolute right-1",
+                            table: "w-full border-collapse",
+                            head_row: "flex w-full",
+                            head_cell: "text-muted-foreground font-normal text-[0.875rem] w-[14.28%] h-8 text-center",
+                            row: "flex w-full mt-2",
+                            cell: cn(
+                              "relative w-[14.28%] h-9 text-center text-sm p-0",
+                              "first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md",
+                              "focus-within:relative focus-within:z-20"
+                            ),
+                            day: cn(
+                              "h-9 w-9 p-0 font-normal",
+                              "aria-selected:opacity-100",
+                              "hover:bg-primary/10 hover:text-primary-foreground",
+                              "focus:bg-primary focus:text-primary-foreground",
+                              "mx-auto rounded-full transition-all text-center"
+                            ),
+                            day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
+                            day_today: "bg-accent text-accent-foreground",
+                            day_outside: "text-muted-foreground opacity-50",
+                            day_disabled: "text-muted-foreground opacity-30",
+                            day_range_middle: "aria-selected:bg-accent aria-selected:text-accent-foreground",
+                            day_hidden: "invisible",
+                          }}
+                          components={{
+                            IconLeft: () => <ChevronLeft className="h-4 w-4" />,
+                            IconRight: () => <ChevronRight className="h-4 w-4" />,
+                          }}
+                        />
+                      </div>
+                      
+                      {/* Legend */}
+                      <div className="flex items-center justify-center gap-6 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-2">
+                          <div className="h-3 w-3 rounded-full bg-primary/10" />
+                          <span>Available</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="h-3 w-3 rounded-full bg-primary" />
+                          <span>Selected</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="h-3 w-3 rounded-full bg-muted" />
+                          <span>Today</span>
                         </div>
                       </div>
-                    )}
-
-                    {/* Timezone Selector */}
-                    <div className="flex items-center space-x-2 mt-6">
-                      <Globe className="w-4 h-4 text-muted-foreground" />
-                      <Select defaultValue="Asia/Kolkata">
-                        <SelectTrigger className="w-[240px]">
-                          <SelectValue placeholder="Select timezone" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Asia/Kolkata">
-                            India Standard Time (10:40am)
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
                     </div>
+
+                    {/* Time Slots Section */}
+                    {selectedDate ? (
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-medium">
+                            Available Times ({format(selectedDate, 'EEEE, MMMM d')})
+                          </h4>
+                          {availableSlots.length > 0 && (
+                            <span className="text-sm text-muted-foreground">
+                              {availableSlots.length} slots available
+                            </span>
+                          )}
+                        </div>
+                        
+                        {availableSlots.length > 0 ? (
+                          <div className="grid grid-cols-3 gap-2">
+                            {availableSlots.map((slot) => (
+                              <Button
+                                key={slot.startTime}
+                                variant={selectedTime === slot.startTime ? "default" : "outline"}
+                                className={cn(
+                                  "w-full transition-all",
+                                  !slot.available && "opacity-50 cursor-not-allowed",
+                                  selectedTime === slot.startTime && "ring-2 ring-primary ring-offset-2"
+                                )}
+                                onClick={() => slot.available && setSelectedTime(slot.startTime)}
+                                disabled={!slot.available}
+                              >
+                                {format(new Date(slot.startTime), 'h:mm a')}
+                              </Button>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="py-8 text-center">
+                            <p className="text-muted-foreground">No available slots for this date</p>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="py-8 text-center border rounded-lg">
+                        <p className="text-muted-foreground">Select a date to view available times</p>
+                      </div>
+                    )}
 
                     {/* Next Button */}
                     {selectedDate && selectedTime && (
                       <Button 
-                        className="w-full mt-4"
+                        className="w-full"
+                        size="lg"
                         onClick={() => setStep(2)}
                       >
                         Next
