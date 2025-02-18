@@ -24,6 +24,22 @@ import { ChatbotFlow, chatbotService } from '@/services/chatbot'
 import { useToast } from '@/components/ui/use-toast'
 import { integrationApi } from '@/lib/api'
 
+interface CTAUrlButton {
+  display_text: string;
+  url: string;
+}
+
+interface CTAUrlMessage {
+  header?: string;
+  body: string;
+  footer?: string;
+  button: CTAUrlButton;
+}
+
+interface MessageNodeData {
+  ctaUrl?: CTAUrlMessage;
+}
+
 const nodeTypes: NodeTypes = {
   message: MessageNode,
   input: InputNode,
@@ -582,7 +598,14 @@ export default function FlowBuilder({ flowId, isNew = false, onSave }: FlowBuild
                               messageType: value,
                               content: '',
                               templateId: undefined,
-                              templateVariables: undefined
+                              templateVariables: undefined,
+                              ctaUrl: value === 'cta_url' ? {
+                                body: '',
+                                button: {
+                                  display_text: '',
+                                  url: ''
+                                }
+                              } : undefined
                             })}
                           >
                             <SelectTrigger>
@@ -591,11 +614,87 @@ export default function FlowBuilder({ flowId, isNew = false, onSave }: FlowBuild
                             <SelectContent>
                               <SelectItem value="text">Text Message</SelectItem>
                               <SelectItem value="template">WhatsApp Template</SelectItem>
+                              <SelectItem value="cta_url">CTA URL Button</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
 
-                        {selectedNode.data.messageType === 'template' ? (
+                        {selectedNode.data.messageType === 'cta_url' ? (
+                          <div className="space-y-4">
+                            <div>
+                              <Label>Header (Optional)</Label>
+                              <Input
+                                value={selectedNode.data.ctaUrl?.header || ''}
+                                onChange={(e) => updateNodeData(selectedNode.id, {
+                                  ctaUrl: {
+                                    ...selectedNode.data.ctaUrl,
+                                    header: e.target.value
+                                  }
+                                })}
+                                placeholder="Header text"
+                              />
+                            </div>
+                            
+                            <div>
+                              <Label>Body Text</Label>
+                              <Textarea
+                                value={selectedNode.data.ctaUrl?.body || ''}
+                                onChange={(e) => updateNodeData(selectedNode.id, {
+                                  ctaUrl: {
+                                    ...selectedNode.data.ctaUrl,
+                                    body: e.target.value
+                                  }
+                                })}
+                                placeholder="Message body text"
+                                className="min-h-[100px]"
+                              />
+                            </div>
+
+                            <div>
+                              <Label>Footer (Optional)</Label>
+                              <Input
+                                value={selectedNode.data.ctaUrl?.footer || ''}
+                                onChange={(e) => updateNodeData(selectedNode.id, {
+                                  ctaUrl: {
+                                    ...selectedNode.data.ctaUrl,
+                                    footer: e.target.value
+                                  }
+                                })}
+                                placeholder="Footer text"
+                              />
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label>Button Configuration</Label>
+                              <Input
+                                value={selectedNode.data.ctaUrl?.button.display_text || ''}
+                                onChange={(e) => updateNodeData(selectedNode.id, {
+                                  ctaUrl: {
+                                    ...selectedNode.data.ctaUrl,
+                                    button: {
+                                      ...selectedNode.data.ctaUrl?.button,
+                                      display_text: e.target.value
+                                    }
+                                  }
+                                })}
+                                placeholder="Button text"
+                              />
+                              <Input
+                                value={selectedNode.data.ctaUrl?.button.url || ''}
+                                onChange={(e) => updateNodeData(selectedNode.id, {
+                                  ctaUrl: {
+                                    ...selectedNode.data.ctaUrl,
+                                    button: {
+                                      ...selectedNode.data.ctaUrl?.button,
+                                      url: e.target.value
+                                    }
+                                  }
+                                })}
+                                placeholder="Button URL"
+                              />
+                            </div>
+                          </div>
+                        ) : selectedNode.data.messageType === 'template' ? (
                           <NodeProperties 
                             node={selectedNode} 
                             onChange={(data) => updateNodeData(selectedNode.id, data)} 
