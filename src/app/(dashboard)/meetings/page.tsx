@@ -428,7 +428,7 @@ function MeetingDetails({ meeting, onUpdate }: { meeting: Meeting, onUpdate?: (u
       )}
 
       {/* Questionnaire Responses */}
-      {meeting.questionnaire && (
+      {meeting.questionnaire && meeting.questionnaire.length > 0 ? (
         <div className="border-b pb-4">
           <h4 className="font-semibold mb-2">Questionnaire Responses</h4>
           <div className="space-y-2">
@@ -440,7 +440,7 @@ function MeetingDetails({ meeting, onUpdate }: { meeting: Meeting, onUpdate?: (u
             ))}
           </div>
         </div>
-      )}
+      ) : null}
 
       {/* Notes & Outcome */}
       <div className="space-y-4">
@@ -666,7 +666,11 @@ export default function MeetingsPage() {
             avatar: ''
           },
           meetingLink: booking.meeting_link || '',
-          source: 'Website'
+          source: 'Website',
+          questionnaire: Object.entries(booking.answers || {}).map(([key, value]) => ({
+            question: key,
+            answer: value as string
+          })).filter(qa => qa.answer),
         }))
 
         const history = data.filter((booking: any) => {
@@ -697,7 +701,11 @@ export default function MeetingsPage() {
             avatar: ''
           },
           meetingLink: booking.meeting_link || '',
-          source: 'Website'
+          source: 'Website',
+          questionnaire: Object.entries(booking.answers || {}).map(([key, value]) => ({
+            question: key,
+            answer: value as string
+          })).filter(qa => qa.answer),
         }))
 
         setMeetings({ upcoming, history })

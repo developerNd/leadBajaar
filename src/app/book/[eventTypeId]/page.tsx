@@ -468,7 +468,7 @@ export default function BookingPage() {
 
               {/* Powered by Badge */}
               <div className="absolute top-0 right-0 bg-gray-700 text-white py-1 px-3 transform rotate-45 translate-x-12 translate-y-6">
-                <span className="text-xs">Powered by AIWhatsapp</span>
+                <span className="text-xs">Powered by LeadBajaar</span>
               </div>
             </div>
 
