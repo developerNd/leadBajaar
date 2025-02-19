@@ -632,81 +632,101 @@ export default function MeetingsPage() {
         if (!response.ok) {
           throw new Error('Failed to fetch meetings')
         }
-
+        
         const data = await response.json()
         console.log('API Response:', data) // Debug log
+        
+        // Add this inside fetchMeetings before mapping
+        console.log('Raw booking data:', data[0]); // Log first booking
+        console.log('Raw answers:', data[0]?.answers); // Log first booking's answers
         
         // Split bookings into upcoming and history
         const now = new Date()
         const upcoming = data.filter((booking: any) => {
           if (!booking?.start_time) return false
           return new Date(booking.start_time) > now
-        }).map((booking: any) => ({
-          id: booking.id,
-          title: `Meeting with ${booking.answers?.[1] || 'Guest'}`,
-          date: format(new Date(booking.start_time), 'EEEE, MMMM d, yyyy'),
-          time: format(new Date(booking.start_time), 'h:mm a'),
-          duration: '30 minutes',
-          type: 'video',
-          status: booking.status || 'confirmed',
-          lead: {
-            name: booking.answers?.[1] || 'Guest',
-            email: booking.answers?.[4] || '',
-            phone: '',
-            profession: '',
-            company: booking.answers?.[5] || '',
-            requirements: '',
-            avatar: ''
-          },
-          assignedTo: {
-            id: booking.user_id,
-            name: 'Host',
-            email: '',
-            role: 'Host',
-            avatar: ''
-          },
-          meetingLink: booking.meeting_link || '',
-          source: 'Website',
-          questionnaire: Object.entries(booking.answers || {}).map(([key, value]) => ({
-            question: key,
-            answer: value as string
-          })).filter(qa => qa.answer),
-        }))
+        }).map((booking: any) => {
+          // Find name, email and mobile from answers
+          const nameAnswer = booking.answers?.find((a: any) => a.question === 'NAME')
+          const emailAnswer = booking.answers?.find((a: any) => a.question === 'EMAIL')
+          const mobileAnswer = booking.answers?.find((a: any) => a.question === 'MOBILE NUMBER')
+
+          return {
+            id: booking.id,
+            title: `Meeting with ${nameAnswer?.answer || 'Guest'}`,
+            date: format(new Date(booking.start_time), 'EEEE, MMMM d, yyyy'),
+            time: format(new Date(booking.start_time), 'h:mm a'),
+            duration: `${booking.eventType?.duration || 30} minutes`,
+            type: booking.eventType?.location || 'video',
+            status: booking.status || 'confirmed',
+            lead: {
+              name: nameAnswer?.answer || 'Guest',
+              email: emailAnswer?.answer || '',
+              phone: mobileAnswer?.answer || '',
+              profession: '',
+              company: '',
+              requirements: '',
+              avatar: ''
+            },
+            assignedTo: {
+              id: booking.user_id,
+              name: 'Host',
+              email: '',
+              role: 'Host',
+              avatar: ''
+            },
+            meetingLink: booking.meeting_link || '',
+            source: 'Website',
+            questionnaire: booking.answers?.map((answer: any) => ({
+              question: answer.question,
+              answer: answer.answer
+            })) || []
+          }
+        })
 
         const history = data.filter((booking: any) => {
           if (!booking?.start_time) return false
           return new Date(booking.start_time) <= now
-        }).map((booking: any) => ({
-          id: booking.id,
-          title: `Meeting with ${booking.answers?.[1] || 'Guest'}`,
-          date: format(new Date(booking.start_time), 'EEEE, MMMM d, yyyy'),
-          time: format(new Date(booking.start_time), 'h:mm a'),
-          duration: '30 minutes',
-          type: 'video',
-          status: booking.status || 'completed',
-          lead: {
-            name: booking.answers?.[1] || 'Guest',
-            email: booking.answers?.[4] || '',
-            phone: '',
-            profession: '',
-            company: booking.answers?.[5] || '',
-            requirements: '',
-            avatar: ''
-          },
-          assignedTo: {
-            id: booking.user_id,
-            name: 'Host',
-            email: '',
-            role: 'Host',
-            avatar: ''
-          },
-          meetingLink: booking.meeting_link || '',
-          source: 'Website',
-          questionnaire: Object.entries(booking.answers || {}).map(([key, value]) => ({
-            question: key,
-            answer: value as string
-          })).filter(qa => qa.answer),
-        }))
+        }).map((booking: any) => {
+          const nameAnswer = booking.answers?.find((a: any) => a.question === 'NAME')
+          const emailAnswer = booking.answers?.find((a: any) => a.question === 'EMAIL')
+          const mobileAnswer = booking.answers?.find((a: any) => a.question === 'MOBILE NUMBER')
+
+          return {
+            id: booking.id,
+            title: `Meeting with ${nameAnswer?.answer || 'Guest'}`,
+            date: format(new Date(booking.start_time), 'EEEE, MMMM d, yyyy'),
+            time: format(new Date(booking.start_time), 'h:mm a'),
+            duration: `${booking.eventType?.duration || 30} minutes`,
+            type: booking.eventType?.location || 'video',
+            status: booking.status || 'completed',
+            lead: {
+              name: nameAnswer?.answer || 'Guest',
+              email: emailAnswer?.answer || '',
+              phone: mobileAnswer?.answer || '',
+              profession: '',
+              company: '',
+              requirements: '',
+              avatar: ''
+            },
+            assignedTo: {
+              id: booking.user_id,
+              name: 'Host',
+              email: '',
+              role: 'Host',
+              avatar: ''
+            },
+            meetingLink: booking.meeting_link || '',
+            source: 'Website',
+            questionnaire: booking.answers?.map((answer: any) => ({
+              question: answer.question,
+              answer: answer.answer
+            })) || []
+          }
+        })
+
+        // Add this after mapping
+        console.log('Processed questionnaire:', upcoming[0]?.questionnaire); // Log first processed booking
 
         setMeetings({ upcoming, history })
       } catch (error) {

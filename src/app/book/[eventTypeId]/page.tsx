@@ -56,6 +56,48 @@ const isDateAvailable = (date: Date, eventType: EventType) => {
   return eventType.scheduling.availableDays.includes(dayOfWeek);
 };
 
+function CalendarSkeleton() {
+  return (
+    <div className="space-y-8">
+      {/* Calendar Grid Skeleton */}
+      <div className="p-6 bg-muted/20 rounded-lg">
+        <div className="space-y-4">
+          {/* Month Navigation */}
+          <div className="flex justify-between items-center pb-4">
+            <div className="h-6 w-32 bg-muted rounded animate-pulse" />
+            <div className="flex gap-1">
+              <div className="h-8 w-8 bg-muted rounded animate-pulse" />
+              <div className="h-8 w-8 bg-muted rounded animate-pulse" />
+            </div>
+          </div>
+          
+          {/* Calendar Grid */}
+          <div className="grid grid-cols-7 gap-1">
+            {/* Week days */}
+            {[...Array(7)].map((_, i) => (
+              <div key={i} className="h-8 bg-muted rounded animate-pulse" />
+            ))}
+            {/* Date cells */}
+            {[...Array(35)].map((_, i) => (
+              <div key={i} className="aspect-square bg-muted rounded animate-pulse" />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Time Slots Skeleton */}
+      <div className="space-y-4">
+        <div className="h-6 w-48 bg-muted rounded animate-pulse" />
+        <div className="grid grid-cols-3 gap-2">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="h-10 bg-muted rounded animate-pulse" />
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function BookingPage() {
   const params = useParams()
   const router = useRouter()
@@ -71,6 +113,10 @@ export default function BookingPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
   const [bookingDetails, setBookingDetails] = useState<any>(null)
+  const [errorDialog, setErrorDialog] = useState({
+    isOpen: false,
+    message: ''
+  });
 
   useEffect(() => {
     const fetchEventType = async () => {
@@ -146,7 +192,7 @@ export default function BookingPage() {
     try {
       console.log('Fetching slots for date:', format(date, 'yyyy-MM-dd'));
       
-      const params = new URLSearchParams({
+      const queryParams = new URLSearchParams({
         date: format(date, 'yyyy-MM-dd'),
         timezone: eventType?.scheduling.timezone || 'UTC',
         duration: eventType?.duration.toString() || '30',
@@ -155,7 +201,7 @@ export default function BookingPage() {
       });
       
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_LARAVEL_API_URL}api/event-types/${params.eventTypeId}/availability?${params.toString()}`,
+        `${process.env.NEXT_PUBLIC_LARAVEL_API_URL}api/event-types/${params.eventTypeId}/availability?${queryParams.toString()}`,
         {
           headers: {
             'Content-Type': 'application/json',
@@ -344,17 +390,22 @@ export default function BookingPage() {
         }
       );
 
+      const data = await response.json();
+      
       if (!response.ok) {
-        const errorData = await response.json();
-        console.error('API Error Response:', errorData);
-        throw new Error('Failed to create booking');
+        if (data.message === "This time slot is no longer available") {
+          setErrorDialog({
+            isOpen: true,
+            message: data.message
+          });
+          return;
+        }
+        throw new Error(data.message || 'Failed to create booking');
       }
 
-      const data = await response.json();
       console.log('Booking Response:', data);
 
       if (!data.booking) {
-        console.error('Invalid booking response:', data);
         throw new Error('Invalid booking response');
       }
 
@@ -370,7 +421,10 @@ export default function BookingPage() {
       
     } catch (error) {
       console.error('Error creating booking:', error);
-      // Show error toast
+      setErrorDialog({
+        isOpen: true,
+        message: error instanceof Error ? error.message : 'Failed to create booking'
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -421,12 +475,35 @@ export default function BookingPage() {
     }
   }
 
-  if (!eventType) return <div>Loading...</div>
+  if (!eventType) return (
+    <div className="container max-w-4xl mx-auto py-10">
+      <Card>
+        <CardContent className="p-0 relative overflow-hidden">
+          <div className="grid md:grid-cols-[300px,1fr]">
+            {/* Left Section Skeleton */}
+            <div className="p-6 border-r">
+              <div className="flex flex-col items-center text-center space-y-4">
+                <div className="w-16 h-16 rounded-full bg-muted animate-pulse" />
+                <div className="h-6 w-32 bg-muted rounded animate-pulse" />
+                <div className="h-4 w-24 bg-muted rounded animate-pulse" />
+                <div className="h-20 w-full bg-muted rounded animate-pulse" />
+              </div>
+            </div>
+            
+            {/* Right Section Skeleton */}
+            <div className="p-6">
+              <CalendarSkeleton />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
 
   return (
     <div className="container max-w-4xl mx-auto py-10">
       <Card>
-        <CardContent className="p-0">
+        <CardContent className="p-0 relative overflow-hidden">
           <div className="grid md:grid-cols-[300px,1fr]">
             {/* Left Section - Event Info */}
             <div className="p-6 border-r">
@@ -699,6 +776,35 @@ export default function BookingPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Error Dialog */}
+      <Dialog 
+        open={errorDialog.isOpen} 
+        onOpenChange={(open) => setErrorDialog(prev => ({ ...prev, isOpen: open }))}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-red-600">Booking Error</DialogTitle>
+            <DialogDescription>
+              {errorDialog.message}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button 
+              variant="secondary" 
+              onClick={() => {
+                setErrorDialog({ isOpen: false, message: '' });
+                // Refresh available slots if time slot is no longer available
+                if (selectedDate) {
+                  fetchAvailableSlots(selectedDate);
+                }
+              }}
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={showSuccess} onOpenChange={setShowSuccess}>
         <DialogContent className="sm:max-w-md">

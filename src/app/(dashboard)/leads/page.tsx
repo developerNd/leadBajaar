@@ -320,10 +320,11 @@ export default function LeadsPage() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [visibleColumns, setVisibleColumns] = useState([
     'name', 
-    'email', 
+    'phone', 
     'stage',
     'status',
-    'source', 
+    'source',
+    'created_at',
     'actions'
   ])
   
@@ -2256,7 +2257,8 @@ export default function LeadsPage() {
                                 {column.icon && React.createElement(column.icon, { 
                                   className: "h-4 w-4 text-gray-500" 
                                 })}
-                                <span>{format(new Date(lead.created_at), "MMM dd, yyyy")}</span>
+                                {/* <span>{format(new Date(lead.created_at), "MMM dd, yyyy")}</span> */}
+                                <span>{format(new Date(lead.created_at), "MMM dd, yyyy 'at' hh:mm a")}</span>
                               </div>
                             ) : (
                               <div className="flex items-center gap-2">
