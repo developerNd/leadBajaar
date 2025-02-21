@@ -205,8 +205,13 @@ const NodeProperties = ({ node, onChange }: {
       if (node.type === 'message') {
         setIsLoadingTemplates(true);
         try {
-          const response = await integrationApi.getWhatsAppTemplates(3);
-          setTemplates(response.templates);
+          const response = await integrationApi.getWhatsAppAccounts();
+          if (response.accounts && response.accounts.length > 0) {
+            console.log(response.accounts[0].templates)
+            setTemplates(response.accounts[0].templates || []);
+          }
+          // const response = await integrationApi.getWhatsAppTemplates(3);
+          // setTemplates(response.templates);
         } catch (error) {
           console.error('Failed to load templates:', error);
           toast({
@@ -424,17 +429,26 @@ export default function FlowBuilder({ flowId, isNew = false, onSave }: FlowBuild
     }
   }, [nodes, selectedNode])
 
-  const onConnect = useCallback((params: Edge | Connection) => {
-    setEdges((eds) => {
-      const newEdge: ChatbotEdge = {
-        ...params,
-        id: `e${params.source}-${params.target}`,
-        label: params.sourceHandle?.startsWith('button-') ? 'button' : undefined,
-        action: params.sourceHandle?.startsWith('button-') ? 'button_click' : undefined
+  const onConnect = useCallback(
+    (params: Connection) => {
+      // Allow multiple incoming connections to message nodes
+      const targetNode = nodes.find(n => n.id === params.target)
+      if (targetNode?.type === 'message') {
+        setEdges((eds) => addEdge(params, eds))
+        return
       }
-      return addEdge(newEdge, eds) as ChatbotEdge[]
-    })
-  }, [setEdges])
+
+      // For other node types, check if they already have an incoming connection
+      const hasIncomingConnection = edges.some(
+        edge => edge.target === params.target
+      )
+
+      if (!hasIncomingConnection) {
+        setEdges((eds) => addEdge(params, eds))
+      }
+    },
+    [nodes, edges]
+  )
 
   const onNodeClick = useCallback((event: React.MouseEvent, node: ChatbotNode) => {
     event.preventDefault()
