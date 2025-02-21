@@ -128,7 +128,7 @@ const integrations: Integration[] = [
     allowMultiple: false
   },
   {
-    id: 'facebook',
+    id: 'leadform',
     name: 'Facebook Lead Forms',
     icon: Facebook,
     category: 'marketing',
@@ -233,8 +233,11 @@ export default function IntegrationsPage() {
       const response = await integrationApi.getConnectedIntegrations()
       console.log(response)
       // If response is directly the integration object, wrap it in an array
-      const integrationData = response.id ? [response] : []
-      setConnectedIntegrations(integrationData)
+      // const integrationData = response.id ? [response] : []
+      // console.log(integrationData)
+      // const integrationIds = response.map(integration => integration.id);
+      // console.log(integrationIds);
+      setConnectedIntegrations(response)
     } catch (error: any) {
       setConnectedIntegrations([])
       toast({
