@@ -520,11 +520,14 @@ export const getLeadsWithLatestMessages = async () => {
   }
 };
 
-export const getConversationMessages = async (conversationId: number) => {
+export const getConversationMessages = async (conversationId: number, lastTimestamp?: string) => {
   try {
     const response = await api.get(`/conversations/${conversationId}/messages`, {
       headers: {
         Authorization: `Bearer ${localStorage.getItem('token')}`
+      },
+      params: {
+        after: lastTimestamp
       }
     });
     return response.data;
