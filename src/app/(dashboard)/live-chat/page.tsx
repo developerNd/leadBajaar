@@ -62,6 +62,41 @@ interface Chat {
   priority: 'high' | 'medium' | 'low';
 }
 
+interface WhatsAppButtonMessage {
+  context?: {
+    from: string;
+    id: string;
+  };
+  from: string;
+  id: string;
+  timestamp: string;
+  type: 'button';
+  button: {
+    payload: string;
+    text: string;
+  };
+}
+
+interface MessageMetadata {
+  type: 'button' | 'interactive';
+  context?: {
+    from: string;
+    id: string;
+  };
+  originalMessage?: WhatsAppButtonMessage;
+  interactive?: WhatsAppInteractive;
+}
+
+interface MessageResponse {
+  id: number;
+  content: string;
+  metadata: string | MessageMetadata;
+  direction: 'inbound' | 'outbound';
+  timestamp: string;
+  sender: { id: number; type: string };
+  receiver: { id: number; type: string };
+}
+
 // const initialChats = [
 //   {
 //     id: 1,
@@ -317,16 +352,41 @@ export default function LiveChatPage() {
     return 'low';
   };
 
+  const processMessage = (message: Message) => {
+    try {
+      // Check if content is JSON
+      if (typeof message.content === 'string' && message.content.startsWith('{')) {
+        const parsedContent = JSON.parse(message.content);
+        
+        // Handle button message type
+        if (parsedContent.type === 'button') {
+          const buttonMessage = parsedContent as WhatsAppButtonMessage;
+          return {
+            ...message,
+            content: buttonMessage.button.text, // or use buttonMessage.button.payload
+            metadata: {
+              type: 'button',
+              context: buttonMessage.context,
+              originalMessage: buttonMessage
+            }
+          };
+        }
+      }
+      return message;
+    } catch (error) {
+      // If JSON parsing fails, return original message
+      return message;
+    }
+  };
+
   const fetchChatMessages = async (chatId: number) => {
     try {
       const response = await getConversationMessages(chatId);
-      console.log('Messages response:', response);
-      
       if (response?.messages && Array.isArray(response.messages)) {
         const formattedMessages = response.messages.map((msg: any) => ({
           id: msg.id,
           content: msg.content || '',
-          metadata: msg.metadata, // Keep metadata as is, don't try to parse yet
+          metadata: msg.metadata,
           sender: msg.direction === 'outbound' ? 'agent' : 'user',
           time: formatMessageTime(msg.created_at || msg.timestamp),
           created_at: msg.created_at || msg.timestamp,
@@ -334,7 +394,7 @@ export default function LiveChatPage() {
           receiver_id: msg.receiver?.id || 0,
           direction: msg.direction
         }));
-        setMessages(formattedMessages);
+        setMessages(formattedMessages.map(processMessage));
       }
     } catch (error) {
       console.error('Error fetching messages:', error);
@@ -353,12 +413,63 @@ export default function LiveChatPage() {
     }
   };
 
-  useEffect(() => {
-    fetchActiveConversations();
-    const interval = setInterval(fetchActiveConversations, 30000); // Refresh every 30 seconds
+  // Add this function to fetch only latest messages for active chat
+  const fetchLatestMessages = async (chatId: number, lastMessageTimestamp?: string) => {
+    try {
+      const timestamp = lastMessageTimestamp ? new Date(lastMessageTimestamp).toISOString() : undefined;
+      const response = await getConversationMessages(chatId, timestamp);
+      
+      if (response?.messages && Array.isArray(response.messages)) {
+        const newMessages = response.messages.map((msg: MessageResponse) => ({
+          id: msg.id,
+          content: msg.content || '',
+          metadata: msg.metadata,
+          sender: msg.direction === 'outbound' ? 'agent' : 'user',
+          time: formatMessageTime(msg.timestamp),
+          created_at: msg.timestamp,
+          sender_id: msg.sender?.id || 0,
+          receiver_id: msg.receiver?.id || 0,
+          direction: msg.direction
+        }));
+        
+        // Filter out duplicate messages using message IDs
+        setMessages(prev => {
+          const existingIds = new Set(prev.map(m => m.id));
+          const uniqueNewMessages = newMessages
+            .map(processMessage)
+            .filter(msg => !existingIds.has(msg.id));
+          return [...prev, ...uniqueNewMessages];
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching latest messages:', error);
+    }
+  };
 
-    return () => clearInterval(interval);
-  }, []);
+  // Update the useEffect for chat refresh
+  useEffect(() => {
+    // Initial fetch of all conversations
+    fetchActiveConversations();
+
+    // Set up interval only for active chat
+    let interval: NodeJS.Timeout;
+    if (activeChat) {
+      // Initial fetch of messages
+      fetchChatMessages(activeChat.id);
+      
+      interval = setInterval(() => {
+        const lastMessage = messages[messages.length - 1];
+        console.log('lastMessage: ', lastMessage);
+        if (lastMessage?.created_at) {
+          fetchLatestMessages(activeChat.id, lastMessage.created_at);
+        }
+      }, 30000);
+    }
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [activeChat?.id]); // Dependency on activeChat.id
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -422,6 +533,22 @@ export default function LiveChatPage() {
       );
     };
 
+    const processedMessage = processMessage(message);
+    
+    // Handle WhatsApp button responses
+    if (processedMessage.metadata?.type === 'button') {
+      return (
+        <div className="space-y-2">
+          <p className="whitespace-pre-line">
+            {processedMessage.content}
+          </p>
+          <div className="text-xs text-muted-foreground">
+            Button Response
+          </div>
+        </div>
+      );
+    }
+
     // Handle interactive messages (WhatsApp)
     if (message.metadata) {
       try {
@@ -464,7 +591,7 @@ export default function LiveChatPage() {
     }
 
     // Default message display
-    return <p className="whitespace-pre-line">{message.content}</p>;
+    return <p className="whitespace-pre-line">{processedMessage.content}</p>;
   };
 
   return (

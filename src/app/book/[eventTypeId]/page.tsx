@@ -574,8 +574,8 @@ export default function BookingPage() {
                             available: (date) => isDateAvailable(date, eventType)
                           }}
                           modifiersClassNames={{
-                            available: "bg-primary/10 hover:bg-primary/15 font-medium",
-                            selected: "bg-primary !text-primary-foreground font-medium",
+                            available: "bg-primary/10 hover:bg-primary/15 font-medium hover:text-blue-900",
+                            selected: "bg-blue-900 !text-primary-foreground font-medium",
                             today: "bg-muted font-medium"
                           }}
                           fromDate={new Date()}
@@ -595,7 +595,7 @@ export default function BookingPage() {
                             head_cell: "text-muted-foreground font-normal text-[0.875rem] w-[14.28%] h-8 text-center",
                             row: "flex w-full mt-2",
                             cell: cn(
-                              "relative w-[14.28%] h-9 text-center text-sm p-0",
+                              "relative w-[14.28%] h-9 text-center text-sm p-4",
                               "first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md",
                               "focus-within:relative focus-within:z-20"
                             ),
@@ -606,7 +606,7 @@ export default function BookingPage() {
                               "focus:bg-primary focus:text-primary-foreground",
                               "mx-auto rounded-full transition-all text-center"
                             ),
-                            day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
+                            day_selected: "bg-primary text-red-500 hover:bg-primary hover:text-primary-foreground",
                             day_today: "bg-accent text-accent-foreground",
                             day_outside: "text-muted-foreground opacity-50",
                             day_disabled: "text-muted-foreground opacity-30",

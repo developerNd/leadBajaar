@@ -99,148 +99,9 @@ interface Meeting {
   notes?: string
   outcome?: string
   followUpDate?: string
+  start_time?: string
 }
 
-// Dummy data for meetings with additional fields
-const upcomingMeetings: Meeting[] = [
-  {
-    id: 1,
-    title: "Product Demo",
-    date: "2024-01-20",
-    time: "10:00 AM",
-    duration: "30 min",
-    lead: {
-      name: "John Smith",
-      email: "john@example.com",
-      phone: "+1 234-567-8900",
-      profession: "Marketing Manager",
-      company: "Tech Corp",
-      state: "California",
-      requirements: "Interested in enterprise features",
-      avatar: "https://www.svgrepo.com/show/65453/avatar.svg"
-    },
-    assignedTo: {
-      id: 1,
-      name: "Alex Thompson",
-      email: "alex@leadbajar.com",
-      avatar: "https://www.svgrepo.com/show/65453/avatar.svg",
-      role: "Sales Representative"
-    },
-    type: "video",
-    status: "confirmed",
-    meetingLink: "https://meet.leadbajar.com/demo-123",
-    agenda: [
-      "Product overview",
-      "Feature demonstration",
-      "Q&A session",
-      "Next steps discussion"
-    ],
-    questionnaire: [
-      { question: "What's your budget range?", answer: "$5000-$10000" },
-      { question: "Team size?", answer: "50-100 employees" },
-      { question: "Current challenges?", answer: "Lead management and tracking" }
-    ],
-    source: "Website Form"
-  },
-  {
-    id: 2,
-    title: "Initial Consultation",
-    date: "2024-01-20",
-    time: "2:00 PM",
-    duration: "45 min",
-    lead: {
-      name: "Emma Davis",
-      email: "emma@example.com",
-      phone: "+1 234-567-8902",
-      profession: "CEO",
-      company: "Startup Ltd",
-      state: "Texas",
-      requirements: "Full platform demo",
-      avatar: "https://www.svgrepo.com/show/65453/avatar.svg"
-    },
-    assignedTo: {
-      id: 2,
-      name: "Sarah Johnson",
-      email: "sarah@leadbajar.com",
-      avatar: "https://www.svgrepo.com/show/65453/avatar.svg",
-      role: "Senior Sales Executive"
-    },
-    type: "video",
-    status: "confirmed",
-    meetingLink: "https://meet.leadbajar.com/consultation-123",
-    source: "LinkedIn Campaign",
-    questionnaire: [
-      { question: "Company size?", answer: "25 employees" },
-      { question: "Industry?", answer: "SaaS" },
-      { question: "Key requirements?", answer: "Integration capabilities" }
-    ]
-  }
-]
-
-const meetingHistory: Meeting[] = [
-  {
-    id: 6,
-    title: "Product Demo",
-    date: "2024-01-15",
-    time: "10:00 AM",
-    duration: "30 min",
-    lead: {
-      name: "Robert Chen",
-      email: "robert@example.com",
-      phone: "+1 234-567-8903",
-      profession: "CTO",
-      company: "Tech Solutions",
-      state: "Washington",
-      requirements: "Technical deep dive",
-      avatar: "https://www.svgrepo.com/show/65453/avatar.svg"
-    },
-    assignedTo: {
-      id: 1,
-      name: "Alex Thompson",
-      email: "alex@leadbajar.com",
-      avatar: "https://www.svgrepo.com/show/65453/avatar.svg",
-      role: "Sales Representative"
-    },
-    type: "video",
-    status: "completed",
-    notes: "Client showed interest in premium features",
-    followUpDate: "2024-01-22",
-    outcome: "Requested proposal",
-    meetingLink: "https://meet.leadbajar.com/past-demo-123",
-    source: "Direct Referral"
-  },
-  {
-    id: 7,
-    title: "Sales Discussion",
-    date: "2024-01-14",
-    time: "2:00 PM",
-    duration: "45 min",
-    lead: {
-      name: "David Lee",
-      email: "david@example.com",
-      phone: "+1 234-567-8905",
-      profession: "Sales Director",
-      company: "Global Corp",
-      state: "Texas",
-      requirements: "Enterprise pricing discussion",
-      avatar: "https://www.svgrepo.com/show/65453/avatar.svg"
-    },
-    assignedTo: {
-      id: 2,
-      name: "Sarah Johnson",
-      email: "sarah@leadbajar.com",
-      avatar: "https://www.svgrepo.com/show/65453/avatar.svg",
-      role: "Senior Sales Executive"
-    },
-    type: "video",
-    status: "completed",
-    notes: "Positive discussion about enterprise features",
-    followUpDate: "2024-01-21",
-    outcome: "Contract sent for review",
-    meetingLink: "https://meet.leadbajar.com/past-sales-123",
-    source: "Enterprise Outreach"
-  }
-]
 
 const meetingTypes = {
   video: { icon: Video, color: "text-blue-500" },
@@ -516,10 +377,40 @@ function MeetingsSkeleton() {
   )
 }
 
+// Add this helper function at the top of the file
+const groupMeetingsByDate = (meetings: Meeting[]) => {
+  // Sort meetings by start_time in ascending order (earliest first)
+  const sortedMeetings = [...meetings].sort((a, b) => {
+    const timeA = new Date(a.start_time!).getTime()
+    const timeB = new Date(b.start_time!).getTime()
+    return timeA - timeB  // Changed from timeB - timeA
+  })
+
+  // Group by date using start_time
+  const groups = sortedMeetings.reduce((groups, meeting) => {
+    const dateKey = format(new Date(meeting.start_time!), 'yyyy-MM-dd')
+    if (!groups[dateKey]) {
+      groups[dateKey] = []
+    }
+    groups[dateKey].push(meeting)
+    return groups
+  }, {} as Record<string, Meeting[]>)
+
+  // Sort groups by date keys in ascending order
+  return Object.entries(groups)
+    .sort(([dateA], [dateB]) => {
+      return new Date(dateA).getTime() - new Date(dateB).getTime()  // Changed from dateB - dateA
+    })
+    .reduce((obj, [key, value]) => {
+      obj[key] = value
+      return obj
+    }, {} as Record<string, Meeting[]>)
+}
+
 export default function MeetingsPage() {
-  const [meetings, setMeetings] = useState({
-    upcoming: upcomingMeetings,
-    history: meetingHistory
+  const [meetings, setMeetings] = useState<{ upcoming: Meeting[]; history: Meeting[] }>({
+    upcoming: [],
+    history: []
   })
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -680,7 +571,8 @@ export default function MeetingsPage() {
             questionnaire: booking.answers?.map((answer: any) => ({
               question: answer.question,
               answer: answer.answer
-            })) || []
+            })) || [],
+            start_time: booking.start_time
           }
         })
 
@@ -721,7 +613,8 @@ export default function MeetingsPage() {
             questionnaire: booking.answers?.map((answer: any) => ({
               question: answer.question,
               answer: answer.answer
-            })) || []
+            })) || [],
+            start_time: booking.start_time
           }
         })
 
@@ -798,78 +691,87 @@ export default function MeetingsPage() {
                     <MeetingsSkeleton />
                   ) : (
                     <>
-                      <div className="space-y-4">
-                        {paginatedMeetings.upcoming.map((meeting) => (
-                          <Card key={meeting.id}>
-                            <CardContent className="p-4">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center space-x-4">
-                                  <Avatar>
-                                    <AvatarImage src={meeting.lead.avatar} />
-                                    <AvatarFallback>{meeting.lead.name.split(' ').map((n: string) => n[0]).join('')}</AvatarFallback>
-                                  </Avatar>
-                                  <div>
-                                    <h3 className="font-semibold">{meeting.title}</h3>
-                                    <p className="text-sm text-muted-foreground">{meeting.lead.name} - {meeting.lead.company}</p>
-                                    <div className="flex items-center text-sm text-muted-foreground">
-                                      <CalendarDays className="mr-2 h-4 w-4" />
-                                      {meeting.date} at {meeting.time}
-                                    </div>
-                                    <div className="flex items-center text-sm text-muted-foreground">
-                                      <Clock className="mr-2 h-4 w-4" />
-                                      {meeting.duration}
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="flex flex-col items-end space-y-2">
-                                  <div className="flex items-center space-x-2">
-                                    <Badge variant="outline" className="text-sm">
-                                      {meeting.source}
-                                    </Badge>
-                                    <Avatar className="h-8 w-8 border-2 border-background">
-                                      <AvatarImage src={meeting.assignedTo.avatar} />
-                                      <AvatarFallback>{meeting.assignedTo.name.split(' ').map((n: string) => n[0]).join('')}</AvatarFallback>
-                                    </Avatar>
-                                  </div>
-                                  <div className="flex items-center space-x-2">
-                                    <Dialog>
-                                      <DialogTrigger asChild>
-                                        <Button variant="outline" size="sm">
-                                          <FileText className="h-4 w-4 mr-2" />
-                                          Details
-                                        </Button>
-                                      </DialogTrigger>
-                                      <DialogContent className="max-w-2xl">
-                                        <div className="fixed top-0 right-0 left-0 bg-background border-b p-4 z-50 flex justify-between items-start">
-                                          <DialogHeader>
-                                            <DialogTitle>Meeting Details</DialogTitle>
-                                            <DialogDescription>
-                                              Lead meeting information and details
-                                            </DialogDescription>
-                                          </DialogHeader>
-                                          <DialogClose className="absolute right-4 top-4">
-                                            <X className="h-4 w-4" />
-                                          </DialogClose>
+                      <div className="space-y-6">
+                        {Object.entries(groupMeetingsByDate(paginatedMeetings.upcoming)).map(([date, meetings]) => (
+                          <div key={date} className="space-y-4">
+                            <h3 className="font-medium text-muted-foreground">
+                              {format(new Date(date), 'EEEE, MMMM d, yyyy')}
+                            </h3>
+                            <div className="space-y-4">
+                              {meetings.map((meeting) => (
+                                <Card key={meeting.id}>
+                                  <CardContent className="p-4">
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center space-x-4">
+                                        <Avatar>
+                                          <AvatarImage src={meeting.lead.avatar} />
+                                          <AvatarFallback>{meeting.lead.name.split(' ').map((n: string) => n[0]).join('')}</AvatarFallback>
+                                        </Avatar>
+                                        <div>
+                                          <h3 className="font-semibold">{meeting.title}</h3>
+                                          <p className="text-sm text-muted-foreground">{meeting.lead.name} - {meeting.lead.company}</p>
+                                          <div className="flex items-center text-sm text-muted-foreground">
+                                            <CalendarDays className="mr-2 h-4 w-4" />
+                                            {meeting.date} at {meeting.time}
+                                          </div>
+                                          <div className="flex items-center text-sm text-muted-foreground">
+                                            <Clock className="mr-2 h-4 w-4" />
+                                            {meeting.duration}
+                                          </div>
                                         </div>
-                                        <div className="mt-16 max-h-[calc(90vh-8rem)] overflow-y-auto p-4">
-                                          <MeetingDetails meeting={meeting} onUpdate={handleMeetingUpdate} />
+                                      </div>
+                                      <div className="flex flex-col items-end space-y-2">
+                                        <div className="flex items-center space-x-2">
+                                          <Badge variant="outline" className="text-sm">
+                                            {meeting.source}
+                                          </Badge>
+                                          <Avatar className="h-8 w-8 border-2 border-background">
+                                            <AvatarImage src={meeting.assignedTo.avatar} />
+                                            <AvatarFallback>{meeting.assignedTo.name.split(' ').map((n: string) => n[0]).join('')}</AvatarFallback>
+                                          </Avatar>
                                         </div>
-                                      </DialogContent>
-                                    </Dialog>
-                                    <Button variant="outline" size="sm" className="text-blue-600">
-                                      <RefreshCw className="h-4 w-4" />
-                                    </Button>
-                                    {React.createElement(meetingTypes[meeting.type as keyof typeof meetingTypes].icon, {
-                                      className: `h-4 w-4 ${meetingTypes[meeting.type as keyof typeof meetingTypes].color}`
-                                    })}
-                                    <Badge variant="secondary" className={statusColors[meeting.status as keyof typeof statusColors]}>
-                                      {meeting.status}
-                                    </Badge>
-                                  </div>
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
+                                        <div className="flex items-center space-x-2">
+                                          <Dialog>
+                                            <DialogTrigger asChild>
+                                              <Button variant="outline" size="sm">
+                                                <FileText className="h-4 w-4 mr-2" />
+                                                Details
+                                              </Button>
+                                            </DialogTrigger>
+                                            <DialogContent className="max-w-2xl">
+                                              <div className="fixed top-0 right-0 left-0 bg-background border-b p-4 z-50 flex justify-between items-start">
+                                                <DialogHeader>
+                                                  <DialogTitle>Meeting Details</DialogTitle>
+                                                  <DialogDescription>
+                                                    Lead meeting information and details
+                                                  </DialogDescription>
+                                                </DialogHeader>
+                                                <DialogClose className="absolute right-4 top-4">
+                                                  <X className="h-4 w-4" />
+                                                </DialogClose>
+                                              </div>
+                                              <div className="mt-16 max-h-[calc(90vh-8rem)] overflow-y-auto p-4">
+                                                <MeetingDetails meeting={meeting} onUpdate={handleMeetingUpdate} />
+                                              </div>
+                                            </DialogContent>
+                                          </Dialog>
+                                          <Button variant="outline" size="sm" className="text-blue-600">
+                                            <RefreshCw className="h-4 w-4" />
+                                          </Button>
+                                          {React.createElement(meetingTypes[meeting.type as keyof typeof meetingTypes].icon, {
+                                            className: `h-4 w-4 ${meetingTypes[meeting.type as keyof typeof meetingTypes].color}`
+                                          })}
+                                          <Badge variant="secondary" className={statusColors[meeting.status as keyof typeof statusColors]}>
+                                            {meeting.status}
+                                          </Badge>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              ))}
+                            </div>
+                          </div>
                         ))}
                       </div>
                       <PaginationControls 
@@ -899,71 +801,78 @@ export default function MeetingsPage() {
                     </div>
                   ) : (
                     <>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Meeting</TableHead>
-                            <TableHead>Date & Time</TableHead>
-                            <TableHead>Attendee</TableHead>
-                            <TableHead>Type</TableHead>
-                            <TableHead>Outcome</TableHead>
-                            <TableHead>Follow-up</TableHead>
-                            <TableHead>Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {paginatedMeetings.history.map((meeting) => (
-                            <TableRow key={meeting.id}>
-                              <TableCell className="font-medium">{meeting.title}</TableCell>
-                              <TableCell>{meeting.date} {meeting.time}</TableCell>
-                              <TableCell>
-                                <div className="flex items-center space-x-2">
-                                  <Avatar className="h-6 w-6">
-                                    <AvatarImage src={meeting.lead.avatar} />
-                                    <AvatarFallback>{meeting.lead.name.split(' ').map((n: string) => n[0]).join('')}</AvatarFallback>
-                                  </Avatar>
-                                  <div>
-                                    <span className="font-medium">{meeting.lead.name}</span>
-                                    <p className="text-sm text-muted-foreground">{meeting.lead.company}</p>
-                                  </div>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex items-center">
-                                  {React.createElement(meetingTypes[meeting.type as keyof typeof meetingTypes].icon, {
-                                    className: `h-4 w-4 mr-2 ${meetingTypes[meeting.type as keyof typeof meetingTypes].color}`
-                                  })}
-                                  {meeting.type}
-                                </div>
-                              </TableCell>
-                              <TableCell>{meeting.outcome || 'No outcome recorded'}</TableCell>
-                              <TableCell>{meeting.followUpDate}</TableCell>
-                              <TableCell>
-                                <Dialog>
-                                  <DialogTrigger asChild>
-                                    <Button variant="ghost" size="sm">
-                                      <FileText className="h-4 w-4" />
-                                    </Button>
-                                  </DialogTrigger>
-                                  <DialogContent className="max-w-2xl">
-                                    <div className="fixed top-0 right-0 left-0 bg-background border-b p-4 z-50 flex justify-between items-start">
-                                      <DialogHeader>
-                                        <DialogTitle>Meeting History Details</DialogTitle>
-                                      </DialogHeader>
-                                      <DialogClose className="absolute right-4 top-4">
-                                        <X className="h-4 w-4" />
-                                      </DialogClose>
+                      {Object.entries(groupMeetingsByDate(paginatedMeetings.history)).map(([date, meetings]) => (
+                        <div key={date} className="mb-6">
+                          <h3 className="font-medium text-muted-foreground mb-4">
+                            {format(new Date(date), 'EEEE, MMMM d, yyyy')}
+                          </h3>
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Meeting</TableHead>
+                                <TableHead>Time</TableHead>
+                                <TableHead>Attendee</TableHead>
+                                <TableHead>Type</TableHead>
+                                <TableHead>Outcome</TableHead>
+                                <TableHead>Follow-up</TableHead>
+                                <TableHead>Actions</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {meetings.map((meeting) => (
+                                <TableRow key={meeting.id}>
+                                  <TableCell className="font-medium">{meeting.title}</TableCell>
+                                  <TableCell>{meeting.time}</TableCell>
+                                  <TableCell>
+                                    <div className="flex items-center space-x-2">
+                                      <Avatar className="h-6 w-6">
+                                        <AvatarImage src={meeting.lead.avatar} />
+                                        <AvatarFallback>{meeting.lead.name.split(' ').map((n: string) => n[0]).join('')}</AvatarFallback>
+                                      </Avatar>
+                                      <div>
+                                        <span className="font-medium">{meeting.lead.name}</span>
+                                        <p className="text-sm text-muted-foreground">{meeting.lead.company}</p>
+                                      </div>
                                     </div>
-                                    <div className="mt-16 max-h-[calc(90vh-8rem)] overflow-y-auto p-4">
-                                      <MeetingDetails meeting={meeting} onUpdate={handleMeetingUpdate} />
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="flex items-center">
+                                      {React.createElement(meetingTypes[meeting.type as keyof typeof meetingTypes].icon, {
+                                        className: `h-4 w-4 mr-2 ${meetingTypes[meeting.type as keyof typeof meetingTypes].color}`
+                                      })}
+                                      {meeting.type}
                                     </div>
-                                  </DialogContent>
-                                </Dialog>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
+                                  </TableCell>
+                                  <TableCell>{meeting.outcome || 'No outcome recorded'}</TableCell>
+                                  <TableCell>{meeting.followUpDate}</TableCell>
+                                  <TableCell>
+                                    <Dialog>
+                                      <DialogTrigger asChild>
+                                        <Button variant="ghost" size="sm">
+                                          <FileText className="h-4 w-4" />
+                                        </Button>
+                                      </DialogTrigger>
+                                      <DialogContent className="max-w-2xl">
+                                        <div className="fixed top-0 right-0 left-0 bg-background border-b p-4 z-50 flex justify-between items-start">
+                                          <DialogHeader>
+                                            <DialogTitle>Meeting History Details</DialogTitle>
+                                          </DialogHeader>
+                                          <DialogClose className="absolute right-4 top-4">
+                                            <X className="h-4 w-4" />
+                                          </DialogClose>
+                                        </div>
+                                        <div className="mt-16 max-h-[calc(90vh-8rem)] overflow-y-auto p-4">
+                                          <MeetingDetails meeting={meeting} onUpdate={handleMeetingUpdate} />
+                                        </div>
+                                      </DialogContent>
+                                    </Dialog>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      ))}
                       <PaginationControls 
                         type="history"
                         currentPage={currentPage.history}
