@@ -46,7 +46,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { Skeleton } from "@/components/ui/skeleton"
-import { format } from 'date-fns'
+import { formatInTimeZone } from 'date-fns-tz'
 import {
   Pagination,
   PaginationContent,
@@ -100,6 +100,7 @@ interface Meeting {
   outcome?: string
   followUpDate?: string
   start_time?: string
+  timezone: string
 }
 
 
@@ -388,7 +389,7 @@ const groupMeetingsByDate = (meetings: Meeting[]) => {
 
   // Group by date using start_time
   const groups = sortedMeetings.reduce((groups, meeting) => {
-    const dateKey = format(new Date(meeting.start_time!), 'yyyy-MM-dd')
+    const dateKey = formatInTimeZone(new Date(meeting.start_time!), 'UTC', 'yyyy-MM-dd')
     if (!groups[dateKey]) {
       groups[dateKey] = []
     }
@@ -537,16 +538,23 @@ export default function MeetingsPage() {
           if (!booking?.start_time) return false
           return new Date(booking.start_time) > now
         }).map((booking: any) => {
-          // Find name, email and mobile from answers
           const nameAnswer = booking.answers?.find((a: any) => a.question === 'NAME')
           const emailAnswer = booking.answers?.find((a: any) => a.question === 'EMAIL')
           const mobileAnswer = booking.answers?.find((a: any) => a.question === 'MOBILE NUMBER')
 
+          // Parse the UTC time string
+          const startTime = new Date(booking.start_time)
+          const endTime = new Date(booking.end_time)
+
+          // Format date and time in UTC
+          const formattedDate = formatInTimeZone(startTime, 'UTC', 'EEEE, MMMM d, yyyy')
+          const formattedTime = formatInTimeZone(startTime, 'UTC', 'h:mm a')
+
           return {
             id: booking.id,
             title: `Meeting with ${nameAnswer?.answer || 'Guest'}`,
-            date: format(new Date(booking.start_time), 'EEEE, MMMM d, yyyy'),
-            time: format(new Date(booking.start_time), 'h:mm a'),
+            date: formattedDate,
+            time: formattedTime,
             duration: `${booking.eventType?.duration || 30} minutes`,
             type: booking.eventType?.location || 'video',
             status: booking.status || 'confirmed',
@@ -572,7 +580,8 @@ export default function MeetingsPage() {
               question: answer.question,
               answer: answer.answer
             })) || [],
-            start_time: booking.start_time
+            start_time: booking.start_time,
+            timezone: booking.timezone || 'UTC'
           }
         })
 
@@ -587,8 +596,8 @@ export default function MeetingsPage() {
           return {
             id: booking.id,
             title: `Meeting with ${nameAnswer?.answer || 'Guest'}`,
-            date: format(new Date(booking.start_time), 'EEEE, MMMM d, yyyy'),
-            time: format(new Date(booking.start_time), 'h:mm a'),
+            date: formatInTimeZone(new Date(booking.start_time), 'UTC', 'EEEE, MMMM d, yyyy'),
+            time: formatInTimeZone(new Date(booking.start_time), 'UTC', 'h:mm a'),
             duration: `${booking.eventType?.duration || 30} minutes`,
             type: booking.eventType?.location || 'video',
             status: booking.status || 'completed',
@@ -695,7 +704,7 @@ export default function MeetingsPage() {
                         {Object.entries(groupMeetingsByDate(paginatedMeetings.upcoming)).map(([date, meetings]) => (
                           <div key={date} className="space-y-4">
                             <h3 className="font-medium text-muted-foreground">
-                              {format(new Date(date), 'EEEE, MMMM d, yyyy')}
+                              {formatInTimeZone(new Date(date), 'UTC', 'EEEE, MMMM d, yyyy')}
                             </h3>
                             <div className="space-y-4">
                               {meetings.map((meeting) => (
@@ -804,7 +813,7 @@ export default function MeetingsPage() {
                       {Object.entries(groupMeetingsByDate(paginatedMeetings.history)).map(([date, meetings]) => (
                         <div key={date} className="mb-6">
                           <h3 className="font-medium text-muted-foreground mb-4">
-                            {format(new Date(date), 'EEEE, MMMM d, yyyy')}
+                            {formatInTimeZone(new Date(date), 'UTC', 'EEEE, MMMM d, yyyy')}
                           </h3>
                           <Table>
                             <TableHeader>

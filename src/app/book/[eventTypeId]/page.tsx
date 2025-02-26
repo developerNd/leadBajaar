@@ -23,6 +23,7 @@ import {
 import { validateQuestionResponse } from '@/lib/validations/questions'
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogHeader, DialogFooter } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
+import { formatInTimeZone } from 'date-fns-tz'
 
 interface EventType {
   id: string
@@ -826,7 +827,7 @@ export default function BookingPage() {
                 <span className="text-muted-foreground">Date</span>
                 <span className="font-medium">
                   {bookingDetails?.start_time ? 
-                    format(new Date(bookingDetails.start_time), 'EEEE, MMMM d, yyyy') : 
+                    formatInTimeZone(new Date(bookingDetails.start_time), 'UTC', 'EEEE, MMMM d, yyyy') : 
                     ''}
                 </span>
               </div>
@@ -834,7 +835,7 @@ export default function BookingPage() {
                 <span className="text-muted-foreground">Time</span>
                 <span className="font-medium">
                   {bookingDetails?.start_time ? 
-                    format(new Date(bookingDetails.start_time), 'h:mm a') : 
+                    formatInTimeZone(new Date(bookingDetails.start_time), 'UTC', 'h:mm a') : 
                     ''}
                 </span>
               </div>
