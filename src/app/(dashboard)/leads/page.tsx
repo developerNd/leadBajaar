@@ -19,7 +19,10 @@ import {
   Pencil, Trash, FileDown, Search,
   Settings2, Plus, Loader2, X, FileSpreadsheet,
   CheckCircle2, Flame, ThermometerSun, Snowflake, Thermometer,
-  XCircle, RefreshCcw, Calendar as CalendarIcon
+  XCircle, RefreshCcw, Calendar as CalendarIcon,
+  FileUp,
+  Computer,
+  Map
 } from 'lucide-react'
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -50,6 +53,8 @@ const columns = [
   { id: 'name', label: 'Name', icon: User },
   { id: 'email', label: 'Email', icon: Mail },
   { id: 'phone', label: 'Phone', icon: Phone },
+  { id: 'profession', label: 'profession', icon: Computer },
+  { id: 'city', label: 'city', icon: Map },
   { id: 'company', label: 'Company', icon: Building2 },
   { id: 'stage', label: 'Stage', icon: Tag },
   { id: 'status', label: 'Temperature', icon: Thermometer },
@@ -322,8 +327,9 @@ export default function LeadsPage() {
     'name', 
     'phone', 
     'stage',
-    'status',
-    'source',
+    // 'status',
+    'city',
+    'profession',
     'created_at',
     'actions'
   ])
@@ -437,6 +443,81 @@ export default function LeadsPage() {
     message?: string;
     error?: string;
   } | null>(null);
+
+  // State to hold the CSV data and column mappings
+  const [csvData, setCsvData] = useState<string[][]>([]);
+  // const [columnMapping, setColumnMapping] = useState<{ csvHeader: string; leadField: string }[]>([]);
+
+  // Function to handle CSV file upload and parsing
+  // const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   const selectedFile = e.target.files?.[0];
+  //   if (selectedFile) {
+  //     const reader = new FileReader();
+  //     reader.onload = (event) => {
+  //       const csv = event.target?.result as string;
+  //       const lines = csv.split('\n').map(line => line.split(',').map(cell => cell.trim()));
+  //       setCsvData(lines);
+  //       // Initialize column mapping based on CSV headers
+  //       const headers = lines[0];
+  //       const initialMapping = headers.map(header => ({ csvHeader: header, leadField: 'skip' }));
+  //       setColumnMapping(initialMapping);
+  //     };
+  //     reader.readAsText(selectedFile);
+  //   }
+  // };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('handlefilechange')
+    const selectedFile = e.target.files?.[0]
+    setImportError(null)
+    setImportStats(null)
+    
+    if (!selectedFile) {
+      setImportError('No file selected')
+      return
+    }
+
+    if (!selectedFile.name.endsWith('.csv')) {
+      setImportError('Please select a CSV file')
+      return
+    }
+    console.log('file chenged');
+
+    setFile(selectedFile)
+    const reader = new FileReader()
+    
+    reader.onload = (event) => {
+      try {
+        const csv = event.target?.result as string
+        const lines = csv.split('\n')
+        
+        if (lines.length < 2) {
+          setImportError('CSV file is empty or has no data rows')
+          return
+        }
+
+        const result = lines.map(line => line.split(',').map(cell => cell.trim()))
+        setPreview(result.slice(0, 5))
+        
+        // Initialize column mapping
+        const csvHeaders = result[0]
+        setColumnMapping(csvHeaders.map(header => ({
+          csvHeader: header,
+          leadField: 'skip'
+        })))
+        setShowMapping(true)
+      } catch (err) {
+        console.error('Failed to read CSV file:', err)
+        setImportError('Failed to read CSV file. Please check the file format.')
+      }
+    }
+
+    reader.onerror = () => {
+      setImportError('Failed to read the file')
+    }
+
+    reader.readAsText(selectedFile)
+  }
 
   // Move all function definitions here
   const handleFilterChange = (key: string, value: any) => {
@@ -637,57 +718,6 @@ export default function LeadsPage() {
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0]
-    setImportError(null)
-    setImportStats(null)
-    
-    if (!selectedFile) {
-      setImportError('No file selected')
-      return
-    }
-
-    if (!selectedFile.name.endsWith('.csv')) {
-      setImportError('Please select a CSV file')
-      return
-    }
-
-    setFile(selectedFile)
-    const reader = new FileReader()
-    
-    reader.onload = (event) => {
-      try {
-        const csv = event.target?.result as string
-        const lines = csv.split('\n')
-        
-        if (lines.length < 2) {
-          setImportError('CSV file is empty or has no data rows')
-          return
-        }
-
-        const result = lines.map(line => line.split(',').map(cell => cell.trim()))
-        setPreview(result.slice(0, 5))
-        
-        // Initialize column mapping
-        const csvHeaders = result[0]
-        setColumnMapping(csvHeaders.map(header => ({
-          csvHeader: header,
-          leadField: 'skip'
-        })))
-        setShowMapping(true)
-      } catch (err) {
-        console.error('Failed to read CSV file:', err)
-        setImportError('Failed to read CSV file. Please check the file format.')
-      }
-    }
-
-    reader.onerror = () => {
-      setImportError('Failed to read the file')
-    }
-
-    reader.readAsText(selectedFile)
-  }
-
   const handleColumnMapChange = (csvHeader: string, leadField: string) => {
     setColumnMapping(current =>
       current.map(mapping =>
@@ -851,9 +881,10 @@ export default function LeadsPage() {
     setImportStats(null);
   };
 
-  // const handleImportClick = () => {
-  //   fileInputRef.current?.click()
-  // }
+  const handleImportClick = () => {
+    console.log('handleImportClick');
+    fileInputRef.current?.click()
+  }
 
   // Update pagination controls
   const PaginationControls = () => (
@@ -1224,6 +1255,26 @@ export default function LeadsPage() {
               <FileDown className="h-4 w-4 lg:mr-2" />
               <span className="hidden lg:inline">Export</span>
             </Button>
+            {/* <Button
+              variant="outline"
+              size="sm"
+              className="h-8 px-2 lg:px-3"
+              onClick={() => setShowImportDialog(true)}
+            >
+              <FileDown className="h-4 w-4 lg:mr-2" />
+              <span className="hidden lg:inline">Import</span>
+            </Button> */}
+            <input 
+                ref={fileInputRef}
+                type="file" 
+                accept=".csv" 
+                onChange={handleFileChange} 
+                className="hidden"
+              />
+              <Button onClick={handleImportClick}>
+                <FileUp className="mr-2 h-4 w-4" />
+                Import CSV
+              </Button>
           </div>
         </CardHeader>
         <CardContent>
