@@ -537,6 +537,16 @@ export const getConversationMessages = async (conversationId: number, lastTimest
   }
 };
 
+export const getBookings = async () => {
+  const response = await api.get('/bookings', {
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem('token')}`
+    }
+  });
+  console.log(response.data);
+  return response;
+};
+
 export default api;
 
 
