@@ -56,6 +56,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination"
+import { getBookings } from '@/lib/api'
 
 // Add TypeScript interfaces
 interface Lead {
@@ -512,25 +513,20 @@ export default function MeetingsPage() {
     const fetchMeetings = async () => {
       try {
         setIsLoading(true)
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_LARAVEL_API_URL}api/bookings`,
-          {
-            headers: {
-              'Content-Type': 'application/json',
-            }
-          }
-        )
+        // const response = await fetch(
+        //   `${process.env.NEXT_PUBLIC_LARAVEL_API_URL}api/bookings`,
+        //   {
+        //     headers: {
+        //       'Content-Type': 'application/json',
+        //       'Authorization': `Bearer ${localStorage.getItem('token')}`
+        //     }       
+        //   }
+        // )
+        const response = await getBookings();
+        
+        const data = response.data
+        
 
-        if (!response.ok) {
-          throw new Error('Failed to fetch meetings')
-        }
-        
-        const data = await response.json()
-        console.log('API Response:', data) // Debug log
-        
-        // Add this inside fetchMeetings before mapping
-        console.log('Raw booking data:', data[0]); // Log first booking
-        console.log('Raw answers:', data[0]?.answers); // Log first booking's answers
         
         // Split bookings into upcoming and history
         const now = new Date()
