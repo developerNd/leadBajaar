@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Calendar } from "@/components/ui/calendar"
+import { CustomCalendar } from "@/components/ui/custom-calendar"
 import { format, addDays, isBefore, isAfter, startOfDay, endOfDay, isWithinInterval } from "date-fns"
 import { ChevronLeft, ChevronRight, Clock, Globe, CheckCircle2 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -118,6 +118,8 @@ export default function BookingPage() {
     isOpen: false,
     message: ''
   });
+  const slotsRef = useRef<HTMLDivElement | null>(null)
+  const nextButtonRef = useRef<HTMLButtonElement | null>(null)
 
   useEffect(() => {
     const fetchEventType = async () => {
@@ -188,6 +190,20 @@ export default function BookingPage() {
       fetchAvailableSlots(selectedDate)
     }
   }, [selectedDate, eventType])
+
+  // Smoothly scroll to the slots section when a date is selected
+  useEffect(() => {
+    if (selectedDate && slotsRef.current) {
+      slotsRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }, [selectedDate])
+
+  // Smoothly scroll to the Next button when a time slot is selected
+  useEffect(() => {
+    if (selectedTime && nextButtonRef.current) {
+      nextButtonRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' })
+    }
+  }, [selectedTime])
 
   const fetchAvailableSlots = async (date: Date) => {
     try {
@@ -502,7 +518,7 @@ export default function BookingPage() {
   );
 
   return (
-    <div className="container max-w-4xl mx-auto py-10">
+    <div className="container max-w-4xl mx-auto py-0 md:py-10">
       <Card>
         <CardContent className="p-0 relative overflow-hidden">
           <div className="grid md:grid-cols-[300px,1fr]">
@@ -555,7 +571,11 @@ export default function BookingPage() {
               {step === 1 ? (
                 <>
                   <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-xl font-semibold">Select Date & Time</h3>
+                    <h3 className="text-xl font-semibold">
+                      {selectedDate
+                        ? `Available Times (${format(selectedDate, 'EEEE, MMMM d')})`
+                        : 'Select Date & Time'}
+                    </h3>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Globe className="h-4 w-4" />
                       <span>{eventType.scheduling.timezone}</span>
@@ -563,95 +583,65 @@ export default function BookingPage() {
                   </div>
                   
                   <div className="grid gap-8">
-                    {/* Calendar Section */}
-                    <div className="space-y-4">
-                      <div className="p-6 bg-muted/20 rounded-lg">
-                        <Calendar
-                          mode="single"
-                          selected={selectedDate}
-                          onSelect={setSelectedDate}
-                          disabled={(date) => !isDateAvailable(date, eventType)}
-                          modifiers={{
-                            available: (date) => isDateAvailable(date, eventType)
-                          }}
-                          modifiersClassNames={{
-                            available: "bg-primary/10 hover:bg-primary/15 font-medium hover:text-blue-900",
-                            selected: "bg-blue-900 !text-primary-foreground font-medium",
-                            today: "bg-muted font-medium"
-                          }}
-                          fromDate={new Date()}
-                          toDate={addDays(new Date(), eventType.scheduling.dateRange)}
-                          className="rounded-md w-full"
-                          classNames={{
-                            months: "flex flex-col space-y-4",
-                            month: "space-y-4",
-                            caption: "flex justify-between items-center pt-1 pb-4 px-2",
-                            caption_label: "text-base font-medium text-center",
-                            nav: "flex items-center gap-1",
-                            nav_button: "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 transition-opacity",
-                            nav_button_previous: "absolute left-1",
-                            nav_button_next: "absolute right-1",
-                            table: "w-full border-collapse",
-                            head_row: "flex w-full",
-                            head_cell: "text-muted-foreground font-normal text-[0.875rem] w-[14.28%] h-8 text-center",
-                            row: "flex w-full mt-2",
-                            cell: cn(
-                              "relative w-[14.28%] h-9 text-center text-sm p-4",
-                              "first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md",
-                              "focus-within:relative focus-within:z-20"
-                            ),
-                            day: cn(
-                              "h-9 w-9 p-0 font-normal",
-                              "aria-selected:opacity-100",
-                              "hover:bg-primary/10 hover:text-primary-foreground",
-                              "focus:bg-primary focus:text-primary-foreground",
-                              "mx-auto rounded-full transition-all text-center"
-                            ),
-                            day_selected: "bg-primary text-red-500 hover:bg-primary hover:text-primary-foreground",
-                            day_today: "bg-accent text-accent-foreground",
-                            day_outside: "text-muted-foreground opacity-50",
-                            day_disabled: "text-muted-foreground opacity-30",
-                            day_range_middle: "aria-selected:bg-accent aria-selected:text-accent-foreground",
-                            day_hidden: "invisible",
-                          }}
-                          components={{
-                            IconLeft: () => <ChevronLeft className="h-4 w-4" />,
-                            IconRight: () => <ChevronRight className="h-4 w-4" />,
-                          }}
+                    {/* Calendar/Slots Transition Container */}
+                    <div className="p-0 bg-muted/20 rounded-lg">
+                      {/* Calendar View */}
+                      <div
+                        className={cn(
+                          "transition-all duration-300",
+                          selectedDate ? "opacity-0 -translate-y-2 pointer-events-none h-0 overflow-hidden" : "opacity-100 translate-y-0"
+                        )}
+                        aria-hidden={!!selectedDate}
+                      >
+                        <CustomCalendar
+                          selectedDate={selectedDate}
+                          onDateSelect={setSelectedDate}
+                          minDate={new Date()}
+                          maxDate={addDays(new Date(), eventType.scheduling.dateRange)}
+                          className="w-full"
+                          isDateAvailable={(date) => isDateAvailable(date, eventType)}
                         />
+                        {!selectedDate && (
+                          <div className="pt-6 text-center text-sm text-muted-foreground">
+                            Select a date to view available times
+                          </div>
+                        )}
                       </div>
-                      
-                      {/* Legend */}
-                      <div className="flex items-center justify-center gap-6 text-sm text-muted-foreground">
-                        <div className="flex items-center gap-2">
-                          <div className="h-3 w-3 rounded-full bg-primary/10" />
-                          <span>Available</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="h-3 w-3 rounded-full bg-primary" />
-                          <span>Selected</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="h-3 w-3 rounded-full bg-muted" />
-                          <span>Today</span>
-                        </div>
-                      </div>
-                    </div>
 
-                    {/* Time Slots Section */}
-                    {selectedDate ? (
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                          <h4 className="font-medium">
-                            Available Times ({format(selectedDate, 'EEEE, MMMM d')})
-                          </h4>
-                          {availableSlots.length > 0 && (
-                            <span className="text-sm text-muted-foreground">
-                              {availableSlots.length} slots available
-                            </span>
-                          )}
+                      {/* Slots View */}
+                      <div
+                        ref={slotsRef}
+                        className={cn(
+                          "transition-all duration-300",
+                          selectedDate ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none h-0 overflow-hidden"
+                        )}
+                        aria-hidden={!selectedDate}
+                      >
+                        <div className="flex items-center justify-between mb-4">
+                          {/* <h4 className="font-medium">
+                            {selectedDate ? `Available Times (${format(selectedDate, 'EEEE, MMMM d')})` : 'Available Times'}
+                          </h4> */}
+                          <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedTime(null)
+                                setSelectedDate(undefined)
+                              }}
+                              className="ml-2"
+                            >
+                              <ChevronLeft className="h-4 w-4 mr-1" /> Change date
+                          </Button>
+                          <div className="flex items-center gap-2">
+                            {availableSlots.length > 0 && (
+                              <span className="text-sm text-muted-foreground">
+                                {availableSlots.length} slots available
+                              </span>
+                            )}
+                            
+                          </div>
                         </div>
-                        
+
                         {availableSlots.length > 0 ? (
                           <div className="grid grid-cols-3 gap-2">
                             {availableSlots.map((slot) => (
@@ -675,23 +665,20 @@ export default function BookingPage() {
                             <p className="text-muted-foreground">No available slots for this date</p>
                           </div>
                         )}
-                      </div>
-                    ) : (
-                      <div className="py-8 text-center border rounded-lg">
-                        <p className="text-muted-foreground">Select a date to view available times</p>
-                      </div>
-                    )}
 
-                    {/* Next Button */}
-                    {selectedDate && selectedTime && (
-                      <Button 
-                        className="w-full"
-                        size="lg"
-                        onClick={() => setStep(2)}
-                      >
-                        Next
-                      </Button>
-                    )}
+                        {/* Next Button */}
+                        {selectedDate && selectedTime && (
+                          <Button 
+                            ref={nextButtonRef}
+                            className="w-full mt-6"
+                            size="lg"
+                            onClick={() => setStep(2)}
+                          >
+                            Next
+                          </Button>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </>
               ) : (
