@@ -427,7 +427,49 @@ export const integrationApi = {
   }) => {
     const response = await api.post('/leads/send-template', data);
     return response.data;
+  },
 
+  // Facebook Lead Retrieval Methods
+  getFacebookLeadForms: async () => {
+    try {
+      const response = await api.get('/facebook-lead-forms');
+      return response.data;
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Failed to fetch Facebook lead forms';
+      throw new Error(message);
+    }
+  },
+
+  debugIntegrations: async () => {
+    try {
+      const response = await api.get('/debug-integrations');
+      return response.data;
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Failed to debug integrations';
+      throw new Error(message);
+    }
+  },
+
+  retrieveFacebookLeads: async (data: {
+    form_id: string;
+    integration_id: number;
+    date_from?: string;
+    date_to?: string;
+  }) => {
+    try {
+      const response = await api.post('/facebook-lead-retrieval', data);
+      return response.data;
+    } catch (error: any) {
+      // Enhanced error handling to preserve error details from backend
+      if (error.response?.data) {
+        // Create a new error with the backend's error details
+        const backendError = new Error(error.response.data.error || 'Failed to retrieve Facebook leads');
+        // Attach the response data to the error for the frontend to use
+        (backendError as any).response = error.response;
+        throw backendError;
+      }
+      throw new Error('Failed to retrieve Facebook leads');
+    }
   },
 };
 
