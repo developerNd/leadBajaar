@@ -1,6 +1,6 @@
 import { Sidebar } from '@/components/sidebar'
 import { Header } from '@/components/header'
-import { Toaster } from '@/components/ui/toaster'
+import { Toaster } from '@/components/ui/sonner'
 
 export default function DashboardLayout({
   children,
