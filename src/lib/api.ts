@@ -1,7 +1,8 @@
 import axios, { AxiosError } from 'axios';
 import { setSession, clearSession, getSession } from './auth';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
+// const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
+const API_BASE_URL ='https://api.leadbajaar.com/api'
 
 // Export both httpClient and api
 export const httpClient = {
@@ -403,7 +404,87 @@ export const integrationApi = {
       const response = await api.post(`/integrations/whatsapp/${accountId}/templates`, templateData);
       return response.data;
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Failed to create template';
+      // Enhanced error handling for validation errors
+      if (error.response?.status === 422 && error.response?.data?.errors) {
+        // Format validation errors
+        const validationErrors = error.response.data.errors;
+        const errorMessages = Object.entries(validationErrors)
+          .map(([field, messages]) => `${field}: ${Array.isArray(messages) ? messages.join(', ') : messages}`)
+          .join('; ');
+        throw new Error(`Validation failed: ${errorMessages}`);
+      } else if (error.response?.status === 401 && error.response?.data?.error_type === 'token_expired') {
+        throw new Error('Your WhatsApp access token has expired. Please update your access token.');
+      } else if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      } else {
+        throw new Error('Failed to create template');
+      }
+    }
+  },
+
+  checkIntegrationStatus: async (accountId: number) => {
+    try {
+      const response = await api.get(`/integrations/whatsapp/${accountId}/status`);
+      return response.data;
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Failed to check integration status';
+      throw new Error(message);
+    }
+  },
+
+  markReauthenticated: async (accountId: number) => {
+    try {
+      const response = await api.post(`/integrations/whatsapp/${accountId}/reauth`);
+      return response.data;
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Failed to mark integration as re-authenticated';
+      throw new Error(message);
+    }
+  },
+
+  updateAccessToken: async (accountId: number, accessToken: string) => {
+    try {
+      const response = await api.post(`/integrations/whatsapp/${accountId}/update-token`, {
+        access_token: accessToken
+      });
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.status === 400 && error.response?.data?.error_type === 'invalid_token') {
+        throw new Error('Invalid access token. Please check your token and try again.');
+      }
+      const message = error.response?.data?.message || 'Failed to update access token';
+      throw new Error(message);
+    }
+  },
+
+
+
+  updateWhatsAppTemplate: async (accountId: number, templateId: string, templateData: any) => {
+    try {
+      const response = await api.put(`/integrations/whatsapp/${accountId}/templates/${templateId}`, templateData);
+      return response.data;
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Failed to update template';
+      throw new Error(message);
+    }
+  },
+
+  deleteWhatsAppTemplate: async (accountId: number, templateId: string) => {
+    try {
+      const response = await api.delete(`/integrations/whatsapp/${accountId}/templates/${templateId}`);
+      return response.data;
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Failed to delete template';
+      throw new Error(message);
+    }
+  },
+
+  getWhatsAppTemplateDetails: async (accountId: number, templateId: string) => {
+    try {
+      const response = await api.get(`/integrations/whatsapp/${accountId}/templates/${templateId}/details`);
+      return response.data;
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Failed to get template details';
       throw new Error(message);
     }
   },

@@ -41,12 +41,13 @@ import {
 } from '@/lib/api'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
+import { useDebounce } from '@/hooks/use-debounce'
 // import axios from 'axios'
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { format } from 'date-fns'
 import { DateRange } from "react-day-picker"
-import { Calendar } from "@/components/ui/calendar"
+import { DateRangePicker } from "@/components/ui/date-range-picker"
 // import { addDays } from "date-fns" // Add this import
 
 const columns = [
@@ -468,6 +469,19 @@ export default function LeadsPage() {
     createdAt: undefined
   });
 
+  // Add debounced search for better performance
+  const debouncedSearch = useDebounce(filters.search, 500); // 500ms delay
+  const [isSearching, setIsSearching] = useState(false);
+
+  // Track when search is happening
+  useEffect(() => {
+    if (filters.search !== debouncedSearch) {
+      setIsSearching(true);
+    } else {
+      setIsSearching(false);
+    }
+  }, [filters.search, debouncedSearch]);
+
   // Add these state variables near your other states
   const [isSendingBroadcast, setIsSendingBroadcast] = useState(false);
   const [broadcastResponse, setBroadcastResponse] = useState<{
@@ -581,7 +595,7 @@ export default function LeadsPage() {
       const params = {
         page: currentPage,
         per_page: itemsPerPage,
-        ...(filters.search && { search: filters.search }),
+        ...(debouncedSearch && { search: debouncedSearch }),
         ...(filters.status !== 'all' && { status: filters.status }),
         ...(filters.stage !== 'all' && { stage: filters.stage }),
         ...(filters.source !== 'all' && { source: filters.source }),
@@ -625,7 +639,7 @@ export default function LeadsPage() {
   // Remove the old fetchLeadsConfig since we're not using it
   useEffect(() => {
     fetchLeads();
-  }, [currentPage, filters, itemsPerPage]);
+  }, [currentPage, debouncedSearch, filters.status, filters.stage, filters.source, filters.dateRange, filters.createdAt, itemsPerPage]);
 
   // Update handleAddLead
   const handleAddLead = async () => {
@@ -1331,11 +1345,7 @@ export default function LeadsPage() {
     console.log('Leads state changed:', leads);
   }, [leads]);
 
-  // Update the fetchLeadsConfig dependency array
-  useEffect(() => {
-    console.log('Fetching leads with config:', fetchLeadsConfig);
-    fetchLeads();
-  }, [currentPage, filters, itemsPerPage]);
+  // Remove duplicate useEffect - using the one above with debouncedSearch
 
   return (
     <div className="space-y-4 p-2 h-full overflow-scroll">
@@ -1410,12 +1420,16 @@ export default function LeadsPage() {
             <div className="flex flex-wrap gap-2 mb-4">
               {/* Search input */}
               <div className="relative flex-1 max-w-sm">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                {isSearching ? (
+                  <Loader2 className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500 animate-spin" />
+                ) : (
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                )}
                 <Input
                   placeholder="Search leads..."
                   value={filters.search}
                   onChange={(e) => handleFilterChange('search', e.target.value)}
-                  className="pl-8"
+                  className={cn("pl-8", isSearching && "border-blue-300")}
                 />
               </div>
             </div>
@@ -1477,62 +1491,20 @@ export default function LeadsPage() {
               </Select>
 
               {/* Date Range filter */}
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-[240px] justify-start text-left font-normal">
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {filters.dateRange?.from ? (
-                      filters.dateRange.to ? (
-                        <>Last Contact: {format(filters.dateRange.from, "LLL dd, y")} -{" "}
-                          {format(filters.dateRange.to, "LLL dd, y")}
-                        </>
-                      ) : (
-                        <>Last Contact: {format(filters.dateRange.from, "LLL dd, y")}</>
-                      )
-                    ) : (
-                      <span>Last Contact Date</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="range"
-                    defaultMonth={filters.dateRange?.from}
-                    selected={filters.dateRange}
-                    onSelect={(range) => handleFilterChange('dateRange', range)}
-                    numberOfMonths={2}
-                  />
-                </PopoverContent>
-              </Popover>
+              <DateRangePicker
+                value={filters.dateRange}
+                onChange={(range) => handleFilterChange('dateRange', range)}
+                placeholder="Last Contact Date"
+                className="w-[280px]"
+              />
 
               {/* Created At Date Range filter */}
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-[240px] justify-start text-left font-normal">
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {filters.createdAt?.from ? (
-                      filters.createdAt.to ? (
-                        <>Created: {format(filters.createdAt.from, "LLL dd, y")} -{" "}
-                          {format(filters.createdAt.to, "LLL dd, y")}
-                        </>
-                      ) : (
-                        <>Created: {format(filters.createdAt.from, "LLL dd, y")}</>
-                      )
-                    ) : (
-                      <span>Created Date</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="range"
-                    defaultMonth={filters.createdAt?.from}
-                    selected={filters.createdAt}
-                    onSelect={(range) => handleFilterChange('createdAt', range)}
-                    numberOfMonths={2}
-                  />
-                </PopoverContent>
-              </Popover>
+              <DateRangePicker
+                value={filters.createdAt}
+                onChange={(range) => handleFilterChange('createdAt', range)}
+                placeholder="Created Date"
+                className="w-[280px]"
+              />
 
               {/* Clear filters button */}
               <Button 
