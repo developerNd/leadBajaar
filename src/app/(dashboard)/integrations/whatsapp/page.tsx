@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Pencil, Plus, Trash2, MessageSquare, RefreshCcw, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useToast } from "@/hooks/use-toast"
@@ -15,6 +15,7 @@ import { integrationApi } from '@/lib/api'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { TokenUpdateModal } from "@/components/ui/reconnection-modal"
 
 interface WhatsAppAccount {
   id: number;
@@ -46,6 +47,7 @@ interface TemplateComponent {
   example?: {
     header_handle: string[];
   };
+  file?: File; // For file upload handling
   buttons?: Array<{
     type: 'QUICK_REPLY' | 'URL' | 'PHONE_NUMBER' | 'COPY_CODE';
     text: string;
@@ -83,19 +85,83 @@ export default function WhatsAppManagementPage() {
   const [itemsPerPage] = useState(10)
   const [showPreview, setShowPreview] = useState(false)
   const [previewTemplate, setPreviewTemplate] = useState<MessageTemplate | null>(null)
+  const [showTokenUpdateModal, setShowTokenUpdateModal] = useState(false)
+  const [tokenUpdateData, setTokenUpdateData] = useState<{
+    businessName?: string;
+    phoneNumber?: string;
+    errorMessage?: string;
+    integrationId?: number;
+  }>({})
+  const [isUpdatingToken, setIsUpdatingToken] = useState(false)
+  const [previewUrls, setPreviewUrls] = useState<string[]>([])
+
+  // Reset template form to initial state
+  const resetTemplateForm = () => {
+    // Cleanup preview URLs
+    previewUrls.forEach(url => URL.revokeObjectURL(url))
+    setPreviewUrls([])
+    
+    setNewTemplate({
+      name: '',
+      category: 'MARKETING',
+      language: 'en',
+      components: [
+        { type: 'HEADER', format: 'TEXT', text: '' },
+        { type: 'BODY', text: '' },
+        { type: 'FOOTER', text: '' }
+      ]
+    })
+  }
 
   useEffect(() => {
     fetchAccounts()
   }, [])
 
+  // Manage object URLs for file previews
+  useEffect(() => {
+    // Cleanup previous URLs
+    previewUrls.forEach(url => URL.revokeObjectURL(url))
+    
+    // Create new URLs if file exists
+    if (newTemplate.components[0]?.file) {
+      const url = URL.createObjectURL(newTemplate.components[0].file)
+      setPreviewUrls([url])
+    } else {
+      setPreviewUrls([])
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      previewUrls.forEach(url => URL.revokeObjectURL(url))
+    }
+  }, [newTemplate.components[0]?.file])
+
   const fetchAccounts = async () => {
     try {
       const response = await integrationApi.getWhatsAppAccounts()
-      console.log(response);
       setAccounts(response.accounts)
       if (response.accounts && response.accounts.length > 0) {
         setTemplates(response.accounts[0].templates || [])
         setSelectedAccount(response.accounts[0])
+        
+        // Check if any account needs token update
+        for (const account of response.accounts) {
+          try {
+            const statusResponse = await integrationApi.checkIntegrationStatus(account.id)
+            if (statusResponse.needs_token_update) {
+              setTokenUpdateData({
+                businessName: account.business_name,
+                phoneNumber: account.phone_number,
+                errorMessage: statusResponse.last_error || 'Your WhatsApp access token has expired.',
+                integrationId: account.id
+              });
+              setShowTokenUpdateModal(true);
+              break;
+            }
+          } catch (error) {
+            // Silently handle integration status check errors
+          }
+        }
       }
     } catch (error: any) {
       toast({
@@ -111,7 +177,6 @@ export default function WhatsAppManagementPage() {
   const fetchTemplates = async (accountId: number) => {
     try {
       const response = await integrationApi.getWhatsAppTemplates(accountId)
-      console.log(response)
       setTemplates(response.templates)  
     } catch (error: any) {
       toast({
@@ -149,20 +214,170 @@ export default function WhatsAppManagementPage() {
       return;
     }
 
-    try {
-      await integrationApi.createWhatsAppTemplate(selectedAccount.id, newTemplate);
-      toast({
-        title: "Success",
-        description: "Template created successfully",
-      });
-      setShowNewTemplate(false);
-      fetchTemplates(selectedAccount.id);
-    } catch (error: any) {
+    // Capture selectedAccount data to avoid state changes during async operations
+    const currentAccount = { ...selectedAccount };
+
+    // Validate required fields
+    if (!newTemplate.name.trim()) {
       toast({
         title: "Error",
-        description: error.message || "Failed to create template",
+        description: "Template name is required",
         variant: "destructive",
       });
+      return;
+    }
+
+    if (!newTemplate.components[1]?.text?.trim()) {
+      toast({
+        title: "Error",
+        description: "Message body is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate language code (must be 2 characters)
+    if (newTemplate.language.length !== 2) {
+      toast({
+        title: "Error",
+        description: "Language code must be exactly 2 characters (e.g., 'en', 'es')",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check for media files (not supported yet)
+    const hasMediaHeader = newTemplate.components[0]?.format && 
+                          newTemplate.components[0].format !== 'TEXT' && 
+                          newTemplate.components[0].file;
+    if (hasMediaHeader) {
+      toast({
+        title: "Not Supported",
+        description: "Media file uploads are not yet implemented. Please use text headers only.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Prepare the template data for API
+    const templateData = {
+      name: newTemplate.name.trim(),
+      category: newTemplate.category,
+      language: newTemplate.language,
+      components: newTemplate.components
+        .filter(component => {
+          // Filter out empty components
+          if (component.type === 'HEADER' && !component.format) return false;
+          if (component.type === 'BODY' && !component.text?.trim()) return false;
+          if (component.type === 'FOOTER' && !component.text?.trim()) return false;
+          if (component.type === 'BUTTONS' && (!component.buttons || component.buttons.length === 0)) return false;
+          return true;
+        })
+        .map(component => {
+          // Clean up component data
+          if (component.type === 'HEADER') {
+            const headerComponent: any = {
+              type: component.type,
+              format: component.format
+            };
+            
+            if (component.format === 'TEXT') {
+              headerComponent.text = component.text ?? '';
+            } else if (component.format === 'IMAGE' || component.format === 'VIDEO' || component.format === 'DOCUMENT') {
+              headerComponent.example = component.example;
+            }
+            
+            return headerComponent;
+          }
+          if (component.type === 'BODY' || component.type === 'FOOTER') {
+            return {
+              type: component.type,
+              text: component.text ?? ''
+            };
+          }
+          if (component.type === 'BUTTONS') {
+            return {
+              type: component.type,
+              buttons: component.buttons?.map(button => {
+                const buttonData: any = {
+                  type: button.type,
+                  text: button.text
+                };
+                
+                if (button.type === 'URL' && button.url) {
+                  buttonData.url = button.url;
+                }
+                if (button.type === 'PHONE_NUMBER' && button.phone_number) {
+                  buttonData.phone_number = button.phone_number;
+                }
+                if (button.type === 'COPY_CODE' && button.code) {
+                  buttonData.code = button.code;
+                }
+                
+                return buttonData;
+              }) || []
+            };
+          }
+          return component;
+        })
+    };
+
+    try {
+      try {
+        await integrationApi.createWhatsAppTemplate(currentAccount.id, templateData);
+        toast({
+          title: "Success",
+          description: "Template created successfully",
+        });
+        setShowNewTemplate(false);
+        resetTemplateForm();
+        fetchTemplates(currentAccount.id);
+      } catch (apiError: any) {
+        throw apiError; // Re-throw to be caught by outer catch
+      }
+    } catch (error: any) {
+      // Enhanced error display
+      let errorMessage = error.message || "Failed to create template";
+      
+      // Handle specific error types
+      if (errorMessage.includes('Validation failed:')) {
+        toast({
+          title: "Validation Error",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      } else if (errorMessage.includes('access token') || errorMessage.includes('token has expired')) {
+        // Show token update modal instead of toast
+        if (currentAccount) {
+          setTokenUpdateData({
+            businessName: currentAccount.business_name,
+            phoneNumber: currentAccount.phone_number,
+            errorMessage: errorMessage,
+            integrationId: currentAccount.id
+          });
+          setShowTokenUpdateModal(true);
+          
+          // Show a user-friendly toast to explain what happened
+          toast({
+            title: "Token Update Required",
+            description: "Your WhatsApp access token has expired. Please update it to continue creating templates.",
+            variant: "default",
+          });
+        } else {
+          // Fallback if no selected account
+          toast({
+            title: "Token Expired",
+            description: "Your WhatsApp access token has expired. Please update your access token.",
+            variant: "destructive",
+          });
+        }
+      } else {
+        toast({
+          title: "Error",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -170,12 +385,14 @@ export default function WhatsAppManagementPage() {
   const indexOfFirstTemplate = indexOfLastTemplate - itemsPerPage
   const currentTemplates = templates.slice(indexOfFirstTemplate, indexOfLastTemplate)
   const totalPages = Math.ceil(templates.length / itemsPerPage)
-  console.log(isLoading)
   return (
     <div className="p-6 space-y-6 h-full overflow-y-auto">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">WhatsApp Management</h1>
-        <Button onClick={() => setShowNewTemplate(true)}>
+        <Button onClick={() => {
+          resetTemplateForm();
+          setShowNewTemplate(true);
+        }}>
           <Plus className="h-4 w-4 mr-2" />
           New Template
         </Button>
@@ -350,16 +567,29 @@ export default function WhatsAppManagementPage() {
         </TabsContent>
       </Tabs>
 
+             {/* Enhanced Template Creation Modal with Preview */}
       <Dialog open={showNewTemplate} onOpenChange={setShowNewTemplate}>
-        <DialogContent className="max-w-[600px]">
+         <DialogContent className="max-w-[1200px] max-h-[95vh] w-[95vw]">
           <DialogHeader>
-            <DialogTitle>Create New Template</DialogTitle>
+             <DialogTitle>Create New WhatsApp Template</DialogTitle>
+             <DialogDescription>
+               Design your WhatsApp message template with real-time preview
+             </DialogDescription>
           </DialogHeader>
-          <ScrollArea className="max-h-[600px]">
-            <div className="grid gap-4 py-4">
+           
+           <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                         {/* Form Section */}
+             <div className="h-[65vh] overflow-hidden flex flex-col">
+               <ScrollArea className="flex-1 pr-2">
+                 <div className="space-y-3 pb-4">
+                  {/* Basic Information */}
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">Basic Information</h3>
+                    
               <div className="grid gap-2">
-                <Label>Template Name</Label>
+                      <Label htmlFor="template-name">Template Name *</Label>
                 <Input
+                        id="template-name"
                   placeholder="welcome_message"
                   value={newTemplate.name}
                   onChange={(e) => setNewTemplate(prev => ({
@@ -367,10 +597,14 @@ export default function WhatsAppManagementPage() {
                     name: e.target.value.toLowerCase().replace(/\s+/g, '_')
                   }))}
                 />
+                      <p className="text-xs text-muted-foreground">
+                        Use lowercase letters and underscores only
+                      </p>
               </div>
 
+                    <div className="grid grid-cols-2 gap-3">
               <div className="grid gap-2">
-                <Label>Category</Label>
+                        <Label htmlFor="template-category">Category *</Label>
                 <Select
                   value={newTemplate.category}
                   onValueChange={(value) => setNewTemplate(prev => ({
@@ -390,7 +624,7 @@ export default function WhatsAppManagementPage() {
               </div>
 
               <div className="grid gap-2">
-                <Label>Language</Label>
+                        <Label htmlFor="template-language">Language *</Label>
                 <Select
                   value={newTemplate.language}
                   onValueChange={(value) => setNewTemplate(prev => ({
@@ -405,18 +639,30 @@ export default function WhatsAppManagementPage() {
                     <SelectItem value="en">English</SelectItem>
                     <SelectItem value="es">Spanish</SelectItem>
                     <SelectItem value="pt">Portuguese</SelectItem>
+                            <SelectItem value="hi">Hindi</SelectItem>
+                            <SelectItem value="ar">Arabic</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+                    </div>
+              </div>
 
-              <div className="grid gap-4">
+                  {/* Header Component */}
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">Header (Optional)</h3>
+                    
                 <div className="grid gap-2">
-                  <Label>Header</Label>
+                      <Label htmlFor="header-type">Header Type</Label>
                   <Select
-                    value={newTemplate.components[0].format}
+                        value={newTemplate.components[0].format || 'TEXT'}
                     onValueChange={(value: 'TEXT' | 'IMAGE' | 'VIDEO' | 'DOCUMENT') => {
                       const components = [...newTemplate.components];
-                      components[0] = { ...components[0], format: value };
+                          components[0] = { 
+                            type: 'HEADER', 
+                            format: value, 
+                            text: value === 'TEXT' ? (components[0].text || '') : undefined,
+                            example: value !== 'TEXT' ? { header_handle: [] } : undefined
+                          };
                       setNewTemplate(prev => ({ ...prev, components }));
                     }}
                   >
@@ -430,9 +676,14 @@ export default function WhatsAppManagementPage() {
                       <SelectItem value="DOCUMENT">Document</SelectItem>
                     </SelectContent>
                   </Select>
+                    </div>
+
                   {newTemplate.components[0].format === 'TEXT' ? (
+                      <div className="grid gap-2">
+                        <Label htmlFor="header-text">Header Text</Label>
                     <Input
-                      placeholder="Header text"
+                          id="header-text"
+                          placeholder="Enter header text"
                       value={newTemplate.components[0].text || ''}
                       onChange={(e) => {
                         const components = [...newTemplate.components];
@@ -440,9 +691,15 @@ export default function WhatsAppManagementPage() {
                         setNewTemplate(prev => ({ ...prev, components }));
                       }}
                     />
-                  ) : (
+                        <p className="text-xs text-muted-foreground">
+                          Maximum 60 characters
+                        </p>
+                      </div>
+                    ) : newTemplate.components[0].format && (newTemplate.components[0].format === 'IMAGE' || newTemplate.components[0].format === 'VIDEO' || newTemplate.components[0].format === 'DOCUMENT') ? (
                     <div className="space-y-2">
+                        <Label htmlFor="header-media">Upload {newTemplate.components[0].format}</Label>
                       <Input
+                          id="header-media"
                         type="file"
                         accept={
                           newTemplate.components[0].format === 'IMAGE' ? 'image/*' :
@@ -450,57 +707,424 @@ export default function WhatsAppManagementPage() {
                           newTemplate.components[0].format === 'DOCUMENT' ? '.pdf,.doc,.docx' :
                           undefined
                         }
+                        key={`file-input-${newTemplate.components[0].format}`}
                         onChange={(e) => {
-                          // Handle file upload logic here
                           const file = e.target.files?.[0];
                           if (file) {
-                            // You'll need to implement the file upload logic
-                            // and update the template with the file URL
+                               // For now, we'll store the file reference
+                               // In a real implementation, you'd upload the file to your server first
+                               // and get a proper URL that WhatsApp can access
+                               const components = [...newTemplate.components];
+                               components[0] = { 
+                                 ...components[0], 
+                                 example: { header_handle: [file.name] }, // Store filename for now
+                                 file: file // Store file reference for upload
+                               };
+                               setNewTemplate(prev => ({ ...prev, components }));
+                               
+                               // Show warning about file upload
+                               toast({
+                                 title: "File Upload Notice",
+                                 description: "File uploads require server-side implementation. For now, only text headers are supported.",
+                                 variant: "default",
+                               });
                           }
                         }}
                       />
                       <p className="text-xs text-muted-foreground">
-                        {newTemplate.components[0].format === 'IMAGE' && 'Supported formats: JPG, PNG (max 5MB)'}
-                        {newTemplate.components[0].format === 'VIDEO' && 'Supported formats: MP4 (max 16MB)'}
-                        {newTemplate.components[0].format === 'DOCUMENT' && 'Supported formats: PDF, DOC (max 100MB)'}
+                          {newTemplate.components[0].format === 'IMAGE' && 'Supported: JPG, PNG (max 5MB)'}
+                          {newTemplate.components[0].format === 'VIDEO' && 'Supported: MP4 (max 16MB)'}
+                          {newTemplate.components[0].format === 'DOCUMENT' && 'Supported: PDF, DOC (max 100MB)'}
                       </p>
                     </div>
-                  )}
+                    ) : null}
                 </div>
 
+                  {/* Body Component */}
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">Body (Required)</h3>
+
                 <div className="grid gap-2">
-                  <Label>Body</Label>
+                      <Label htmlFor="body-text">Message Body *</Label>
                   <Textarea
-                    placeholder="Message body text"
+                        id="body-text"
+                        placeholder="Enter your message content here..."
+                        className="min-h-[100px]"
                     value={newTemplate.components[1].text || ''}
                     onChange={(e) => {
                       const components = [...newTemplate.components];
-                      components[1] = { ...components[1], text: e.target.value };
+                          components[1] = { type: 'BODY', text: e.target.value };
+                      setNewTemplate(prev => ({ ...prev, components }));
+                    }}
+                  />
+                      <p className="text-xs text-muted-foreground">
+                        Maximum 1024 characters. Use {'{{1}}'}, {'{{2}}'} for variables.
+                      </p>
+                    </div>
+                </div>
+
+                  {/* Footer Component */}
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">Footer (Optional)</h3>
+
+                <div className="grid gap-2">
+                      <Label htmlFor="footer-text">Footer Text</Label>
+                  <Input
+                        id="footer-text"
+                        placeholder="Enter footer text"
+                        value={newTemplate.components[2].text || ''}
+                    onChange={(e) => {
+                      const components = [...newTemplate.components];
+                          components[2] = { type: 'FOOTER', text: e.target.value };
+                      setNewTemplate(prev => ({ ...prev, components }));
+                    }}
+                  />
+                      <p className="text-xs text-muted-foreground">
+                        Maximum 60 characters
+                      </p>
+                    </div>
+                  </div>
+
+                                     {/* Buttons Component */}
+                   <div className="space-y-2">
+                     <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">Buttons (Optional)</h3>
+                     
+                                          <div className="space-y-2">
+                       {/* Empty State */}
+                       {(!newTemplate.components[3]?.buttons || newTemplate.components[3].buttons.length === 0) && (
+                         <div className="text-center py-4 text-sm text-gray-500 dark:text-gray-400">
+                           No buttons added yet. Click "Add Button" to get started.
+                         </div>
+                       )}
+                       
+                       {/* Existing Buttons */}
+                       {newTemplate.components[3]?.buttons?.map((button, buttonIndex) => (
+                         <div key={buttonIndex} className="border rounded-lg p-2 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <Label>Button {buttonIndex + 1}</Label>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                const components = [...newTemplate.components];
+                                if (!components[3]) {
+                                  components[3] = { type: 'BUTTONS', buttons: [] };
+                                }
+                                const buttons = [...(components[3].buttons || [])];
+                                buttons.splice(buttonIndex, 1);
+                                components[3].buttons = buttons;
+                                setNewTemplate(prev => ({ ...prev, components }));
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          
+                          <div className="grid gap-2">
+                            <Label>Button Type</Label>
+                            <Select
+                              value={newTemplate.components[3]?.buttons?.[buttonIndex]?.type || ''}
+                              onValueChange={(value: 'QUICK_REPLY' | 'URL' | 'PHONE_NUMBER' | 'COPY_CODE') => {
+                                const components = [...newTemplate.components];
+                                if (!components[3]) {
+                                  components[3] = { type: 'BUTTONS', buttons: [] };
+                                }
+                                if (!components[3].buttons) {
+                                  components[3].buttons = [];
+                                }
+                                if (!components[3].buttons[buttonIndex]) {
+                                  components[3].buttons[buttonIndex] = { type: value, text: '' };
+                                } else {
+                                  components[3].buttons[buttonIndex] = { ...components[3].buttons[buttonIndex], type: value };
+                                }
+                                setNewTemplate(prev => ({ ...prev, components }));
+                              }}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select button type" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="QUICK_REPLY">Quick Reply</SelectItem>
+                                <SelectItem value="URL">URL</SelectItem>
+                                <SelectItem value="PHONE_NUMBER">Phone Number</SelectItem>
+                                <SelectItem value="COPY_CODE">Copy Code</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className="grid gap-2">
+                            <Label>Button Text</Label>
+                            <Input
+                              placeholder="Enter button text"
+                              value={newTemplate.components[3]?.buttons?.[buttonIndex]?.text || ''}
+                              onChange={(e) => {
+                                const components = [...newTemplate.components];
+                                if (!components[3]) {
+                                  components[3] = { type: 'BUTTONS', buttons: [] };
+                                }
+                                if (!components[3].buttons) {
+                                  components[3].buttons = [];
+                                }
+                                if (!components[3].buttons[buttonIndex]) {
+                                  components[3].buttons[buttonIndex] = { type: 'QUICK_REPLY', text: e.target.value };
+                                } else {
+                                  components[3].buttons[buttonIndex] = { ...components[3].buttons[buttonIndex], text: e.target.value };
+                                }
                       setNewTemplate(prev => ({ ...prev, components }));
                     }}
                   />
                 </div>
 
+                          {newTemplate.components[3]?.buttons?.[buttonIndex]?.type === 'URL' && (
+                            <div className="grid gap-2">
+                              <Label>URL</Label>
+                              <Input
+                                placeholder="https://example.com"
+                                value={newTemplate.components[3]?.buttons?.[buttonIndex]?.url || ''}
+                                onChange={(e) => {
+                                  const components = [...newTemplate.components];
+                                  if (components[3]?.buttons?.[buttonIndex]) {
+                                    components[3].buttons[buttonIndex] = { 
+                                      ...components[3].buttons[buttonIndex], 
+                                      url: e.target.value 
+                                    };
+                                    setNewTemplate(prev => ({ ...prev, components }));
+                                  }
+                                }}
+                              />
+                            </div>
+                          )}
+
+                          {newTemplate.components[3]?.buttons?.[buttonIndex]?.type === 'PHONE_NUMBER' && (
+                            <div className="grid gap-2">
+                              <Label>Phone Number</Label>
+                              <Input
+                                placeholder="+1234567890"
+                                value={newTemplate.components[3]?.buttons?.[buttonIndex]?.phone_number || ''}
+                                onChange={(e) => {
+                                  const components = [...newTemplate.components];
+                                  if (components[3]?.buttons?.[buttonIndex]) {
+                                    components[3].buttons[buttonIndex] = { 
+                                      ...components[3].buttons[buttonIndex], 
+                                      phone_number: e.target.value 
+                                    };
+                                    setNewTemplate(prev => ({ ...prev, components }));
+                                  }
+                                }}
+                              />
+                            </div>
+                          )}
+
+                          {newTemplate.components[3]?.buttons?.[buttonIndex]?.type === 'COPY_CODE' && (
                 <div className="grid gap-2">
-                  <Label>Footer</Label>
+                              <Label>Code</Label>
                   <Input
-                    placeholder="Footer text"
-                    value={newTemplate.components[2].text || ''}
+                                placeholder="Enter code to copy"
+                                value={newTemplate.components[3]?.buttons?.[buttonIndex]?.code || ''}
                     onChange={(e) => {
                       const components = [...newTemplate.components];
-                      components[2] = { ...components[2], text: e.target.value };
+                                  if (components[3]?.buttons?.[buttonIndex]) {
+                                    components[3].buttons[buttonIndex] = { 
+                                      ...components[3].buttons[buttonIndex], 
+                                      code: e.target.value 
+                                    };
                       setNewTemplate(prev => ({ ...prev, components }));
+                                  }
                     }}
                   />
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                      
+                      {/* Add Button - Only show if less than 3 buttons */}
+                      {(newTemplate.components[3]?.buttons?.length || 0) < 3 && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const components = [...newTemplate.components];
+                            if (!components[3]) {
+                              components[3] = { type: 'BUTTONS', buttons: [] };
+                            }
+                            if (!components[3].buttons) {
+                              components[3].buttons = [];
+                            }
+                            // Add a new button (max 3 buttons allowed)
+                            if (components[3].buttons.length < 3) {
+                              components[3].buttons.push({ type: 'QUICK_REPLY', text: '' });
+                              setNewTemplate(prev => ({ ...prev, components }));
+                            } else {
+                              toast({
+                                title: "Maximum Buttons Reached",
+                                description: "You can only add up to 3 buttons per template.",
+                                variant: "destructive",
+                              });
+                            }
+                          }}
+                          className="w-full"
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Button
+                        </Button>
+                      )}
                 </div>
               </div>
             </div>
           </ScrollArea>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowNewTemplate(false)}>
+            </div>
+
+                         {/* Preview Section */}
+             <div className="space-y-3">
+               <div className="flex items-center justify-between">
+                 <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">Template Preview</h3>
+                 <Badge variant="outline">WhatsApp Preview</Badge>
+               </div>
+               
+               <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 h-[350px] overflow-y-auto">
+                 <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border max-w-sm mx-auto">
+                   {/* Template Preview */}
+                   <div className="p-3 space-y-2">
+                    {/* Header Preview */}
+                    {newTemplate.components[0]?.format === 'TEXT' && newTemplate.components[0]?.text && (
+                      <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                        {newTemplate.components[0].text}
+                      </div>
+                    )}
+                    
+                    {newTemplate.components[0]?.format === 'IMAGE' && newTemplate.components[0]?.file && previewUrls[0] && (
+                      <div className="aspect-video bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+                        <img 
+                          src={previewUrls[0]} 
+                          alt="Header" 
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            // Fallback if image fails to load
+                            e.currentTarget.style.display = 'none';
+                            e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                          }}
+                        />
+                        <div className="hidden w-full h-full flex items-center justify-center text-sm text-gray-500 dark:text-gray-400">
+                          <div className="text-center">
+                            <div className="text-2xl mb-2">🖼️</div>
+                            <div>Image Preview</div>
+                            <div className="text-xs mt-1">{newTemplate.components[0].file?.name}</div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {newTemplate.components[0]?.format === 'VIDEO' && newTemplate.components[0]?.file && previewUrls[0] && (
+                      <div className="aspect-video bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+                        <video 
+                          src={previewUrls[0]} 
+                          controls 
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            // Fallback if video fails to load
+                            e.currentTarget.style.display = 'none';
+                            e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                          }}
+                        />
+                        <div className="hidden w-full h-full flex items-center justify-center text-sm text-gray-500 dark:text-gray-400">
+                          <div className="text-center">
+                            <div className="text-2xl mb-2">🎥</div>
+                            <div>Video Preview</div>
+                            <div className="text-xs mt-1">{newTemplate.components[0].file?.name}</div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {newTemplate.components[0]?.format === 'DOCUMENT' && newTemplate.components[0]?.file && (
+                      <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-3 flex items-center space-x-2">
+                        <div className="text-2xl">📄</div>
+                        <div className="text-sm text-gray-600 dark:text-gray-300">
+                          <div>Document Attachment</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            {newTemplate.components[0].file?.name}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Body Preview */}
+                    {newTemplate.components[1]?.text && (
+                      <div className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">
+                        {newTemplate.components[1].text}
+                      </div>
+                    )}
+
+                    {/* Footer Preview */}
+                    {newTemplate.components[2]?.text && (
+                      <div className="text-xs text-gray-500 dark:text-gray-400 pt-2 border-t">
+                        {newTemplate.components[2].text}
+                      </div>
+                    )}
+
+                    {/* Buttons Preview */}
+                    {newTemplate.components[3]?.buttons && newTemplate.components[3].buttons.length > 0 && (
+                      <div className="space-y-2 pt-3 border-t">
+                        {newTemplate.components[3].buttons.map((button, index) => (
+                          <div
+                            key={index}
+                            className="bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors rounded-lg p-3 text-sm text-center cursor-pointer border border-blue-200 dark:border-blue-800"
+                          >
+                            {button.type === 'URL' && (
+                              <div className="flex items-center justify-center gap-1">
+                                <span>🔗</span>
+                                <span>{button.text}</span>
+                              </div>
+                            )}
+                            {button.type === 'PHONE_NUMBER' && (
+                              <div className="flex items-center justify-center gap-1">
+                                <span>📞</span>
+                                <span>{button.text}</span>
+                              </div>
+                            )}
+                            {button.type === 'QUICK_REPLY' && (
+                              <span>{button.text}</span>
+                            )}
+                            {button.type === 'COPY_CODE' && (
+                              <div className="flex items-center justify-center gap-1">
+                                <span>📋</span>
+                                <span>{button.text}</span>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+                             {/* Template Info */}
+               <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-2">
+                 <h4 className="text-xs font-medium text-blue-900 dark:text-blue-100 mb-1">Template Information</h4>
+                 <div className="text-xs text-blue-700 dark:text-blue-300 space-y-0.5">
+                   <div><strong>Name:</strong> {newTemplate.name || 'Not set'}</div>
+                   <div><strong>Category:</strong> {newTemplate.category}</div>
+                   <div><strong>Language:</strong> {newTemplate.language.toUpperCase()}</div>
+                   <div><strong>Status:</strong> Will be submitted for approval</div>
+                 </div>
+               </div>
+            </div>
+          </div>
+
+          <DialogFooter className="flex gap-2">
+            <Button variant="outline" onClick={() => {
+              setShowNewTemplate(false);
+              resetTemplateForm();
+            }}>
               Cancel
             </Button>
-            <Button onClick={handleCreateTemplate}>
+            <Button 
+              onClick={handleCreateTemplate}
+              disabled={!newTemplate.name || !newTemplate.components[1]?.text}
+            >
               Create Template
             </Button>
           </DialogFooter>
@@ -624,6 +1248,35 @@ export default function WhatsAppManagementPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Token Update Modal */}
+      <TokenUpdateModal
+        isOpen={showTokenUpdateModal}
+        onClose={() => setShowTokenUpdateModal(false)}
+        onUpdateToken={async (token: string) => {
+          if (!tokenUpdateData.integrationId) return;
+          
+          setIsUpdatingToken(true);
+          try {
+            await integrationApi.updateAccessToken(tokenUpdateData.integrationId, token);
+            toast({
+              title: "Success",
+              description: "Access token updated successfully. You can now create templates.",
+            });
+            setShowTokenUpdateModal(false);
+            // Refresh the accounts to update the status
+            fetchAccounts();
+          } catch (error: any) {
+            throw error; // Let the modal handle the error display
+          } finally {
+            setIsUpdatingToken(false);
+          }
+        }}
+        businessName={tokenUpdateData.businessName}
+        phoneNumber={tokenUpdateData.phoneNumber}
+        errorMessage={tokenUpdateData.errorMessage}
+        isLoading={isUpdatingToken}
+      />
     </div>
   )
 } 

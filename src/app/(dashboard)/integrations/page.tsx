@@ -36,10 +36,16 @@ interface ConnectedIntegration {
   user_id: number;
   type: string;
   config: {
-    phoneNumberId?: string;
-    wabaId?: string;
-    accessToken?: string;
-    enableTemplates?: boolean;
+    // WhatsApp fields (snake_case from backend)
+    phone_number_id?: string;
+    waba_id?: string;
+    access_token?: string;
+    enable_templates?: boolean;
+    // Facebook Lead Form fields
+    project_name?: string;
+    page_id?: string;
+    form_id?: string;
+    page_access_token?: string;
     // Add other possible config fields
   };
   metadata: any;
@@ -231,12 +237,6 @@ export default function IntegrationsPage() {
   const fetchConnectedIntegrations = async () => {
     try {
       const response = await integrationApi.getConnectedIntegrations()
-      console.log(response)
-      // If response is directly the integration object, wrap it in an array
-      // const integrationData = response.id ? [response] : []
-      // console.log(integrationData)
-      // const integrationIds = response.map(integration => integration.id);
-      // console.log(integrationIds);
       setConnectedIntegrations(response)
     } catch (error: any) {
       setConnectedIntegrations([])
@@ -260,7 +260,6 @@ export default function IntegrationsPage() {
   }
 
   const testToast = () => {
-    console.log('testToast')
     toast({
       title: "Test Toast",
       description: "This is a test notification",
@@ -439,7 +438,18 @@ export default function IntegrationsPage() {
   //   }
   // };
 
-  const handleIntegrationConnect = async (type: string, config: any) => {
+  const handleIntegrationConnect = async () => {
+    const type = selectedIntegrationId;
+    if (!type) return;
+    
+    let config: any;
+    if (type === 'whatsapp') {
+      config = whatsappConfig;
+    } else if (type === 'leadform') {
+      config = facebookConfig;
+    } else {
+      config = {};
+    }
     // Clear previous errors
     setConfigErrors({});
     setServerError(null);
@@ -509,8 +519,6 @@ export default function IntegrationsPage() {
       setConfigErrors({});
       setSelectedIntegrationId(null);
     } catch (error: any) {
-      console.error('Integration error:', error);
-      
       if (error.response) {
         // Server responded with error
         const serverError = error.response.data;
@@ -607,6 +615,11 @@ export default function IntegrationsPage() {
                         ))}
                       </div>
                       
+                        <div className="flex gap-2">
+                          {connectedIntegrations.some(ci => 
+                            ci.type === integration.id
+                          ) ? (
+                            <>
                       <Dialog 
                         open={selectedIntegrationId === integration.id} 
                         onOpenChange={(open) => setSelectedIntegrationId(open ? integration.id : null)}
@@ -614,14 +627,32 @@ export default function IntegrationsPage() {
                         <DialogTrigger asChild>
                           <Button 
                             variant="outline" 
-                            className="w-full"
-                            onClick={() => setSelectedIntegrationId(integration.id)}
-                            disabled={!canConnectIntegration(integration.id)}
-                          >
-                            {connectedIntegrations.some(ci => 
-                              ci.type === integration.id && 
-                              ci.is_active
-                            ) ? 'Connected' : 'Connect'}
+                                    className="flex-1"
+                                    onClick={() => {
+                                      // Find the connected integration for this type
+                                      const connectedIntegration = connectedIntegrations.find(ci => ci.type === integration.id);
+                                      if (connectedIntegration) {
+                                        if (integration.id === 'whatsapp') {
+                                          const whatsappData = {
+                                            phoneNumberId: connectedIntegration.config.phone_number_id || '',
+                                            wabaId: connectedIntegration.config.waba_id || '',
+                                            accessToken: connectedIntegration.config.access_token || '',
+                                            enableTemplates: connectedIntegration.config.enable_templates || false
+                                          };
+                                          setWhatsappConfig(whatsappData);
+                                        } else if (integration.id === 'leadform') {
+                                          const facebookData = {
+                                            leadFormName: connectedIntegration.config.project_name || '',
+                                            pageId: connectedIntegration.config.page_id || '',
+                                            formId: connectedIntegration.config.form_id || '',
+                                            accessToken: connectedIntegration.config.page_access_token || ''
+                                          };
+                                          setFacebookConfig(facebookData);
+                                        }
+                                      }
+                                    }}
+                                  >
+                                    Configure
                           </Button>
                         </DialogTrigger>
                         <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col">
@@ -630,7 +661,7 @@ export default function IntegrationsPage() {
                             <DialogDescription>
                               {integration.id === 'whatsapp' 
                                 ? 'Configure your WhatsApp Business API credentials'
-                                : integration.id === 'facebook'
+                                        : integration.id === 'leadform'
                                 ? 'Configure your Facebook Lead Form settings'
                                 : `Configure your ${integration.name} settings`}
                             </DialogDescription>
@@ -728,54 +759,348 @@ export default function IntegrationsPage() {
                                       )}
                                     </div>
 
+                                            <div className="flex items-center space-x-2">
+                                              <Switch
+                                                id="enable-templates"
+                                                checked={whatsappConfig.enableTemplates}
+                                                onCheckedChange={(checked) => {
+                                                  setWhatsappConfig(prev => ({
+                                                    ...prev,
+                                                    enableTemplates: checked
+                                                  }))
+                                                }}
+                                              />
+                                              <Label htmlFor="enable-templates">Enable Message Templates</Label>
+                                            </div>
+                                          </div>
+                                        </>
+                                      ) : integration.id === 'leadform' ? (
+                                        <>
+                                          <div className="grid gap-4">
                                     <div className="space-y-2">
-                                      <Label>Webhook URL</Label>
-                                      <div className="flex gap-2">
+                                              <Label>Lead Form Name</Label>
                                         <Input 
                                           type="text" 
-                                          value="https://your-domain.com/api/whatsapp/webhook" 
-                                          readOnly
-                                        />
-                                        <Button variant="outline" size="icon">
-                                          <ClipboardCopy className="h-4 w-4" />
-                                        </Button>
+                                                placeholder="Enter Lead Form Name"
+                                                value={facebookConfig.leadFormName}
+                                                onChange={(e) => {
+                                                  setFacebookConfig(prev => ({
+                                                    ...prev,
+                                                    leadFormName: e.target.value
+                                                  }))
+                                                  if (configErrors.leadFormName) {
+                                                    setConfigErrors(prev => ({
+                                                      ...prev,
+                                                      leadFormName: undefined
+                                                    }))
+                                                  }
+                                                }}
+                                                className={cn(
+                                                  configErrors.leadFormName && "border-red-500"
+                                                )}
+                                              />
+                                              {configErrors.leadFormName && (
+                                                <p className="text-sm text-red-500">{configErrors.leadFormName}</p>
+                                              )}
                                       </div>
+
+                                            <div className="space-y-2">
+                                              <Label>Page ID</Label>
+                                              <Input 
+                                                type="text" 
+                                                placeholder="Enter Facebook Page ID"
+                                                value={facebookConfig.pageId}
+                                                onChange={(e) => {
+                                                  setFacebookConfig(prev => ({
+                                                    ...prev,
+                                                    pageId: e.target.value
+                                                  }))
+                                                  if (configErrors.pageId) {
+                                                    setConfigErrors(prev => ({
+                                                      ...prev,
+                                                      pageId: undefined
+                                                    }))
+                                                  }
+                                                }}
+                                                className={cn(
+                                                  configErrors.pageId && "border-red-500"
+                                                )}
+                                              />
+                                              {configErrors.pageId && (
+                                                <p className="text-sm text-red-500">{configErrors.pageId}</p>
+                                              )}
                                     </div>
 
                                     <div className="space-y-2">
-                                      <Label>Verify Token</Label>
-                                      <div className="flex gap-2">
+                                              <Label>Form ID</Label>
                                         <Input 
                                           type="text" 
-                                          value="your-verify-token-here" 
-                                          readOnly
-                                        />
-                                        <Button variant="outline" size="icon">
-                                          <RefreshCcw className="h-4 w-4" />
-                                        </Button>
-                                      </div>
+                                                placeholder="Enter Lead Form ID"
+                                                value={facebookConfig.formId}
+                                                onChange={(e) => {
+                                                  setFacebookConfig(prev => ({
+                                                    ...prev,
+                                                    formId: e.target.value
+                                                  }))
+                                                  if (configErrors.formId) {
+                                                    setConfigErrors(prev => ({
+                                                      ...prev,
+                                                      formId: undefined
+                                                    }))
+                                                  }
+                                                }}
+                                                className={cn(
+                                                  configErrors.formId && "border-red-500"
+                                                )}
+                                              />
+                                              {configErrors.formId && (
+                                                <p className="text-sm text-red-500">{configErrors.formId}</p>
+                                              )}
+                                            </div>
+
+                                            <div className="space-y-2">
+                                              <Label>Access Token</Label>
+                                              <Input 
+                                                type="password" 
+                                                placeholder="Enter Access Token"
+                                                value={facebookConfig.accessToken}
+                                                onChange={(e) => {
+                                                  setFacebookConfig(prev => ({
+                                                    ...prev,
+                                                    accessToken: e.target.value
+                                                  }))
+                                                  if (configErrors.fbAccessToken) {
+                                                    setConfigErrors(prev => ({
+                                                      ...prev,
+                                                      fbAccessToken: undefined
+                                                    }))
+                                                  }
+                                                }}
+                                                className={cn(
+                                                  configErrors.fbAccessToken && "border-red-500"
+                                                )}
+                                              />
+                                              {configErrors.fbAccessToken && (
+                                                <p className="text-sm text-red-500">{configErrors.fbAccessToken}</p>
+                                              )}
+                                            </div>
+                                          </div>
+                                        </>
+                                      ) : (
+                                        // Generic configuration form for other integrations
+                                        <div className="grid gap-4">
+                                          <div className="space-y-2">
+                                            <Label>API Key</Label>
+                                            <Input 
+                                              type="password" 
+                                              placeholder="Enter API Key"
+                                            />
+                                          </div>
+
+                                          <div className="space-y-2">
+                                            <Label>API Secret</Label>
+                                            <Input 
+                                              type="password" 
+                                              placeholder="Enter API Secret"
+                                            />
+                                          </div>
+
+                                          <div className="space-y-2">
+                                            <Label>Webhook URL</Label>
+                                            <Input 
+                                              type="url" 
+                                              placeholder="Enter Webhook URL"
+                                            />
+                                          </div>
+                                        </div>
+                                      )}
                                     </div>
                                   </div>
 
-                                  <div className="flex items-center justify-between">
-                                    <div>
-                                      <Label>Message Templates</Label>
-                                      <p className="text-sm text-muted-foreground">
-                                        Enable pre-approved templates
-                                      </p>
+                                  <DialogFooter className="flex-none">
+                                    <Button variant="outline" onClick={() => setSelectedIntegrationId(null)}>
+                                      Cancel
+                                        </Button>
+                                    <Button 
+                                      onClick={handleIntegrationConnect}
+                                      disabled={isConnecting}
+                                    >
+                                      {isConnecting ? (
+                                        <>
+                                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                          Connecting...
+                                        </>
+                                      ) : (
+                                        'Connect'
+                                      )}
+                                    </Button>
+                                  </DialogFooter>
+                                </DialogContent>
+                              </Dialog>
+                              <Button
+                                variant={connectedIntegrations.some(ci => 
+                                  ci.type === integration.id && ci.is_active
+                                ) ? "destructive" : "default"}
+                                size="sm"
+                                onClick={async () => {
+                                  const connectedIntegration = connectedIntegrations.find(ci => ci.type === integration.id);
+                                  if (connectedIntegration) {
+                                    try {
+                                      await integrationApi.updateIntegrationStatus(connectedIntegration.id.toString(), !connectedIntegration.is_active);
+                                      toast({
+                                        title: "Success",
+                                        description: `Integration ${connectedIntegration.is_active ? 'deactivated' : 'activated'} successfully`,
+                                      });
+                                      fetchConnectedIntegrations();
+                                    } catch (error: any) {
+                                      toast({
+                                        title: "Error",
+                                        description: error.message || "Failed to update integration status",
+                                        variant: "destructive",
+                                      });
+                                    }
+                                  }
+                                }}
+                              >
+                                {connectedIntegrations.some(ci => 
+                                  ci.type === integration.id && ci.is_active
+                                ) ? 'Deactivate' : 'Activate'}
+                              </Button>
+                            </>
+                          ) : (
+                            <Dialog 
+                              open={selectedIntegrationId === integration.id} 
+                              onOpenChange={(open) => setSelectedIntegrationId(open ? integration.id : null)}
+                            >
+                              <DialogTrigger asChild>
+                                <Button 
+                                  variant="outline" 
+                                  className="w-full"
+                                >
+                                  Connect
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent className="sm:max-w-[700px] h-[85vh] flex flex-col">
+                                <DialogHeader className="flex-none">
+                                  <DialogTitle>{integration.name} Configuration</DialogTitle>
+                                  <DialogDescription>
+                                    {integration.id === 'whatsapp' 
+                                      ? 'Configure your WhatsApp Business API credentials'
+                                      : integration.id === 'leadform'
+                                      ? 'Configure your Facebook Lead Form settings'
+                                      : `Configure your ${integration.name} settings`}
+                                  </DialogDescription>
+                                </DialogHeader>
+                                
+                                <div className="flex-1 overflow-y-auto pr-2">
+                                  {serverError && (
+                                    <div className="mb-4 p-4 text-sm text-red-500 bg-red-50 dark:bg-red-900/10 border border-red-500/10 rounded-md">
+                                      <p>{serverError}</p>
+                                      </div>
+                                  )}
+
+                                  <div className="space-y-6">
+                                    {integration.id === 'whatsapp' ? (
+                                      <>
+                                        <div className="grid gap-4">
+                                          <div className="space-y-2">
+                                            <Label>Phone Number ID</Label>
+                                            <Input 
+                                              type="text" 
+                                              placeholder="Enter Phone Number ID"
+                                              value={whatsappConfig.phoneNumberId}
+                                              onChange={(e) => {
+                                                setWhatsappConfig(prev => ({
+                                                  ...prev,
+                                                  phoneNumberId: e.target.value
+                                                }))
+                                                if (configErrors.phoneNumberId) {
+                                                  setConfigErrors(prev => ({
+                                                    ...prev,
+                                                    phoneNumberId: undefined
+                                                  }))
+                                                }
+                                              }}
+                                              className={cn(
+                                                configErrors.phoneNumberId && "border-red-500"
+                                              )}
+                                            />
+                                            {configErrors.phoneNumberId && (
+                                              <p className="text-sm text-red-500">{configErrors.phoneNumberId}</p>
+                                            )}
                                     </div>
+
+                                          <div className="space-y-2">
+                                            <Label>WABA ID</Label>
+                                            <Input 
+                                              type="text" 
+                                              placeholder="Enter WhatsApp Business Account ID"
+                                              value={whatsappConfig.wabaId}
+                                              onChange={(e) => {
+                                                setWhatsappConfig(prev => ({
+                                                  ...prev,
+                                                  wabaId: e.target.value
+                                                }))
+                                                if (configErrors.wabaId) {
+                                                  setConfigErrors(prev => ({
+                                                    ...prev,
+                                                    wabaId: undefined
+                                                  }))
+                                                }
+                                              }}
+                                              className={cn(
+                                                configErrors.wabaId && "border-red-500"
+                                              )}
+                                            />
+                                            {configErrors.wabaId && (
+                                              <p className="text-sm text-red-500">{configErrors.wabaId}</p>
+                                            )}
+                                  </div>
+
+                                          <div className="space-y-2">
+                                            <Label>Access Token</Label>
+                                            <Input 
+                                              type="password" 
+                                              placeholder="Enter Access Token"
+                                              value={whatsappConfig.accessToken}
+                                              onChange={(e) => {
+                                                setWhatsappConfig(prev => ({
+                                                  ...prev,
+                                                  accessToken: e.target.value
+                                                }))
+                                                if (configErrors.accessToken) {
+                                                  setConfigErrors(prev => ({
+                                                    ...prev,
+                                                    accessToken: undefined
+                                                  }))
+                                                }
+                                              }}
+                                              className={cn(
+                                                configErrors.accessToken && "border-red-500"
+                                              )}
+                                            />
+                                            {configErrors.accessToken && (
+                                              <p className="text-sm text-red-500">{configErrors.accessToken}</p>
+                                            )}
+                                    </div>
+
+                                          <div className="flex items-center space-x-2">
                                     <Switch 
+                                              id="enable-templates"
                                       checked={whatsappConfig.enableTemplates}
-                                      onCheckedChange={(checked) => 
+                                              onCheckedChange={(checked) => {
                                         setWhatsappConfig(prev => ({
                                           ...prev,
                                           enableTemplates: checked
                                         }))
-                                      }
+                                              }}
                                     />
+                                            <Label htmlFor="enable-templates">Enable Message Templates</Label>
+                                          </div>
                                   </div>
                                 </>
-                              ) : integration.id === 'facebook' ? (
+                                    ) : integration.id === 'leadform' ? (
+                                      <>
                                 <div className="grid gap-4">
                                   <div className="space-y-2">
                                     <Label>Lead Form Name</Label>
@@ -885,6 +1210,7 @@ export default function IntegrationsPage() {
                                     )}
                                   </div>
                                 </div>
+                                      </>
                               ) : (
                                 // Generic configuration form for other integrations
                                 <div className="grid gap-4">
@@ -905,16 +1231,11 @@ export default function IntegrationsPage() {
                                   </div>
 
                                   <div className="space-y-2">
-                                    <Label>Environment</Label>
-                                    <Select defaultValue="production">
-                                      <SelectTrigger>
-                                        <SelectValue placeholder="Select environment" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        <SelectItem value="sandbox">Sandbox</SelectItem>
-                                        <SelectItem value="production">Production</SelectItem>
-                                      </SelectContent>
-                                    </Select>
+                                          <Label>Webhook URL</Label>
+                                          <Input 
+                                            type="url" 
+                                            placeholder="Enter Webhook URL"
+                                          />
                                   </div>
                                 </div>
                               )}
@@ -922,23 +1243,11 @@ export default function IntegrationsPage() {
                           </div>
 
                           <DialogFooter className="flex-none">
-                            <Button variant="outline" onClick={() => {
-                              setSelectedIntegrationId(null);
-                              setServerError(null);
-                            }}>
+                                  <Button variant="outline" onClick={() => setSelectedIntegrationId(null)}>
                               Cancel
                             </Button>
                             <Button 
-                              onClick={() => {
-                                if (integration.id === 'whatsapp') {
-                                  handleIntegrationConnect('whatsapp', whatsappConfig);
-                                } else if (integration.id === 'facebook') {
-                                  handleIntegrationConnect('facebook', facebookConfig);
-                                } else {
-                                  // Handle other integrations
-                                  setSelectedIntegrationId(null);
-                                }
-                              }}
+                                    onClick={handleIntegrationConnect}
                               disabled={isConnecting}
                             >
                               {isConnecting ? (
@@ -953,6 +1262,8 @@ export default function IntegrationsPage() {
                           </DialogFooter>
                         </DialogContent>
                       </Dialog>
+                          )}
+                        </div>
                     </CardContent>
                     <CardFooter className="flex gap-2">
                       {integration.id === 'whatsapp' && 

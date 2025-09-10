@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation"
 import { ModeToggle } from "@/components/mode-toggle"
+import { NotificationBell } from "@/components/notification-bell"
 
 const getPageTitle = (pathname: string) => {
   switch (pathname) {
@@ -37,6 +38,7 @@ export function Header() {
           </h1>
         </div>
         <div className="flex items-center gap-4">
+          <NotificationBell />
           <ModeToggle />
         </div>
       </div>
