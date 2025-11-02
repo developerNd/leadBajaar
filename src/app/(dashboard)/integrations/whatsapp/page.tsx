@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Pencil, Plus, Trash2, MessageSquare, RefreshCcw, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Pencil, Plus, Trash2, MessageSquare, RefreshCcw, ChevronLeft, ChevronRight, AlertCircle, X } from 'lucide-react'
 import { useToast } from "@/hooks/use-toast"
 import { integrationApi } from '@/lib/api'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -28,6 +28,7 @@ interface WhatsAppAccount {
 
 interface MessageTemplate {
   id: number;
+  template_id: string;
   name: string;
   category: string;
   language: string;
@@ -45,7 +46,9 @@ interface TemplateComponent {
   text?: string;
   format?: 'TEXT' | 'IMAGE' | 'VIDEO' | 'DOCUMENT';
   example?: {
-    header_handle: string[];
+    header_handle?: string[];
+    header_text?: string[];
+    body_text?: string[];
   };
   file?: File; // For file upload handling
   buttons?: Array<{
@@ -94,6 +97,26 @@ export default function WhatsAppManagementPage() {
   }>({})
   const [isUpdatingToken, setIsUpdatingToken] = useState(false)
   const [previewUrls, setPreviewUrls] = useState<string[]>([])
+  const [isCreatingTemplate, setIsCreatingTemplate] = useState(false)
+  const [currentAccount, setCurrentAccount] = useState<WhatsAppAccount | null>(null)
+  const [showEditTemplate, setShowEditTemplate] = useState(false)
+  const [editingTemplate, setEditingTemplate] = useState<MessageTemplate | null>(null)
+  const [editTemplateData, setEditTemplateData] = useState<NewTemplate>({
+    name: '',
+    category: 'MARKETING',
+    language: 'en',
+    components: [
+      { type: 'HEADER', format: 'TEXT', text: '' },
+      { type: 'BODY', text: '' },
+      { type: 'FOOTER', text: '' }
+    ]
+  })
+  const [showRejectionModal, setShowRejectionModal] = useState(false)
+  const [rejectionData, setRejectionData] = useState<{
+    templateId?: string;
+    rejectionReason?: string;
+    suggestedAction?: string;
+  }>({})
 
   // Reset template form to initial state
   const resetTemplateForm = () => {
@@ -135,6 +158,27 @@ export default function WhatsAppManagementPage() {
       previewUrls.forEach(url => URL.revokeObjectURL(url))
     }
   }, [newTemplate.components[0]?.file])
+
+  // Auto-show preview when editing template
+  useEffect(() => {
+    if (showEditTemplate) {
+      setShowPreview(true)
+    }
+  }, [showEditTemplate])
+
+  // Helper function to replace variables with sample text
+  const replaceVariablesWithSample = (templateText: string, sampleText: string) => {
+    if (!templateText || !sampleText) return templateText;
+    
+    // Split sample text by common separators to get individual values
+    const sampleValues = sampleText.split(/[,;|]/).map(val => val.trim()).filter(val => val);
+    
+    // Replace variables {{1}}, {{2}}, etc. with corresponding sample values
+    return templateText.replace(/\{\{(\d+)\}\}/g, (match, number) => {
+      const index = parseInt(number) - 1; // Convert to 0-based index
+      return sampleValues[index] || `{{${number}}}`; // Fallback to original if no sample value
+    });
+  }
 
   const fetchAccounts = async () => {
     try {
@@ -290,10 +334,25 @@ export default function WhatsAppManagementPage() {
             return headerComponent;
           }
           if (component.type === 'BODY' || component.type === 'FOOTER') {
-            return {
+            const bodyComponent: any = {
               type: component.type,
               text: component.text ?? ''
             };
+            
+            // Add example/sample text if available
+            if (component.example) {
+              if (component.type === 'BODY' && component.example.body_text?.[0]) {
+                bodyComponent.example = {
+                  body_text: [component.example.body_text[0]]
+                };
+              } else if (component.type === 'FOOTER' && component.example.body_text?.[0]) {
+                bodyComponent.example = {
+                  body_text: [component.example.body_text[0]]
+                };
+              }
+            }
+            
+            return bodyComponent;
           }
           if (component.type === 'BUTTONS') {
             return {
@@ -346,13 +405,13 @@ export default function WhatsAppManagementPage() {
           description: errorMessage,
           variant: "destructive",
         });
-      } else if (errorMessage.includes('access token') || errorMessage.includes('token has expired')) {
+      } else if (error.response?.data?.error_type === 'token_expired') {
         // Show token update modal instead of toast
         if (currentAccount) {
           setTokenUpdateData({
             businessName: currentAccount.business_name,
             phoneNumber: currentAccount.phone_number,
-            errorMessage: errorMessage,
+            errorMessage: error.response.data.message,
             integrationId: currentAccount.id
           });
           setShowTokenUpdateModal(true);
@@ -371,6 +430,39 @@ export default function WhatsAppManagementPage() {
             variant: "destructive",
           });
         }
+      } else if (error.response?.data?.error_type === 'duplicate_template') {
+        // Handle duplicate template error
+        toast({
+          title: "Template Already Exists",
+          description: `This template name "${newTemplate.name}" already exists in ${newTemplate.language === 'en' ? 'English' : 
+                       newTemplate.language === 'es' ? 'Spanish' : 
+                       newTemplate.language === 'pt' ? 'Portuguese' :
+                       newTemplate.language === 'hi' ? 'Hindi' :
+                       newTemplate.language === 'ar' ? 'Arabic' : 
+                       newTemplate.language}. You can either:\n\n1. Choose a different name (e.g., "${newTemplate.name}_2")\n2. Use a different language (available: Spanish, Portuguese, Hindi, Arabic)`,
+          variant: "destructive",
+        });
+      } else if (error.response?.data?.error_type === 'template_rejected') {
+        // Handle template rejection
+        setRejectionData({
+          templateId: error.response.data.template_id,
+          rejectionReason: error.response.data.rejection_reason,
+          suggestedAction: error.response.data.suggested_action
+        });
+        setShowRejectionModal(true);
+        
+        toast({
+          title: "Template Rejected",
+          description: "Your template was rejected by WhatsApp. Click 'Edit Template' to add sample text and resubmit.",
+          variant: "destructive",
+        });
+      } else if (error.response?.data?.error_type === 'validation_error') {
+        // Handle other validation errors
+        toast({
+          title: error.response.data.error_details || "Validation Error",
+          description: error.response.data.message,
+          variant: "destructive",
+        });
       } else {
         toast({
           title: "Error",
@@ -380,6 +472,181 @@ export default function WhatsAppManagementPage() {
       }
     }
   };
+
+  const handleDeleteTemplate = async (templateId: string) => {
+    if (!currentAccount) return
+
+    try {
+      await integrationApi.deleteWhatsAppTemplate(currentAccount.id, templateId)
+      toast({
+        title: "Success",
+        description: "Template deleted successfully",
+      })
+      await loadTemplates(currentAccount.id)
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || error.message || "Failed to delete template"
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleEditTemplate = (template: MessageTemplate) => {
+    setEditingTemplate(template)
+    setEditTemplateData({
+      name: template.name,
+      category: template.category,
+      language: template.language,
+      components: template.components || []
+    })
+    setShowPreview(true) // Show preview by default in edit mode
+    setShowEditTemplate(true)
+    
+    // Ensure currentAccount is set for resubmission
+    if (!currentAccount && selectedAccount) {
+      setCurrentAccount(selectedAccount)
+    }
+  }
+
+  const handleUpdateTemplate = async () => {
+    console.log('Update button clicked', { currentAccount, selectedAccount, editingTemplate, editTemplateData });
+    
+    // Use currentAccount or fallback to selectedAccount
+    const accountToUse = currentAccount || selectedAccount;
+    
+    if (!accountToUse || !editingTemplate) {
+      console.error('Missing required data:', { currentAccount, selectedAccount, editingTemplate });
+      toast({
+        title: "Error",
+        description: "Missing account or template data",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsCreatingTemplate(true)
+      
+      // Prepare components with sample text for resubmission
+      const componentsWithSample = editTemplateData.components.map(component => {
+        if (component.type === 'BODY' || component.type === 'FOOTER') {
+          const bodyComponent: any = {
+            type: component.type,
+            text: component.text ?? ''
+          };
+          
+          // Add example/sample text if available
+          if (component.example) {
+            if (component.type === 'BODY' && component.example.body_text?.[0]) {
+              bodyComponent.example = {
+                body_text: [component.example.body_text[0]]
+              };
+            } else if (component.type === 'FOOTER' && component.example.body_text?.[0]) {
+              bodyComponent.example = {
+                body_text: [component.example.body_text[0]]
+              };
+            }
+          }
+          
+          return bodyComponent;
+        }
+        
+        if (component.type === 'HEADER') {
+          const headerComponent: any = {
+            type: component.type,
+            format: component.format
+          };
+          
+          if (component.format === 'TEXT') {
+            headerComponent.text = component.text ?? '';
+          } else if (component.format === 'IMAGE' || component.format === 'VIDEO' || component.format === 'DOCUMENT') {
+            headerComponent.example = component.example;
+          }
+          
+          return headerComponent;
+        }
+        
+        if (component.type === 'BUTTONS') {
+          return {
+            type: component.type,
+            buttons: component.buttons?.map(button => {
+              const buttonData: any = {
+                type: button.type,
+                text: button.text
+              };
+              
+              if (button.type === 'URL' && button.url) {
+                buttonData.url = button.url;
+              } else if (button.type === 'PHONE_NUMBER' && button.phone_number) {
+                buttonData.phone_number = button.phone_number;
+              } else if (button.type === 'COPY_CODE' && button.code) {
+                buttonData.code = button.code;
+              }
+              
+              return buttonData;
+            })
+          };
+        }
+        
+        return component;
+      });
+      
+          await integrationApi.updateWhatsAppTemplate(accountToUse.id, editingTemplate.template_id, {
+            components: componentsWithSample
+          })
+      
+      toast({
+        title: "Success",
+        description: "Template updated successfully",
+      })
+      
+      setShowEditTemplate(false)
+      setShowRejectionModal(false)
+      setEditingTemplate(null)
+      await loadTemplates(accountToUse.id)
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || error.message || "Failed to resubmit template"
+      
+      if (error.response?.data?.error_type === 'template_rejected') {
+        setRejectionData({
+          templateId: error.response.data.template_id,
+          rejectionReason: error.response.data.rejection_reason,
+          suggestedAction: error.response.data.suggested_action
+        });
+        setShowRejectionModal(true);
+        
+        toast({
+          title: "Template Rejected Again",
+          description: "Your template was rejected again. Please review the guidelines and add proper sample text.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsCreatingTemplate(false)
+    }
+  }
+
+  const loadTemplates = async (accountId: number) => {
+    try {
+      const response = await integrationApi.getWhatsAppTemplates(accountId)
+      setTemplates(response.templates)
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || error.message || "Failed to load templates"
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      })
+    }
+  }
 
   const indexOfLastTemplate = currentPage * itemsPerPage
   const indexOfFirstTemplate = indexOfLastTemplate - itemsPerPage
@@ -517,10 +784,19 @@ export default function WhatsAppManagementPage() {
                                 }}>
                                   <MessageSquare className="h-4 w-4" />
                                 </Button>
-                                <Button variant="ghost" size="sm">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  onClick={() => handleEditTemplate(template)}
+                                  disabled={template.status === 'APPROVED'}
+                                >
                                   <Pencil className="h-4 w-4" />
                                 </Button>
-                                <Button variant="ghost" size="sm">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  onClick={() => handleDeleteTemplate(template.template_id)}
+                                >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
                               </div>
@@ -1277,6 +1553,356 @@ export default function WhatsAppManagementPage() {
         errorMessage={tokenUpdateData.errorMessage}
         isLoading={isUpdatingToken}
       />
+
+      {/* Template Rejection Modal */}
+      <Dialog open={showRejectionModal} onOpenChange={setShowRejectionModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-destructive" />
+              Template Rejected
+            </DialogTitle>
+            <DialogDescription>
+              Your template was rejected by WhatsApp and needs to be updated.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+              <h4 className="font-medium text-destructive mb-2">Rejection Reason:</h4>
+              <p className="text-sm text-muted-foreground">
+                {rejectionData.rejectionReason || "Template variables without sample text or policy violation"}
+              </p>
+            </div>
+            <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+              <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-2">Suggested Action:</h4>
+              <p className="text-sm text-blue-700 dark:text-blue-300">
+                {rejectionData.suggestedAction || "Please add sample text for variables and resubmit for review"}
+              </p>
+            </div>
+            <div className="bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+              <h4 className="font-medium text-yellow-900 dark:text-yellow-100 mb-2">WhatsApp Guidelines:</h4>
+              <ul className="text-sm text-yellow-700 dark:text-yellow-300 space-y-1">
+                <li>• Add sample text for variables - separate multiple values with commas (e.g., "John, Smith" for {`{{1}}, {{2}}`})</li>
+                <li>• Ensure content complies with WhatsApp Business Policy</li>
+                <li>• Avoid promotional language in utility templates</li>
+                <li>• Keep templates clear and professional</li>
+              </ul>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowRejectionModal(false)}>
+              Cancel
+            </Button>
+            <Button onClick={() => {
+              setShowRejectionModal(false);
+              if (editingTemplate) {
+                handleEditTemplate(editingTemplate);
+              }
+            }}>
+              Edit Template
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Template Edit Modal */}
+      <Dialog open={showEditTemplate} onOpenChange={setShowEditTemplate}>
+        <DialogContent className="max-w-[1200px] max-h-[95vh] w-[95vw]">
+          <DialogHeader>
+            <DialogTitle>Edit Template - {editingTemplate?.name}</DialogTitle>
+            <DialogDescription>
+              Update your template with sample text and resubmit for review
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+            {/* Form Section */}
+            <div className="h-[65vh] overflow-hidden flex flex-col">
+              <ScrollArea className="flex-1 pr-2">
+                <div className="space-y-3 pb-4">
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">Template Components</h3>
+                    
+                    {editTemplateData.components.map((component, idx) => (
+                      <div key={idx} className="border rounded-lg p-3 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium">{component.type}</span>
+                          {component.type !== 'BODY' && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                const newComponents = editTemplateData.components.filter((_, i) => i !== idx);
+                                setEditTemplateData(prev => ({ ...prev, components: newComponents }));
+                              }}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                        
+                        {component.type === 'HEADER' && (
+                          <div className="space-y-2">
+                            <Label>Format</Label>
+                            <Select
+                              value={component.format}
+                              onValueChange={(value) => {
+                                const newComponents = [...editTemplateData.components];
+                                newComponents[idx] = { ...component, format: value as 'TEXT' | 'IMAGE' | 'VIDEO' | 'DOCUMENT' };
+                                setEditTemplateData(prev => ({ ...prev, components: newComponents }));
+                              }}
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="TEXT">Text</SelectItem>
+                                <SelectItem value="IMAGE">Image</SelectItem>
+                                <SelectItem value="VIDEO">Video</SelectItem>
+                                <SelectItem value="DOCUMENT">Document</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            
+                            <Label>Text Content</Label>
+                            <Textarea
+                              placeholder="Enter header text with variables like {{1}}"
+                              value={component.text}
+                              onChange={(e) => {
+                                const newComponents = [...editTemplateData.components];
+                                newComponents[idx] = { ...component, text: e.target.value };
+                                setEditTemplateData(prev => ({ ...prev, components: newComponents }));
+                              }}
+                            />
+                            
+                            <Label>Sample Text (for variables)</Label>
+                            <Input
+                              placeholder="e.g., Welcome John! (for {{1}}) or John, Smith (for {{1}}, {{2}})"
+                              value={component.example?.header_text?.[0] || ''}
+                              onChange={(e) => {
+                                const newComponents = [...editTemplateData.components];
+                                newComponents[idx] = {
+                                  ...component,
+                                  example: {
+                                    ...component.example,
+                                    header_text: [e.target.value]
+                                  }
+                                };
+                                setEditTemplateData(prev => ({ ...prev, components: newComponents }));
+                              }}
+                            />
+                          </div>
+                        )}
+                        
+                        {component.type === 'BODY' && (
+                          <div className="space-y-2">
+                            <Label>Message Text</Label>
+                            <Textarea
+                              placeholder="Enter message text with variables like {{1}}"
+                              value={component.text}
+                              onChange={(e) => {
+                                const newComponents = [...editTemplateData.components];
+                                newComponents[idx] = { ...component, text: e.target.value };
+                                setEditTemplateData(prev => ({ ...prev, components: newComponents }));
+                              }}
+                            />
+                            
+                            <Label>Sample Text (for variables)</Label>
+                            <Input
+                              placeholder="e.g., John, 12345 (for {{1}}, {{2}}) - separate multiple values with commas"
+                              value={component.example?.body_text?.[0] || ''}
+                              onChange={(e) => {
+                                const newComponents = [...editTemplateData.components];
+                                newComponents[idx] = {
+                                  ...component,
+                                  example: {
+                                    ...component.example,
+                                    body_text: [e.target.value]
+                                  }
+                                };
+                                setEditTemplateData(prev => ({ ...prev, components: newComponents }));
+                              }}
+                            />
+                          </div>
+                        )}
+                        
+                        {component.type === 'FOOTER' && (
+                          <div className="space-y-2">
+                            <Label>Footer Text</Label>
+                            <Textarea
+                              placeholder="Enter footer text"
+                              value={component.text}
+                              onChange={(e) => {
+                                const newComponents = [...editTemplateData.components];
+                                newComponents[idx] = { ...component, text: e.target.value };
+                                setEditTemplateData(prev => ({ ...prev, components: newComponents }));
+                              }}
+                            />
+                          </div>
+                        )}
+                        
+                        {component.type === 'BUTTONS' && (
+                          <div className="space-y-2">
+                            <Label>Buttons</Label>
+                            {component.buttons?.map((button, buttonIdx) => (
+                              <div key={buttonIdx} className="flex gap-2 items-center">
+                                <Select
+                                  value={button.type}
+                                  onValueChange={(value) => {
+                                    const newComponents = [...editTemplateData.components];
+                                    newComponents[idx] = {
+                                      ...component,
+                                      buttons: component.buttons?.map((b, i) => 
+                                        i === buttonIdx ? { ...b, type: value as 'QUICK_REPLY' | 'URL' | 'PHONE_NUMBER' | 'COPY_CODE' } : b
+                                      )
+                                    };
+                                    setEditTemplateData(prev => ({ ...prev, components: newComponents }));
+                                  }}
+                                >
+                                  <SelectTrigger className="w-32">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="QUICK_REPLY">Quick Reply</SelectItem>
+                                    <SelectItem value="URL">URL</SelectItem>
+                                    <SelectItem value="PHONE_NUMBER">Phone</SelectItem>
+                                    <SelectItem value="COPY_CODE">Copy Code</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                
+                                <Input
+                                  placeholder="Button text"
+                                  value={button.text}
+                                  onChange={(e) => {
+                                    const newComponents = [...editTemplateData.components];
+                                    newComponents[idx] = {
+                                      ...component,
+                                      buttons: component.buttons?.map((b, i) => 
+                                        i === buttonIdx ? { ...b, text: e.target.value } : b
+                                      )
+                                    };
+                                    setEditTemplateData(prev => ({ ...prev, components: newComponents }));
+                                  }}
+                                />
+                                
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    const newComponents = [...editTemplateData.components];
+                                    newComponents[idx] = {
+                                      ...component,
+                                      buttons: component.buttons?.filter((_, i) => i !== buttonIdx)
+                                    };
+                                    setEditTemplateData(prev => ({ ...prev, components: newComponents }));
+                                  }}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ))}
+                            
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const newComponents = [...editTemplateData.components];
+                                newComponents[idx] = {
+                                  ...component,
+                                  buttons: [
+                                    ...(component.buttons || []),
+                                    { type: 'QUICK_REPLY', text: '' }
+                                  ]
+                                };
+                                setEditTemplateData(prev => ({ ...prev, components: newComponents }));
+                              }}
+                            >
+                              Add Button
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </ScrollArea>
+            </div>
+
+            {/* Preview Section */}
+            <div className="h-[65vh] overflow-hidden flex flex-col">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">Preview</h3>
+              </div>
+              
+              <div className="flex-1 bg-gray-50 dark:bg-gray-900 rounded-lg p-4 overflow-y-auto">
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 max-w-sm mx-auto">
+                  <div className="space-y-2">
+                    {editTemplateData.components.map((component, idx) => {
+                        if (component.type === 'HEADER') {
+                          // Replace variables with sample text
+                          const displayText = component.example?.header_text?.[0] 
+                            ? replaceVariablesWithSample(component.text || '', component.example.header_text[0])
+                            : component.text || '';
+                          return (
+                            <div key={idx} className="font-semibold text-lg">
+                              {displayText}
+                            </div>
+                          )
+                        }
+                        if (component.type === 'BODY') {
+                          // Replace variables with sample text
+                          const displayText = component.example?.body_text?.[0] 
+                            ? replaceVariablesWithSample(component.text || '', component.example.body_text[0])
+                            : component.text || '';
+                          return (
+                            <div key={idx} className="text-sm whitespace-pre-line">
+                              {displayText}
+                            </div>
+                          )
+                        }
+                      if (component.type === 'FOOTER') {
+                        return (
+                          <div key={idx} className="text-xs text-muted-foreground">
+                            {component.text}
+                          </div>
+                        )
+                      }
+                      if (component.type === 'BUTTONS' && component.buttons) {
+                        return (
+                          <div key={idx} className="space-y-2 pt-2 border-t">
+                            {component.buttons.map((button, buttonIdx) => (
+                              <div
+                                key={buttonIdx}
+                                className="bg-primary/10 hover:bg-primary/20 transition-colors rounded-md p-2 text-sm text-center cursor-pointer"
+                              >
+                                {button.text}
+                              </div>
+                            ))}
+                          </div>
+                        )
+                      }
+                      return null
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditTemplate(false)}>
+              Cancel
+            </Button>
+        <Button 
+          onClick={() => {
+            console.log('Update button clicked - before handler', { isCreatingTemplate, currentAccount, selectedAccount, editingTemplate });
+            handleUpdateTemplate();
+          }} 
+          disabled={isCreatingTemplate}
+        >
+          {isCreatingTemplate ? 'Updating...' : 'Update Template'}
+        </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 } 

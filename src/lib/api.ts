@@ -1,8 +1,8 @@
 import axios, { AxiosError } from 'axios';
 import { setSession, clearSession, getSession } from './auth';
 
-// const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
-const API_BASE_URL ='https://api.leadbajaar.com/api'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
+// const API_BASE_URL ='https://api.leadbajaar.com/api'
 
 // Export both httpClient and api
 export const httpClient = {
@@ -304,7 +304,7 @@ export const updateLeadDetails = async (id: number, data: Partial<Lead>) => {
 };
 
 // Types for API requests
-interface IntegrationConfig {
+export interface IntegrationConfig {
   type: string;
   config: Record<string, any>;
   isActive: boolean;
@@ -330,6 +330,23 @@ export const integrationApi = {
       const response = await api.post('/integrations', config);
       return response.data;
     } catch (error: any) {
+      // Enhanced error handling for validation errors
+      if (error.response?.status === 422) {
+        const validationErrors = error.response.data.errors;
+        if (validationErrors && typeof validationErrors === 'object') {
+          // Format validation errors into a readable message
+          const errorMessages = Object.entries(validationErrors)
+            .map(([field, messages]) => {
+              const messageArray = Array.isArray(messages) ? messages : [messages];
+              return `${field}: ${messageArray.join(', ')}`;
+            })
+            .join('; ');
+          throw new Error(`Validation failed: ${errorMessages}`);
+        }
+        // If errors object is not in expected format, try to get message
+        const message = error.response.data.message || 'Validation failed';
+        throw new Error(message);
+      }
       const message = error.response?.data?.message || 'Failed to save integration configuration';
       throw new Error(message);
     }
@@ -360,7 +377,6 @@ export const integrationApi = {
   getWhatsAppProfiles: async () => {
     try {
       const response = await api.get('/integrations/whatsapp/profiles');
-      console.log(response.data);
       return response.data.profiles;
     } catch (error: any) {
       const message = error.response?.data?.message || 'Failed to fetch WhatsApp profiles';
@@ -381,7 +397,6 @@ export const integrationApi = {
   getWhatsAppTemplates: async (accountId: number) => {
     try {
       const response = await api.get(`/integrations/whatsapp/${accountId}/templates`);
-      console.log(response.data);
       return response.data;
     } catch (error: any) {
       const message = error.response?.data?.message || 'Failed to fetch templates';
@@ -489,6 +504,7 @@ export const integrationApi = {
     }
   },
 
+
   getConnectedIntegrations: async () => {
     try {
       const response = await api.get('/integrations/connected');
@@ -550,6 +566,92 @@ export const integrationApi = {
         throw backendError;
       }
       throw new Error('Failed to retrieve Facebook leads');
+    }
+  },
+
+  // Facebook Conversion API Methods
+  sendConversionEvent: async (data: {
+    pixel_id: string;
+    event_name: string;
+    event_data: any;
+    user_data?: any;
+    integration_id?: number;
+  }) => {
+    try {
+      const response = await api.post('/facebook/conversion-api/send-event', data);
+      return response.data;
+    } catch (error: any) {
+      const message = error.response?.data?.error || 'Failed to send conversion event';
+      throw new Error(message);
+    }
+  },
+
+  sendBatchConversionEvents: async (data: {
+    pixel_id: string;
+    events: Array<{
+      event_name: string;
+      event_data: any;
+      user_data?: any;
+    }>;
+    integration_id?: number;
+  }) => {
+    try {
+      const response = await api.post('/facebook/conversion-api/send-batch-events', data);
+      return response.data;
+    } catch (error: any) {
+      const message = error.response?.data?.error || 'Failed to send batch conversion events';
+      throw new Error(message);
+    }
+  },
+
+  sendTestConversionEvent: async (data: {
+    pixel_id: string;
+    test_event_code: string;
+    event_name: string;
+    event_data: any;
+    user_data?: any;
+    integration_id?: number;
+  }) => {
+    try {
+      const response = await api.post('/facebook/conversion-api/send-test-event', data);
+      return response.data;
+    } catch (error: any) {
+      const message = error.response?.data?.error || 'Failed to send test conversion event';
+      throw new Error(message);
+    }
+  },
+
+  getConversionApiEventTypes: async () => {
+    try {
+      const response = await api.get('/facebook/conversion-api/event-types');
+      return response.data;
+    } catch (error: any) {
+      const message = error.response?.data?.error || 'Failed to fetch event types';
+      throw new Error(message);
+    }
+  },
+
+  getConversionApiConfiguration: async () => {
+    try {
+      const response = await api.get('/facebook/conversion-api/configuration');
+      return response.data;
+    } catch (error: any) {
+      const message = error.response?.data?.error || 'Failed to fetch Conversion API configuration';
+      throw new Error(message);
+    }
+  },
+
+  updateConversionApiConfiguration: async (data: {
+    integration_id: number;
+    pixel_id: string;
+    test_event_code?: string;
+  }) => {
+    try {
+      const response = await api.post('/facebook/conversion-api/configuration', data);
+      return response.data;
+    } catch (error: any) {
+      const message = error.response?.data?.error || 'Failed to update Conversion API configuration';
+      throw new Error(message);
     }
   },
 };
@@ -666,7 +768,6 @@ export const getBookings = async () => {
       Authorization: `Bearer ${localStorage.getItem('token')}`
     }
   });
-  console.log(response.data);
   return response;
 };
 
