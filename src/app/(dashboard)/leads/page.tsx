@@ -31,7 +31,7 @@ import {
   type CreateLeadDto, 
   getLeads, 
   deleteLead, 
-  // updateLead, 
+  updateLead, 
   bulkDeleteLeads, 
   bulkUpdateLeadStatus,
   updateLeadStage,
@@ -613,15 +613,15 @@ export default function LeadsPage() {
         })
       };
 
-      // Log the params being sent to API
-      console.log('Fetching leads with params:', params);
-
       const response = await getLeads(params);
       
+      // Laravel pagination returns: { data: [...], current_page, last_page, total, ... }
+      // Check for both possible response structures
       if (response?.data && Array.isArray(response.data)) {
         setLeads(response.data);
-        setTotalItems(response.total || 0);
-        setTotalPages(response.last_page || 1);
+        // Laravel pagination has total and last_page at root level
+        setTotalItems(response.total || response.meta?.total || 0);
+        setTotalPages(response.last_page || response.meta?.last_page || 1);
       } else {
         throw new Error('Invalid response format from API');
       }
@@ -1019,13 +1019,34 @@ export default function LeadsPage() {
     setShowEditLead(true)
   }
 
-  const handleUpdateLead = (updatedLead: Lead | null) => {
+  const handleUpdateLead = async (updatedLead: Lead | null) => {
     if (!updatedLead) return
-    setLeads(prev => prev.map(lead => 
-      lead.id === updatedLead.id ? updatedLead : lead
-    ))
-    setShowEditLead(false)
-    setEditedLead(null)
+    
+    try {
+      const response = await updateLead(updatedLead.id, {
+        name: updatedLead.name,
+        email: updatedLead.email,
+        phone: updatedLead.phone,
+        company: updatedLead.company,
+        stage: updatedLead.stage,
+        status: (updatedLead.status === 'Hot' || updatedLead.status === 'Warm' || updatedLead.status === 'Cold') 
+          ? updatedLead.status 
+          : 'Cold',
+        source: updatedLead.source,
+      })
+      
+      // Update local state with response from server
+      setLeads(prev => prev.map(lead => 
+        lead.id === response.id ? response : lead
+      ))
+      
+      toast.success("Lead updated successfully")
+      setShowEditLead(false)
+      setEditedLead(null)
+    } catch (error) {
+      console.error('Failed to update lead:', error)
+      toast.error("Failed to update lead. Please try again.")
+    }
   }
 
   // Add this function to handle bulk selection
@@ -2025,7 +2046,14 @@ export default function LeadsPage() {
                   <Button variant="outline" onClick={() => setShowEditLead(false)}>
                     Cancel
                   </Button>
-                  <Button onClick={() => handleUpdateLead(editedLead)}>
+                  <Button 
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      handleUpdateLead(editedLead)
+                    }}
+                  >
                     Save Changes
                   </Button>
                 </DialogFooter>
