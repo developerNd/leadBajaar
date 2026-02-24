@@ -11,10 +11,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Label } from "@/components/ui/label"
+import { Separator } from "@/components/ui/separator"
+import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
-import { 
+import {
   User, Mail, Phone, Building2, Tag, Globe,
-  CheckCircle, Clock, Star, AlertCircle, Globe2, 
+  CheckCircle, Clock, Star, AlertCircle, Globe2,
   Facebook, Linkedin, MonitorSmartphone, MessageSquare,
   Pencil, Trash, FileDown, Search,
   Settings2, Plus, Loader2, X, FileSpreadsheet,
@@ -22,22 +24,26 @@ import {
   XCircle, RefreshCcw, Calendar as CalendarIcon,
   FileUp,
   Computer,
-  Map
+  Map,
+  IndianRupee,
+  Wallet
 } from 'lucide-react'
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import { 
-  createLead, 
-  type CreateLeadDto, 
-  getLeads, 
-  deleteLead, 
-  updateLead, 
-  bulkDeleteLeads, 
+import {
+  createLead,
+  type CreateLeadDto,
+  getLeads,
+  deleteLead,
+  updateLead,
+  bulkDeleteLeads,
   bulkUpdateLeadStatus,
+  bulkUpdateLeadStage,
   updateLeadStage,
   importLeads,
   exportLeads,
-  integrationApi  // Add this
+  integrationApi,
+  createPayment
 } from '@/lib/api'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
@@ -60,8 +66,10 @@ const columns = [
   { id: 'stage', label: 'Stage', icon: Tag },
   { id: 'status', label: 'Temperature', icon: Thermometer },
   { id: 'source', label: 'Source', icon: Globe },
+  { id: 'deal_value', label: 'Deal Value', icon: IndianRupee },
+  { id: 'paid_amount', label: 'Paid Amount', icon: Wallet },
   { id: 'lastContact', label: 'Last Contact', icon: CalendarIcon },
-  { id: 'created_at', label: 'Created At', icon: CalendarIcon }, // Add this line
+  { id: 'created_at', label: 'Created At', icon: CalendarIcon },
   { id: 'actions', label: 'Actions' },
 ]
 
@@ -89,10 +97,12 @@ interface Lead {
   stage: string;
   status: string;
   source: string;
+  notes?: string;
+  deal_value?: number;
+  paid_amount?: number;
   last_contact: string;
   created_at: string;
   updated_at: string;
-  // Remove last_page and total as they belong to metadata
 }
 
 // Add interfaces for error tracking
@@ -123,6 +133,7 @@ const defaultStages = {
   'Disqualified': { color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100', icon: AlertCircle },
   'Not Connected': { color: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-100', icon: Phone },
   'Deal Closed': { color: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-100', icon: CheckCircle },
+  'Closed Won': { color: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-100', icon: CheckCircle },
   'DNP': { color: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-100', icon: AlertCircle },
   'Follow Up': { color: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-100', icon: Clock },
   'Call Back': { color: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-100', icon: Phone },
@@ -242,7 +253,7 @@ const LeadsTableSkeleton = ({ columns, visibleColumns }: LeadsTableSkeletonProps
         <div className="h-8 w-24 bg-gray-200 rounded"></div>
       </div>
     </div>
-    
+
     <Table>
       <TableHeader>
         <TableRow>
@@ -325,16 +336,18 @@ export default function LeadsPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [visibleColumns, setVisibleColumns] = useState([
-    'name', 
-    'phone', 
+    'name',
+    'phone',
     'stage',
     // 'status',
     'city',
     'profession',
+    'deal_value',
+    'paid_amount',
     'created_at',
     'actions'
   ])
-  
+
   // Add states for import functionality
   const [file, setFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<string[][]>([])
@@ -358,7 +371,17 @@ export default function LeadsPage() {
   const [selectedColor, setSelectedColor] = useState('blue')
   const [selectedIcon] = useState<keyof typeof iconMapping>('User')
   const [editingLead, setEditingLead] = useState<Lead | null>(null)
+  const [selectedStage, setSelectedStage] = useState<string | null>(null)
   const [showStageChange, setShowStageChange] = useState(false)
+
+  // Deal Value Dialog State
+  const [showDealValue, setShowDealValue] = useState(false);
+  const [dealValueAmount, setDealValueAmount] = useState('');
+  const [recordInitialPayment, setRecordInitialPayment] = useState(false);
+  const [initialPaymentAmount, setInitialPaymentAmount] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('UPI');
+  const [isSavingDealValue, setIsSavingDealValue] = useState(false);
+
   const [editingStage, setEditingStage] = useState<string | null>(null)
   const [editedStageName, setEditedStageName] = useState('')
   const [editedStageColor, setEditedStageColor] = useState('')
@@ -432,7 +455,7 @@ export default function LeadsPage() {
       lead_id: number;
       name: string;
     }>;
-    } | null>(null);
+  } | null>(null);
   const [showResults, setShowResults] = useState(false);
   const [showProgress, setShowProgress] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -517,7 +540,7 @@ export default function LeadsPage() {
     const selectedFile = e.target.files?.[0]
     setImportError(null)
     setImportStats(null)
-    
+
     if (!selectedFile) {
       setImportError('No file selected')
       return
@@ -531,12 +554,12 @@ export default function LeadsPage() {
 
     setFile(selectedFile)
     const reader = new FileReader()
-    
+
     reader.onload = (event) => {
       try {
         const csv = event.target?.result as string
         const lines = csv.split('\n')
-        
+
         if (lines.length < 2) {
           setImportError('CSV file is empty or has no data rows')
           return
@@ -544,7 +567,7 @@ export default function LeadsPage() {
 
         const result = lines.map(line => line.split(',').map(cell => cell.trim()))
         setPreview(result.slice(0, 5))
-        
+
         // Initialize column mapping
         const csvHeaders = result[0]
         setColumnMapping(csvHeaders.map(header => ({
@@ -591,7 +614,7 @@ export default function LeadsPage() {
     try {
       setIsLoading(true);
       setError(null);
-      
+
       const params = {
         page: currentPage,
         per_page: itemsPerPage,
@@ -599,22 +622,22 @@ export default function LeadsPage() {
         ...(filters.status !== 'all' && { status: filters.status }),
         ...(filters.stage !== 'all' && { stage: filters.stage }),
         ...(filters.source !== 'all' && { source: filters.source }),
-        ...(filters.dateRange?.from && { 
-          last_contact_from: format(filters.dateRange.from, 'yyyy-MM-dd') 
+        ...(filters.dateRange?.from && {
+          last_contact_from: format(filters.dateRange.from, 'yyyy-MM-dd')
         }),
-        ...(filters.dateRange?.to && { 
-          last_contact_to: format(filters.dateRange.to, 'yyyy-MM-dd') 
+        ...(filters.dateRange?.to && {
+          last_contact_to: format(filters.dateRange.to, 'yyyy-MM-dd')
         }),
-        ...(filters.createdAt?.from && { 
-          created_from: format(filters.createdAt.from, 'yyyy-MM-dd') 
+        ...(filters.createdAt?.from && {
+          created_from: format(filters.createdAt.from, 'yyyy-MM-dd')
         }),
-        ...(filters.createdAt?.to && { 
-          created_to: format(filters.createdAt.to, 'yyyy-MM-dd') 
+        ...(filters.createdAt?.to && {
+          created_to: format(filters.createdAt.to, 'yyyy-MM-dd')
         })
       };
 
       const response = await getLeads(params);
-      
+
       // Laravel pagination returns: { data: [...], current_page, last_page, total, ... }
       // Check for both possible response structures
       if (response?.data && Array.isArray(response.data)) {
@@ -641,6 +664,13 @@ export default function LeadsPage() {
     fetchLeads();
   }, [currentPage, debouncedSearch, filters.status, filters.stage, filters.source, filters.dateRange, filters.createdAt, itemsPerPage]);
 
+  // Prefill deal value when dialog opens
+  useEffect(() => {
+    if (showDealValue && editingLead) {
+      setDealValueAmount(editingLead.deal_value?.toString() || '');
+    }
+  }, [showDealValue, editingLead]);
+
   // Update handleAddLead
   const handleAddLead = async () => {
     try {
@@ -656,13 +686,13 @@ export default function LeadsPage() {
         status: newLead.status,
         source: newLead.source
       });
-      
+
       // Refresh leads list
       await fetchLeads();
-      
+
       setShowNewLead(false);
       toast.success("Lead created successfully");
-      
+
       // Reset form
       setNewLead({
         name: '',
@@ -675,10 +705,10 @@ export default function LeadsPage() {
       });
     } catch (error: any) {
       console.error('Failed to create lead:', error);
-      
+
       // Set the error message to be displayed in the form
       setSubmitError(error.message || 'Failed to create lead. Please try again.');
-      
+
       // Don't close the modal, let the user see the error
       setIsSubmitting(false);
     }
@@ -699,12 +729,13 @@ export default function LeadsPage() {
     }
   }
 
-  const handleBulkStageChange = async (newStatus: string) => {
+  const handleBulkStageChange = async (newStage: string) => {
     try {
-      await bulkUpdateLeadStatus(selectedLeads, newStatus)
+      await bulkUpdateLeadStage(selectedLeads, newStage)
       await fetchLeads() // Refresh the list
       setSelectedLeads([])
       setShowStageChange(false)
+      setSelectedStage(null)
       toast.success("Lead stages updated successfully")
     } catch (error) {
       console.error('Failed to update lead stages:', error)
@@ -724,11 +755,11 @@ export default function LeadsPage() {
   // Add this new function to handle the actual deletion
   const confirmDelete = async () => {
     if (!deleteConfirmation.leadId) return;
-    
+
     try {
       await deleteLead(deleteConfirmation.leadId);
       await fetchLeads();
-      
+
       toast.success("Lead deleted successfully");
     } catch (error) {
       console.error('Failed to delete lead:', error);
@@ -750,11 +781,11 @@ export default function LeadsPage() {
 
   const validateRow = (row: string[], csvHeaders: string[], rowIndex: number): ImportError[] => {
     const errors: ImportError[] = []
-    
+
     columnMapping.forEach((mapping) => {
       if (mapping.leadField !== 'skip') {
         const value = row[csvHeaders.indexOf(mapping.csvHeader)]
-        
+
         // Validate required fields
         if (['name', 'email'].includes(mapping.leadField) && !value) {
           errors.push({
@@ -764,7 +795,7 @@ export default function LeadsPage() {
             reason: `${mapping.leadField} is required`
           })
         }
-        
+
         // Validate email format
         if (mapping.leadField === 'email' && value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
           errors.push({
@@ -776,13 +807,13 @@ export default function LeadsPage() {
         }
       }
     })
-    
+
     return errors
   }
 
   const handleImport = async () => {
     if (!file || isImporting) return;
-    
+
     setIsImporting(true);
     setShowGeneratingReport(true);
 
@@ -834,7 +865,7 @@ export default function LeadsPage() {
 
           // Send to backend
           const response = await importLeads({ leads });
-          
+
           setImportStats({
             totalRows: leads.length,
             successfulRows: response.successful || 0,
@@ -847,7 +878,7 @@ export default function LeadsPage() {
 
           // Refresh leads list
           await fetchLeads();
-          
+
           toast.success(`Successfully imported ${response.successful} leads`);
 
         } catch (error: any) {
@@ -956,26 +987,80 @@ export default function LeadsPage() {
 
   const handleStageChange = async (leadId: number | undefined, newStage: string) => {
     if (typeof leadId !== 'number') return;
-    
+
     try {
+      if (newStage === 'Deal Closed' || newStage === 'Closed Won') {
+        const lead = leads.find(l => l.id === leadId);
+        if (lead && lead.stage !== 'Deal Closed' && lead.stage !== 'Closed Won') {
+          setEditingLead(lead || null);
+          setShowStageChange(false);
+          setShowDealValue(true);
+          return;
+        }
+      }
+
       await updateLeadStage(leadId, newStage);
-      
+
       // Update the lead locally instead of fetching
-      setLeads(prev => prev.map(lead => 
-        lead.id === leadId 
+      setLeads(prev => prev.map(lead =>
+        lead.id === leadId
           ? { ...lead, stage: newStage }
           : lead
       ));
-      
+
       setShowStageChange(false);
       setEditingLead(null);
-      
+      setSelectedStage(null);
+
       toast.success("Lead stage has been updated successfully");
 
     } catch (error) {
       console.error('Failed to update lead stage:', error);
-      
+
       toast.error("Failed to update lead stage. Please try again.");
+    }
+  };
+
+  const handleSaveDealValue = async () => {
+    if (!editingLead || !dealValueAmount) return;
+
+    setIsSavingDealValue(true);
+    try {
+      const amount = parseFloat(dealValueAmount);
+
+      // 1. Update lead stage and deal value
+      await updateLeadStage(editingLead.id, 'Deal Closed', amount);
+
+      // 2. Create initial payment if requested
+      if (recordInitialPayment && initialPaymentAmount) {
+        await createPayment({
+          lead_id: editingLead.id,
+          amount: parseFloat(initialPaymentAmount),
+          payment_method: paymentMethod,
+          status: 'Completed',
+          payment_date: new Date().toISOString().split('T')[0]
+        });
+      }
+
+      // Update local state
+      setLeads(prev => prev.map(lead =>
+        lead.id === editingLead.id
+          ? { ...lead, stage: 'Deal Closed', deal_value: amount }
+          : lead
+      ));
+
+      toast.success(recordInitialPayment ? "Deal closed and payment recorded!" : "Deal closed successfully");
+      setShowDealValue(false);
+      setEditingLead(null);
+      setDealValueAmount('');
+      setInitialPaymentAmount('');
+      setRecordInitialPayment(false);
+
+    } catch (error) {
+      console.error('Failed to save deal value:', error);
+      toast.error("Failed to save deal details");
+    } finally {
+      setIsSavingDealValue(false);
     }
   };
 
@@ -989,7 +1074,7 @@ export default function LeadsPage() {
     if (editedStageName && editingStage) {
       const stageConfig = stages[editingStage]
       const updatedStages = { ...stages }
-      
+
       // Delete old stage if name changed
       if (editingStage !== editedStageName) {
         delete updatedStages[editingStage]
@@ -1021,7 +1106,7 @@ export default function LeadsPage() {
 
   const handleUpdateLead = async (updatedLead: Lead | null) => {
     if (!updatedLead) return
-    
+
     try {
       const response = await updateLead(updatedLead.id, {
         name: updatedLead.name,
@@ -1029,20 +1114,29 @@ export default function LeadsPage() {
         phone: updatedLead.phone,
         company: updatedLead.company,
         stage: updatedLead.stage,
-        status: (updatedLead.status === 'Hot' || updatedLead.status === 'Warm' || updatedLead.status === 'Cold') 
-          ? updatedLead.status 
+        status: (updatedLead.status === 'Hot' || updatedLead.status === 'Warm' || updatedLead.status === 'Cold')
+          ? updatedLead.status
           : 'Cold',
         source: updatedLead.source,
       })
-      
+
       // Update local state with response from server
-      setLeads(prev => prev.map(lead => 
+      setLeads(prev => prev.map(lead =>
         lead.id === response.id ? response : lead
       ))
-      
+
       toast.success("Lead updated successfully")
       setShowEditLead(false)
       setEditedLead(null)
+
+      // Trigger deal value dialog if stage changed to closed and it wasn't closed before
+      const originalLead = leads.find(l => l.id === updatedLead.id);
+      if ((updatedLead.stage === 'Deal Closed' || updatedLead.stage === 'Closed Won') &&
+        originalLead && originalLead.stage !== 'Deal Closed' && originalLead.stage !== 'Closed Won') {
+        // Find the lead in the updated list to ensure we have the latest data
+        setEditingLead(response);
+        setShowDealValue(true);
+      }
     } catch (error) {
       console.error('Failed to update lead:', error)
       toast.error("Failed to update lead. Please try again.")
@@ -1060,8 +1154,8 @@ export default function LeadsPage() {
 
   // Add this function to handle individual selection
   const handleSelectLead = (leadId: number) => {
-    setSelectedLeads(prev => 
-      prev.includes(leadId) 
+    setSelectedLeads(prev =>
+      prev.includes(leadId)
         ? prev.filter(id => id !== leadId)
         : [...prev, leadId]
     );
@@ -1078,30 +1172,30 @@ export default function LeadsPage() {
   const validateAndSubmit = async () => {
     // Reset errors
     setFormErrors({});
-    
+
     // Validate required fields
     const errors: LeadFormErrors = {};
-    
+
     if (!newLead.name?.trim()) {
       errors.name = 'Name is required';
     }
-    
+
     if (!newLead.email?.trim()) {
       errors.email = 'Email is required';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newLead.email)) {
       errors.email = 'Invalid email format';
     }
-    
+
     if (newLead.phone && !/^\+?[\d\s-]{10,}$/.test(newLead.phone)) {
       errors.phone = 'Invalid phone number format';
     }
-    
+
     // If there are errors, show them and stop
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
       return;
     }
-    
+
     // Submit the form
     setIsSubmitting(true);
     try {
@@ -1121,9 +1215,9 @@ export default function LeadsPage() {
     try {
       setIsExporting(true);
       await exportLeads(exportAll ? undefined : selectedLeads);
-      
+
       toast.success("Leads exported successfully");
-      
+
       setShowExportDialog(false);
     } catch (error) {
       console.error('Export failed:', error);
@@ -1137,7 +1231,7 @@ export default function LeadsPage() {
   const extractVariables = (template: MessageTemplate) => {
     const variableRegex = /{{([^}]+)}}/g
     const variables = new Set<string>()
-    
+
     template.components.forEach(component => {
       if (component.text) {
         let match
@@ -1146,7 +1240,7 @@ export default function LeadsPage() {
         }
       }
     })
-    
+
     return Array.from(variables)
   }
 
@@ -1158,32 +1252,32 @@ export default function LeadsPage() {
     setBroadcastResponse(null);
 
     try {
-        // Prepare the data to be sent
-        const broadcastData = {
-            template_id: String(selectedTemplate.id),
-            lead_ids: selectedLeads,
-            variables: variables,
-            variable_column_mapping: variableColumnMapping
-        };
+      // Prepare the data to be sent
+      const broadcastData = {
+        template_id: String(selectedTemplate.id),
+        lead_ids: selectedLeads,
+        variables: variables,
+        variable_column_mapping: variableColumnMapping
+      };
 
-        // Log the data being sent
-        console.log('Sending broadcast data:', broadcastData);
+      // Log the data being sent
+      console.log('Sending broadcast data:', broadcastData);
 
-        // Call your API to send broadcast
-        const response = await integrationApi.sendBroadcast(broadcastData);
-        
-        setBroadcastResponse({
-            success: true,
-            message: `Successfully initiated broadcast to ${selectedLeads.length} leads`
-        });
-        
+      // Call your API to send broadcast
+      const response = await integrationApi.sendBroadcast(broadcastData);
+
+      setBroadcastResponse({
+        success: true,
+        message: `Successfully initiated broadcast to ${selectedLeads.length} leads`
+      });
+
     } catch (error: any) {
-        setBroadcastResponse({
-            success: false,
-            error: error.message || "Failed to send broadcast"
-        });
+      setBroadcastResponse({
+        success: false,
+        error: error.message || "Failed to send broadcast"
+      });
     } finally {
-        setIsSendingBroadcast(false);
+      setIsSendingBroadcast(false);
     }
   };
 
@@ -1192,7 +1286,7 @@ export default function LeadsPage() {
     try {
       const response = await integrationApi.getFacebookLeadForms();
       setFacebookForms(response.forms || []);
-      
+
       // Show debug info if no forms found
       if (response.forms && response.forms.length === 0 && response.debug_info) {
         console.log('Debug info:', response.debug_info);
@@ -1276,16 +1370,16 @@ export default function LeadsPage() {
 
       toast.success(response.message || "Leads synced successfully");
 
-        } catch (error: any) {
+    } catch (error: any) {
       console.error('Failed to retrieve Facebook leads:', error);
-      
+
       // Handle specific Facebook API errors with proper error styling
       let errorMessage = "Failed to retrieve Facebook leads";
       let showAction = false;
-      
+
       if (error.response?.data?.error_code) {
         const errorCode = error.response.data.error_code;
-        
+
         switch (errorCode) {
           case 'TOKEN_EXPIRED':
             errorMessage = "Your Facebook access token has expired. Please refresh your integration in the Integrations page.";
@@ -1306,7 +1400,7 @@ export default function LeadsPage() {
             errorMessage = error.response.data.error || errorMessage;
         }
       }
-      
+
       if (showAction) {
         toast.error(errorMessage, {
           action: {
@@ -1352,7 +1446,7 @@ export default function LeadsPage() {
       if (response.accounts && response.accounts.length > 0) {
         setTemplates(response.accounts[0].templates || []);
       } else {
-              toast.error("No WhatsApp account found");
+        toast.error("No WhatsApp account found");
       }
     } catch (error: any) {
       toast.error(error.message || "Failed to fetch templates");
@@ -1413,25 +1507,25 @@ export default function LeadsPage() {
               <FileDown className="h-4 w-4 lg:mr-2" />
               <span className="hidden lg:inline">Import</span>
             </Button> */}
-            <input 
-                ref={fileInputRef}
-                type="file" 
-                accept=".csv" 
-                onChange={handleFileChange} 
-                className="hidden"
-              />
-              <Button onClick={handleImportClick}>
-                <FileUp className="mr-2 h-4 w-4" />
-                Import CSV
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={openFacebookRetrieval}
-                className="h-8 px-2 lg:px-3"
-              >
-                <Facebook className="h-4 w-4 lg:mr-2" />
-                <span className="hidden lg:inline">Sync Leads</span>
-              </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv"
+              onChange={handleFileChange}
+              className="hidden"
+            />
+            <Button onClick={handleImportClick}>
+              <FileUp className="mr-2 h-4 w-4" />
+              Import CSV
+            </Button>
+            <Button
+              variant="outline"
+              onClick={openFacebookRetrieval}
+              className="h-8 px-2 lg:px-3"
+            >
+              <Facebook className="h-4 w-4 lg:mr-2" />
+              <span className="hidden lg:inline">Sync Leads</span>
+            </Button>
 
           </div>
         </CardHeader>
@@ -1457,8 +1551,8 @@ export default function LeadsPage() {
             <div className="flex flex-wrap gap-2 mb-4">
 
               {/* Status filter */}
-              <Select 
-                value={filters.status} 
+              <Select
+                value={filters.status}
                 onValueChange={(value) => handleFilterChange('status', value)}
               >
                 <SelectTrigger className="w-[140px]">
@@ -1474,8 +1568,8 @@ export default function LeadsPage() {
               </Select>
 
               {/* Stage filter */}
-              <Select 
-                value={filters.stage} 
+              <Select
+                value={filters.stage}
                 onValueChange={(value) => handleFilterChange('stage', value)}
               >
                 <SelectTrigger className="w-[140px]">
@@ -1493,8 +1587,8 @@ export default function LeadsPage() {
               </Select>
 
               {/* Add back the source filter */}
-              <Select 
-                value={filters.source} 
+              <Select
+                value={filters.source}
                 onValueChange={(value) => handleFilterChange('source', value)}
               >
                 <SelectTrigger className="w-[140px]">
@@ -1528,8 +1622,8 @@ export default function LeadsPage() {
               />
 
               {/* Clear filters button */}
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 onClick={clearFilters}
                 className="h-10"
               >
@@ -1563,8 +1657,8 @@ export default function LeadsPage() {
                         <h3 className="text-lg font-semibold mb-4">Map CSV Columns to Lead Fields</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                           {columnMapping.map((mapping) => (
-                            <div 
-                              key={mapping.csvHeader} 
+                            <div
+                              key={mapping.csvHeader}
                               className="flex flex-col space-y-2 p-3 rounded-md border "
                             >
                               <span className="text-sm font-medium text-gray-700">
@@ -1650,14 +1744,14 @@ export default function LeadsPage() {
                                 {isImporting ? 'Importing Your Data' : 'Preparing Import Process'}
                               </h3>
                               <p className="text-sm text-gray-500">
-                                {isImporting 
-                                  ? 'Please wait while we process and validate your data...' 
+                                {isImporting
+                                  ? 'Please wait while we process and validate your data...'
                                   : 'Getting everything ready for your import...'}
                               </p>
                             </div>
                             <div className="w-full max-w-xs">
                               <div className="h-1 w-full bg-gray-200 rounded-full overflow-hidden">
-                                <div 
+                                <div
                                   className="h-full bg-blue-500 transition-all duration-500 ease-in-out"
                                   style={{
                                     animation: 'progress 1.5s ease-in-out infinite',
@@ -1678,9 +1772,9 @@ export default function LeadsPage() {
                               <CheckCircle2 className="h-6 w-6 text-green-500" />
                               <h3 className="text-lg font-semibold">Import Results</h3>
                             </div>
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
+                            <Button
+                              variant="outline"
+                              size="sm"
                               onClick={resetImport}
                               className="flex items-center gap-2"
                             >
@@ -1688,7 +1782,7 @@ export default function LeadsPage() {
                               Close
                             </Button>
                           </div>
-                          
+
                           <div className="grid grid-cols-3 gap-4">
                             <div className="bg-white rounded-lg p-4 border">
                               <div className="text-sm font-medium text-gray-500">Total Rows</div>
@@ -1731,7 +1825,7 @@ export default function LeadsPage() {
                           )}
 
                           <div className="flex justify-center pt-4">
-                            <Button 
+                            <Button
                               onClick={resetImport}
                               className="min-w-[200px]"
                             >
@@ -1752,7 +1846,7 @@ export default function LeadsPage() {
                         <Button variant="outline" onClick={resetImport}>
                           Cancel
                         </Button>
-                        <Button 
+                        <Button
                           onClick={handleImport}
                           disabled={!file || columnMapping.every(m => m.leadField === 'skip') || isImporting}
                         >
@@ -1817,8 +1911,8 @@ export default function LeadsPage() {
                     <div className="max-h-[400px] overflow-y-auto">
                       <div className="space-y-0">
                         {Object.entries(stages).map(([name, config]) => (
-                          <div 
-                            key={name} 
+                          <div
+                            key={name}
                             className={cn(
                               "flex items-center justify-between p-3 border-b last:border-0",
                               editingStage === name ? "bg-gray-50" : ""
@@ -1847,15 +1941,15 @@ export default function LeadsPage() {
                                   </SelectContent>
                                 </Select>
                                 <div className="flex items-center gap-1">
-                                  <Button 
-                                    variant="ghost" 
+                                  <Button
+                                    variant="ghost"
                                     size="sm"
                                     onClick={handleUpdateStage}
                                   >
                                     <CheckCircle className="h-4 w-4 text-green-600" />
                                   </Button>
-                                  <Button 
-                                    variant="ghost" 
+                                  <Button
+                                    variant="ghost"
                                     size="sm"
                                     onClick={() => setEditingStage(null)}
                                   >
@@ -1873,15 +1967,15 @@ export default function LeadsPage() {
                                   <Badge className={cn("w-fit", config.color)}>
                                     Example
                                   </Badge>
-                                  <Button 
-                                    variant="ghost" 
+                                  <Button
+                                    variant="ghost"
                                     size="sm"
                                     onClick={() => handleEditStage(name)}
                                   >
                                     <Pencil className="h-4 w-4 text-blue-600" />
                                   </Button>
-                                  <Button 
-                                    variant="ghost" 
+                                  <Button
+                                    variant="ghost"
                                     size="sm"
                                     onClick={() => handleDeleteStage(name)}
                                     disabled={Object.keys(stages).length <= 1}
@@ -1906,7 +2000,7 @@ export default function LeadsPage() {
                 <DialogHeader>
                   <DialogTitle>Change Lead Stage</DialogTitle>
                   <DialogDescription>
-                    Select a new stage for this lead.
+                    Select a new stage for {editingLead ? editingLead.name : `${selectedLeads.length} leads`}.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="max-h-[60vh] overflow-y-auto pr-2">
@@ -1914,139 +2008,314 @@ export default function LeadsPage() {
                     {Object.entries(stages).map(([name, config]) => (
                       <Button
                         key={name}
-                        variant="outline"
+                        variant={selectedStage === name ? "default" : "outline"}
                         className={cn(
                           "justify-start",
-                          editingLead?.stage === name && "border-blue-500"
+                          selectedStage === name && "border-blue-500 bg-blue-50 text-blue-700 hover:bg-blue-100 hover:text-blue-800"
                         )}
-                        onClick={() => {
-                          if (editingLead?.id !== undefined) {
-                            handleStageChange(editingLead.id, name)
-                          }
-                        }}
+                        onClick={() => setSelectedStage(name)}
                       >
                         <div className="flex items-center gap-2">
                           {React.createElement(config.icon, { className: "h-4 w-4" })}
                           <span>{name}</span>
                         </div>
+                        {selectedStage === name && (
+                          <CheckCircle2 className="ml-auto h-4 w-4 text-blue-600" />
+                        )}
                       </Button>
                     ))}
                   </div>
                 </div>
+                <DialogFooter className="gap-2 sm:gap-0 border-t pt-4">
+                  <Button variant="outline" onClick={() => setShowStageChange(false)}>
+                    Cancel
+                  </Button>
+                  <Button
+                    disabled={!selectedStage}
+                    onClick={() => {
+                      if (!selectedStage) return;
+                      if (editingLead?.id !== undefined) {
+                        handleStageChange(editingLead.id, selectedStage)
+                      } else if (selectedLeads.length === 1) {
+                        handleStageChange(selectedLeads[0], selectedStage)
+                      } else if (selectedLeads.length > 1) {
+                        handleBulkStageChange(selectedStage)
+                      }
+                    }}
+                  >
+                    Save Changes
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            {/* Deal Value Dialog */}
+            <Dialog open={showDealValue} onOpenChange={setShowDealValue}>
+              <DialogContent className="max-w-[450px]">
+                <DialogHeader>
+                  <DialogTitle>Contract Details</DialogTitle>
+                  <DialogDescription>
+                    Set the agreement details for {editingLead?.name}
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-6 py-4">
+                  <div className="grid gap-2">
+                    <Label>Total Deal Amount (Contract Value)</Label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-2.5 text-gray-500">₹</span>
+                      <Input
+                        type="number"
+                        placeholder="0.00"
+                        className="pl-7"
+                        value={dealValueAmount}
+                        onChange={(e) => setDealValueAmount(e.target.value)}
+                        autoFocus
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="recordPayment"
+                      className="h-4 w-4 rounded border-gray-300"
+                      checked={recordInitialPayment}
+                      onChange={(e) => setRecordInitialPayment(e.target.checked)}
+                    />
+                    <Label htmlFor="recordPayment" className="cursor-pointer">Record an initial payment now</Label>
+                  </div>
+
+                  {recordInitialPayment && (
+                    <div className="grid gap-4 p-4 bg-blue-50/50 rounded-lg border border-blue-100">
+                      <div className="grid gap-2">
+                        <Label>Initial Paid Amount</Label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-2.5 text-gray-500">₹</span>
+                          <Input
+                            type="number"
+                            placeholder="0.00"
+                            className="pl-7 bg-white"
+                            value={initialPaymentAmount}
+                            onChange={(e) => setInitialPaymentAmount(e.target.value)}
+                          />
+                        </div>
+                      </div>
+                      <div className="grid gap-2">
+                        <Label>Payment Method</Label>
+                        <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                          <SelectTrigger className="bg-white">
+                            <SelectValue placeholder="Select method" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="UPI">UPI</SelectItem>
+                            <SelectItem value="Cash">Cash</SelectItem>
+                            <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setShowDealValue(false)}>
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleSaveDealValue}
+                    disabled={!dealValueAmount || isSavingDealValue}
+                  >
+                    {isSavingDealValue ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      'Confirm Contract & Payment'
+                    )}
+                  </Button>
+                </DialogFooter>
               </DialogContent>
             </Dialog>
 
             {/* Add Edit Lead Dialog */}
             <Dialog open={showEditLead} onOpenChange={setShowEditLead}>
-              <DialogContent className="max-w-[500px]">
-                <DialogHeader>
+              <DialogContent className="max-w-[500px] h-[90vh] p-0 flex flex-col">
+                <DialogHeader className="px-6 py-4 border-b">
                   <DialogTitle>Edit Lead</DialogTitle>
                   <DialogDescription>
                     Update lead information and stage.
                   </DialogDescription>
                 </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="grid gap-2">
-                    <Label>Name</Label>
-                    <Input
-                      value={editedLead?.name || ''}
-                      onChange={(e) => setEditedLead(prev => prev ? { ...prev, name: e.target.value } : null)}
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label>Email</Label>
-                    <Input
-                      value={editedLead?.email || ''}
-                      onChange={(e) => setEditedLead(prev => prev ? { ...prev, email: e.target.value } : null)}
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label>Phone</Label>
-                    <Input
-                      value={editedLead?.phone || ''}
-                      onChange={(e) => setEditedLead(prev => prev ? { ...prev, phone: e.target.value } : null)}
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label>Company</Label>
-                    <Input
-                      value={editedLead?.company || ''}
-                      onChange={(e) => setEditedLead(prev => prev ? { ...prev, company: e.target.value } : null)}
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label>Stage</Label>
-                    <Select
-                      value={editedLead?.stage || ''}
-                      onValueChange={(value) => setEditedLead(prev => prev ? { ...prev, stage: value } : null)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select stage" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(stages).map(([name, config]) => (
-                          <SelectItem key={name} value={name}>
-                            <div className="flex items-center gap-2">
-                              {React.createElement(config.icon, { className: "h-4 w-4" })}
-                              <span>{name}</span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="temperature">Temperature</Label>
-                    <Select
-                      value={editedLead?.status || ''}
-                      onValueChange={(value) => {
-                        if (value in temperatureConfig) {
-                          setEditedLead(prev => prev ? { ...prev, status: value as 'Hot' | 'Warm' | 'Cold' } : null)
-                        }
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select temperature" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {(Object.keys(temperatureConfig) as Array<'Hot' | 'Warm' | 'Cold'>).map((temp) => (
-                          <SelectItem key={temp} value={temp}>
-                            <div className="flex items-center gap-2">
-                              {React.createElement(temperatureConfig[temp].icon, { className: "h-4 w-4" })}
-                              <span>{temp}</span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid gap-2">
-                    <Label>Source</Label>
-                    <Select
-                      value={editedLead?.source || ''}
-                      onValueChange={(value) => setEditedLead(prev => prev ? { ...prev, source: value } : null)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select source" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.keys(sourceConfig).map((source) => (
-                          <SelectItem key={source} value={source}>
-                            <div className="flex items-center gap-2">
-                              {React.createElement(sourceConfig[source as keyof typeof sourceConfig].icon, { className: "h-4 w-4" })}
-                              <span>{source}</span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                <div className="flex-1 overflow-y-auto px-6 py-4">
+                  <div className="grid gap-4">
+                    <div className="grid gap-2">
+                      <Label>Name</Label>
+                      <Input
+                        value={editedLead?.name || ''}
+                        onChange={(e) => setEditedLead(prev => prev ? { ...prev, name: e.target.value } : null)}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>Email</Label>
+                      <Input
+                        value={editedLead?.email || ''}
+                        onChange={(e) => setEditedLead(prev => prev ? { ...prev, email: e.target.value } : null)}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>Phone</Label>
+                      <Input
+                        value={editedLead?.phone || ''}
+                        onChange={(e) => setEditedLead(prev => prev ? { ...prev, phone: e.target.value } : null)}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>Company</Label>
+                      <Input
+                        value={editedLead?.company || ''}
+                        onChange={(e) => setEditedLead(prev => prev ? { ...prev, company: e.target.value } : null)}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>Stage</Label>
+                      <Select
+                        value={editedLead?.stage || ''}
+                        onValueChange={(value) => setEditedLead(prev => prev ? { ...prev, stage: value } : null)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select stage" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.entries(stages).map(([name, config]) => (
+                            <SelectItem key={name} value={name}>
+                              <div className="flex items-center gap-2">
+                                {React.createElement(config.icon, { className: "h-4 w-4" })}
+                                <span>{name}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="temperature">Temperature</Label>
+                      <Select
+                        value={editedLead?.status || ''}
+                        onValueChange={(value) => {
+                          if (value in temperatureConfig) {
+                            setEditedLead(prev => prev ? { ...prev, status: value as 'Hot' | 'Warm' | 'Cold' } : null)
+                          }
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select temperature" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(Object.keys(temperatureConfig) as Array<'Hot' | 'Warm' | 'Cold'>).map((temp) => (
+                            <SelectItem key={temp} value={temp}>
+                              <div className="flex items-center gap-2">
+                                {React.createElement(temperatureConfig[temp].icon, { className: "h-4 w-4" })}
+                                <span>{temp}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>Source</Label>
+                      <Select
+                        value={editedLead?.source || ''}
+                        onValueChange={(value) => setEditedLead(prev => prev ? { ...prev, source: value } : null)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select source" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.keys(sourceConfig).map((source) => (
+                            <SelectItem key={source} value={source}>
+                              <div className="flex items-center gap-2">
+                                {React.createElement(sourceConfig[source as keyof typeof sourceConfig].icon, { className: "h-4 w-4" })}
+                                <span>{source}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Payment Related Options */}
+                    <div className="mt-4 pt-4 border-t">
+                      <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                        <Wallet className="h-4 w-4 text-blue-600" />
+                        Financial Details
+                      </h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="grid gap-2">
+                          <Label>Total Deal Value</Label>
+                          <div className="relative">
+                            <IndianRupee className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                            <Input
+                              type="number"
+                              className="pl-8"
+                              placeholder="0.00"
+                              value={editedLead?.deal_value || ''}
+                              onChange={(e) => setEditedLead(prev => prev ? { ...prev, deal_value: parseFloat(e.target.value) || 0 } : null)}
+                            />
+                          </div>
+                        </div>
+                        <div className="grid gap-2">
+                          <Label>Paid Amount</Label>
+                          <div className="relative">
+                            <IndianRupee className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                            <Input
+                              type="number"
+                              className="pl-8"
+                              placeholder="0.00"
+                              value={editedLead?.paid_amount || ''}
+                              onChange={(e) => setEditedLead(prev => prev ? { ...prev, paid_amount: parseFloat(e.target.value) || 0 } : null)}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      {editedLead && editedLead.deal_value !== undefined && editedLead.paid_amount !== undefined && (
+                        <div className="mt-3 p-3 bg-blue-50/50 rounded-lg border border-blue-100 text-sm flex justify-between items-center">
+                          <span className="text-blue-700 font-medium">Balance Amount</span>
+                          <span className={cn(
+                            "font-bold text-lg",
+                            (editedLead.deal_value - editedLead.paid_amount) > 0 ? "text-red-600" : "text-green-600"
+                          )}>
+                            ₹{(editedLead.deal_value - editedLead.paid_amount).toLocaleString()}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Notes Section */}
+                    <div className="mt-2 pt-4 border-t">
+                      <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                        <MessageSquare className="h-4 w-4 text-orange-500" />
+                        Notes / History
+                      </h3>
+                      <div className="grid gap-2">
+                        <Textarea
+                          placeholder="Add notes about this lead..."
+                          className="min-h-[100px] bg-gray-50/50"
+                          value={editedLead?.notes || ''}
+                          onChange={(e) => setEditedLead(prev => prev ? { ...prev, notes: e.target.value } : null)}
+                        />
+                        <p className="text-[10px] text-gray-400 italic">
+                          Notes are stored with timestamps automatically when updated.
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <DialogFooter>
+                <DialogFooter className="px-6 py-4 border-t">
                   <Button variant="outline" onClick={() => setShowEditLead(false)}>
                     Cancel
                   </Button>
-                  <Button 
+                  <Button
                     type="button"
                     onClick={(e) => {
                       e.preventDefault()
@@ -2221,7 +2490,7 @@ export default function LeadsPage() {
                   }}>
                     Cancel
                   </Button>
-                  <Button 
+                  <Button
                     onClick={validateAndSubmit}
                     disabled={isSubmitting}
                   >
@@ -2257,7 +2526,8 @@ export default function LeadsPage() {
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      // Handle bulk stage change
+                      setEditingLead(null);
+                      setSelectedStage(null);
                       setShowStageChange(true);
                     }}
                   >
@@ -2282,8 +2552,8 @@ export default function LeadsPage() {
                 </div>
                 <h3 className="text-lg font-medium text-red-900 mb-2">Error Loading Leads</h3>
                 <p className="text-sm text-red-600 max-w-md mb-4">{error}</p>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => {
                     setError(null);
                     fetchLeads();
@@ -2354,9 +2624,9 @@ export default function LeadsPage() {
                                 <TooltipProvider>
                                   <Tooltip>
                                     <TooltipTrigger asChild>
-                                      <Button 
-                                        variant="ghost" 
-                                        size="sm" 
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
                                         className="h-8 w-8 p-0"
                                         onClick={() => handleEditLead(lead)}
                                       >
@@ -2372,9 +2642,9 @@ export default function LeadsPage() {
                                 <TooltipProvider>
                                   <Tooltip>
                                     <TooltipTrigger asChild>
-                                      <Button 
-                                        variant="ghost" 
-                                        size="sm" 
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
                                         className="h-8 w-8 p-0"
                                         onClick={() => handleDelete(lead)}
                                       >
@@ -2388,60 +2658,70 @@ export default function LeadsPage() {
                                 </TooltipProvider>
                               </div>
                             ) : column.id === 'stage' ? (
-                              <Badge 
+                              <Badge
+                                onClick={() => {
+                                  setEditingLead(lead);
+                                  setSelectedStage(lead.stage);
+                                  setShowStageChange(true);
+                                }}
                                 className={cn(
-                                  defaultStages[lead.stage as keyof typeof defaultStages]?.color || 'bg-gray-100 text-gray-800',
-                                  'flex items-center gap-1'
+                                  stages[lead.stage]?.color || 'bg-gray-100 text-gray-800',
+                                  'flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity'
                                 )}
                               >
-                                {React.createElement(defaultStages[lead.stage as keyof typeof defaultStages]?.icon || Tag, { 
-                                  className: "h-3 w-3" 
+                                {React.createElement(stages[lead.stage]?.icon || Tag, {
+                                  className: "h-3 w-3"
                                 })}
                                 {lead.stage}
                               </Badge>
                             ) : column.id === 'status' ? (
-                              <Badge 
+                              <Badge
                                 className={cn(
                                   temperatureConfig[lead.status as TemperatureType]?.color || 'bg-gray-100 text-gray-800',
                                   'flex items-center gap-1'
                                 )}
                               >
-                                {React.createElement(temperatureConfig[lead.status as TemperatureType]?.icon || Thermometer, { 
-                                  className: "h-3 w-3" 
+                                {React.createElement(temperatureConfig[lead.status as TemperatureType]?.icon || Thermometer, {
+                                  className: "h-3 w-3"
                                 })}
                                 {lead.status}
                               </Badge>
                             ) : column.id === 'source' ? (
-                              <Badge 
+                              <Badge
                                 className={cn(
                                   sourceConfig[lead.source as keyof typeof sourceConfig]?.color || 'bg-gray-100 text-gray-800',
                                   'flex items-center gap-1'
                                 )}
                               >
-                                {React.createElement(sourceConfig[lead.source as keyof typeof sourceConfig]?.icon || Globe, { 
-                                  className: "h-3 w-3" 
+                                {React.createElement(sourceConfig[lead.source as keyof typeof sourceConfig]?.icon || Globe, {
+                                  className: "h-3 w-3"
                                 })}
                                 {lead.source}
                               </Badge>
+                            ) : column.id === 'deal_value' || column.id === 'paid_amount' ? (
+                              <div className="flex items-center gap-1 font-medium">
+                                <span className="text-gray-500">₹</span>
+                                <span>{lead[column.id as keyof typeof lead]?.toLocaleString() || '0'}</span>
+                              </div>
                             ) : column.id === 'lastContact' ? (
                               <div className="flex items-center gap-2">
-                                {column.icon && React.createElement(column.icon, { 
-                                  className: "h-4 w-4 text-gray-500" 
+                                {column.icon && React.createElement(column.icon, {
+                                  className: "h-4 w-4 text-gray-500"
                                 })}
                                 <span>{format(new Date(lead.last_contact), "MMM dd, yyyy")}</span>
                               </div>
                             ) : column.id === 'created_at' ? (
                               <div className="flex items-center gap-2">
-                                {column.icon && React.createElement(column.icon, { 
-                                  className: "h-4 w-4 text-gray-500" 
+                                {column.icon && React.createElement(column.icon, {
+                                  className: "h-4 w-4 text-gray-500"
                                 })}
                                 {/* <span>{format(new Date(lead.created_at), "MMM dd, yyyy")}</span> */}
                                 <span>{format(new Date(lead.created_at), "MMM dd, yyyy 'at' hh:mm a")}</span>
                               </div>
                             ) : (
                               <div className="flex items-center gap-2">
-                                {column.icon && React.createElement(column.icon, { 
-                                  className: "h-4 w-4 text-gray-500" 
+                                {column.icon && React.createElement(column.icon, {
+                                  className: "h-4 w-4 text-gray-500"
                                 })}
                                 <span>{lead[column.id as keyof typeof lead]}</span>
                               </div>
@@ -2459,9 +2739,9 @@ export default function LeadsPage() {
       </Card>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog 
-        open={deleteConfirmation.isOpen} 
-        onOpenChange={(isOpen) => 
+      <Dialog
+        open={deleteConfirmation.isOpen}
+        onOpenChange={(isOpen) =>
           setDeleteConfirmation(prev => ({ ...prev, isOpen }))
         }
       >
@@ -2475,10 +2755,10 @@ export default function LeadsPage() {
           <DialogFooter className="gap-2 sm:gap-0">
             <Button
               variant="outline"
-              onClick={() => setDeleteConfirmation({ 
-                isOpen: false, 
-                leadId: null, 
-                leadName: '' 
+              onClick={() => setDeleteConfirmation({
+                isOpen: false,
+                leadId: null,
+                leadName: ''
               })}
             >
               Cancel
@@ -2567,7 +2847,7 @@ export default function LeadsPage() {
               Select a template and customize variables to send to {selectedLeads.length} leads.
             </DialogDescription>
           </DialogHeader>
-          
+
           {/* Add ScrollArea for the content */}
           <ScrollArea className="flex-1 h-[calc(85vh-180px)]">
             <div className="flex gap-6 p-4">
@@ -2598,8 +2878,8 @@ export default function LeadsPage() {
                       </SelectTrigger>
                       <SelectContent>
                         {templates.map(template => (
-                          <SelectItem 
-                            key={template.id} 
+                          <SelectItem
+                            key={template.id}
                             value={template.id?.toString() || 'default'}
                           >
                             <div className="flex items-center gap-2">
@@ -2681,7 +2961,7 @@ export default function LeadsPage() {
                           <div key={idx} className="space-y-2">
                             {component.format === 'TEXT' && (
                               <p className="font-semibold">
-                                {component.text?.replace(/{{([^}]+)}}/g, (_, variable) => 
+                                {component.text?.replace(/{{([^}]+)}}/g, (_, variable) =>
                                   variables[variable] || `{{${variable}}}`
                                 )}
                               </p>
@@ -2690,9 +2970,9 @@ export default function LeadsPage() {
                               <div className="bg-background rounded-lg p-3">
                                 <div className="aspect-video bg-muted-foreground/10 rounded-md flex items-center justify-center">
                                   {component.example?.header_handle?.[0] ? (
-                                    <img 
-                                      src={component.example.header_handle[0]} 
-                                      alt="Header" 
+                                    <img
+                                      src={component.example.header_handle[0]}
+                                      alt="Header"
                                       className="max-h-full rounded-md object-contain"
                                     />
                                   ) : (
@@ -2705,9 +2985,9 @@ export default function LeadsPage() {
                               <div className="bg-background rounded-lg p-3">
                                 <div className="aspect-video bg-muted-foreground/10 rounded-md flex items-center justify-center">
                                   {component.example?.header_handle?.[0] ? (
-                                    <video 
-                                      src={component.example.header_handle[0]} 
-                                      controls 
+                                    <video
+                                      src={component.example.header_handle[0]}
+                                      controls
                                       className="max-h-full rounded-md"
                                     />
                                   ) : (
@@ -2737,7 +3017,7 @@ export default function LeadsPage() {
                       if (component.type === 'BODY') {
                         return (
                           <div key={idx} className="text-sm whitespace-pre-line">
-                            {component.text?.replace(/{{([^}]+)}}/g, (_, variable) => 
+                            {component.text?.replace(/{{([^}]+)}}/g, (_, variable) =>
                               variables[variable] || `{{${variable}}}`
                             )}
                           </div>
@@ -2747,7 +3027,7 @@ export default function LeadsPage() {
                       if (component.type === 'FOOTER') {
                         return (
                           <div key={idx} className="text-xs text-muted-foreground">
-                            {component.text?.replace(/{{([^}]+)}}/g, (_, variable) => 
+                            {component.text?.replace(/{{([^}]+)}}/g, (_, variable) =>
                               variables[variable] || `{{${variable}}}`
                             )}
                           </div>
@@ -2805,7 +3085,7 @@ export default function LeadsPage() {
             {broadcastResponse && (
               <div className={cn(
                 "mb-4 p-4 rounded-lg w-full",
-                broadcastResponse.success 
+                broadcastResponse.success
                   ? "bg-green-50 border border-green-200 text-green-800"
                   : "bg-red-50 border border-red-200 text-red-800"
               )}>
@@ -2821,10 +3101,10 @@ export default function LeadsPage() {
                 </div>
               </div>
             )}
-            
+
             <div className="flex justify-between w-full">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => {
                   setShowBroadcastDialog(false);
                   setBroadcastResponse(null);
@@ -2832,7 +3112,7 @@ export default function LeadsPage() {
               >
                 Close
               </Button>
-              <Button 
+              <Button
                 onClick={handleBroadcast}
                 disabled={!selectedTemplate || selectedLeads.length === 0 || isSendingBroadcast}
               >
@@ -2867,222 +3147,217 @@ export default function LeadsPage() {
             {!showResults && !showProgress ? (
               // Form View
               <div className="space-y-6">
-              {/* Form Selection */}
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="form-select">Select Lead Form</Label>
-                  <Select value={selectedForm} onValueChange={setSelectedForm}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Choose a Facebook lead form">
-                        {selectedForm && facebookForms.find(f => f.id === selectedForm)?.name}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {facebookForms.map((form) => (
-                        <SelectItem key={form.id} value={form.id}>
-                          <div className="flex flex-col">
-                            <span 
-                              className={`font-medium truncate ${form.status === 'ERROR' ? 'text-red-600' : ''}`}
-                              title={form.name}
-                            >
-                              {form.name.length > 40 ? form.name.substring(0, 40) + '...' : form.name}
-                            </span>
-                            <span className="text-xs text-gray-500">
-                              ID: {form.id} • Status: {form.status}
-                              {form.source === 'configured' && (
-                                <span className="text-green-600 block">✓ Configured Integration</span>
-                              )}
-                              {form.error && (
-                                <span className="text-red-500 block">Error: {form.error}</span>
-                              )}
-                            </span>
+                {/* Form Selection */}
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="form-select">Select Lead Form</Label>
+                    <Select value={selectedForm} onValueChange={setSelectedForm}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choose a Facebook lead form">
+                          {selectedForm && facebookForms.find(f => f.id === selectedForm)?.name}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {facebookForms.map((form) => (
+                          <SelectItem key={form.id} value={form.id}>
+                            <div className="flex flex-col">
+                              <span
+                                className={`font-medium truncate ${form.status === 'ERROR' ? 'text-red-600' : ''}`}
+                                title={form.name}
+                              >
+                                {form.name.length > 40 ? form.name.substring(0, 40) + '...' : form.name}
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                ID: {form.id} • Status: {form.status}
+                                {form.source === 'configured' && (
+                                  <span className="text-green-600 block">✓ Configured Integration</span>
+                                )}
+                                {form.error && (
+                                  <span className="text-red-500 block">Error: {form.error}</span>
+                                )}
+                              </span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {selectedForm && (
+                      <div className="mt-2 text-sm text-gray-600">
+                        <span>Integration ID: {facebookForms.find(f => f.id === selectedForm)?.integration_id}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Date Range Selection */}
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="date-range">Date Range <span className="text-red-500">*</span></Label>
+                      <p className="text-sm text-gray-500 mb-3">
+                        Select a date range to sync leads that were not captured via webhooks.
+                        Facebook retains lead data for up to 90 days.
+                      </p>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="date-from">From Date <span className="text-red-500">*</span></Label>
+                          <Input
+                            id="date-from"
+                            type="date"
+                            value={dateFrom}
+                            onChange={(e) => setDateFrom(e.target.value)}
+                            max={new Date().toISOString().split('T')[0]}
+                            required
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="date-to">To Date <span className="text-red-500">*</span></Label>
+                          <Input
+                            id="date-to"
+                            type="date"
+                            value={dateTo}
+                            onChange={(e) => setDateTo(e.target.value)}
+                            max={new Date().toISOString().split('T')[0]}
+                            min={dateFrom}
+                            required
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : showProgress ? (
+              // Progress View
+              <div className="space-y-6">
+                <div className="text-center">
+                  <div className="mx-auto flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-900 mb-6">
+                    <Loader2 className="h-8 w-8 text-blue-600 dark:text-blue-400 animate-spin" />
+                  </div>
+                  <h3 className="text-lg font-semibold mb-2">Syncing Facebook Leads</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+                    {progressMessage}
+                  </p>
+                </div>
+
+                {/* Progress Bar */}
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
+                    <span>Progress</span>
+                    <span>{Math.round(progress)}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+                    <div
+                      className="bg-blue-600 dark:bg-blue-400 h-3 rounded-full transition-all duration-500 ease-out"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Progress Steps */}
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-3">
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${progress >= 10 ? 'bg-green-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-500'
+                      }`}>
+                      {progress >= 10 ? '✓' : '1'}
+                    </div>
+                    <span className={`text-sm ${progress >= 10 ? 'text-green-600 dark:text-green-400' : 'text-gray-500'}`}>
+                      Connect to Facebook API
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${progress >= 30 ? 'bg-green-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-500'
+                      }`}>
+                      {progress >= 30 ? '✓' : '2'}
+                    </div>
+                    <span className={`text-sm ${progress >= 30 ? 'text-green-600 dark:text-green-400' : 'text-gray-500'}`}>
+                      Fetch lead data
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${progress >= 60 ? 'bg-green-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-500'
+                      }`}>
+                      {progress >= 60 ? '✓' : '3'}
+                    </div>
+                    <span className={`text-sm ${progress >= 60 ? 'text-green-600 dark:text-green-400' : 'text-gray-500'}`}>
+                      Process and validate leads
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${progress >= 90 ? 'bg-green-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-500'
+                      }`}>
+                      {progress >= 90 ? '✓' : '4'}
+                    </div>
+                    <span className={`text-sm ${progress >= 90 ? 'text-green-600 dark:text-green-400' : 'text-gray-500'}`}>
+                      Save to database
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${progress >= 100 ? 'bg-green-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-500'
+                      }`}>
+                      {progress >= 100 ? '✓' : '5'}
+                    </div>
+                    <span className={`text-sm ${progress >= 100 ? 'text-green-600 dark:text-green-400' : 'text-gray-500'}`}>
+                      Complete sync
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              // Results View
+              <div className="space-y-6">
+                <div className="text-center">
+                  <div className="mx-auto flex items-center justify-center w-12 h-12 rounded-full bg-green-100 dark:bg-green-900 mb-4">
+                    <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold mb-2">Sync Completed Successfully!</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+                    Your Facebook leads have been synced and added to your leads list.
+                  </p>
+                </div>
+
+                {/* Results Summary */}
+                <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-6 bg-card">
+                  <h4 className="font-semibold mb-4 text-center">Sync Results</h4>
+                  <div className="grid grid-cols-3 gap-4 text-sm">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{retrievalResults?.total_processed}</div>
+                      <div className="text-gray-600 dark:text-gray-400">Total Processed</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-green-600 dark:text-green-400">{retrievalResults?.new_leads}</div>
+                      <div className="text-gray-600 dark:text-gray-400">New Leads</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">{retrievalResults?.existing_leads}</div>
+                      <div className="text-gray-600 dark:text-gray-400">Existing Leads</div>
+                    </div>
+                  </div>
+
+                  {retrievalResults?.processed_leads && retrievalResults.processed_leads.length > 0 && (
+                    <div className="mt-6">
+                      <h5 className="font-medium mb-3 text-center">Processed Leads</h5>
+                      <div className="max-h-48 overflow-y-auto space-y-2">
+                        {retrievalResults.processed_leads.map((lead, index) => (
+                          <div key={index} className="flex items-center justify-between text-sm p-3 bg-muted rounded-lg">
+                            <span className="font-medium">{lead.name}</span>
+                            <Badge variant={lead.status === 'created' ? 'default' : 'secondary'}>
+                              {lead.status === 'created' ? 'New' : 'Existing'}
+                            </Badge>
                           </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {selectedForm && (
-                    <div className="mt-2 text-sm text-gray-600">
-                      <span>Integration ID: {facebookForms.find(f => f.id === selectedForm)?.integration_id}</span>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
-
-                {/* Date Range Selection */}
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="date-range">Date Range <span className="text-red-500">*</span></Label>
-                    <p className="text-sm text-gray-500 mb-3">
-                      Select a date range to sync leads that were not captured via webhooks. 
-                      Facebook retains lead data for up to 90 days.
-                    </p>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="date-from">From Date <span className="text-red-500">*</span></Label>
-                        <Input
-                          id="date-from"
-                          type="date"
-                          value={dateFrom}
-                          onChange={(e) => setDateFrom(e.target.value)}
-                          max={new Date().toISOString().split('T')[0]}
-                          required
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="date-to">To Date <span className="text-red-500">*</span></Label>
-                        <Input
-                          id="date-to"
-                          type="date"
-                          value={dateTo}
-                          onChange={(e) => setDateTo(e.target.value)}
-                          max={new Date().toISOString().split('T')[0]}
-                          min={dateFrom}
-                          required
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
               </div>
-            </div>
-          ) : showProgress ? (
-            // Progress View
-            <div className="space-y-6">
-              <div className="text-center">
-                <div className="mx-auto flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-900 mb-6">
-                  <Loader2 className="h-8 w-8 text-blue-600 dark:text-blue-400 animate-spin" />
-                </div>
-                <h3 className="text-lg font-semibold mb-2">Syncing Facebook Leads</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
-                  {progressMessage}
-                </p>
-              </div>
-
-              {/* Progress Bar */}
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
-                  <span>Progress</span>
-                  <span>{Math.round(progress)}%</span>
-                </div>
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
-                  <div 
-                    className="bg-blue-600 dark:bg-blue-400 h-3 rounded-full transition-all duration-500 ease-out"
-                    style={{ width: `${progress}%` }}
-                  />
-                </div>
-              </div>
-
-              {/* Progress Steps */}
-              <div className="space-y-3">
-                <div className="flex items-center space-x-3">
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
-                    progress >= 10 ? 'bg-green-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-500'
-                  }`}>
-                    {progress >= 10 ? '✓' : '1'}
-                  </div>
-                  <span className={`text-sm ${progress >= 10 ? 'text-green-600 dark:text-green-400' : 'text-gray-500'}`}>
-                    Connect to Facebook API
-                  </span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
-                    progress >= 30 ? 'bg-green-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-500'
-                  }`}>
-                    {progress >= 30 ? '✓' : '2'}
-                  </div>
-                  <span className={`text-sm ${progress >= 30 ? 'text-green-600 dark:text-green-400' : 'text-gray-500'}`}>
-                    Fetch lead data
-                  </span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
-                    progress >= 60 ? 'bg-green-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-500'
-                  }`}>
-                    {progress >= 60 ? '✓' : '3'}
-                  </div>
-                  <span className={`text-sm ${progress >= 60 ? 'text-green-600 dark:text-green-400' : 'text-gray-500'}`}>
-                    Process and validate leads
-                  </span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
-                    progress >= 90 ? 'bg-green-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-500'
-                  }`}>
-                    {progress >= 90 ? '✓' : '4'}
-                  </div>
-                  <span className={`text-sm ${progress >= 90 ? 'text-green-600 dark:text-green-400' : 'text-gray-500'}`}>
-                    Save to database
-                  </span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
-                    progress >= 100 ? 'bg-green-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-500'
-                  }`}>
-                    {progress >= 100 ? '✓' : '5'}
-                  </div>
-                  <span className={`text-sm ${progress >= 100 ? 'text-green-600 dark:text-green-400' : 'text-gray-500'}`}>
-                    Complete sync
-                  </span>
-                </div>
-              </div>
-            </div>
-          ) : (
-            // Results View
-            <div className="space-y-6">
-              <div className="text-center">
-                <div className="mx-auto flex items-center justify-center w-12 h-12 rounded-full bg-green-100 dark:bg-green-900 mb-4">
-                  <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
-                </div>
-                <h3 className="text-lg font-semibold mb-2">Sync Completed Successfully!</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
-                  Your Facebook leads have been synced and added to your leads list.
-                </p>
-              </div>
-
-              {/* Results Summary */}
-              <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-6 bg-card">
-                <h4 className="font-semibold mb-4 text-center">Sync Results</h4>
-                <div className="grid grid-cols-3 gap-4 text-sm">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{retrievalResults?.total_processed}</div>
-                    <div className="text-gray-600 dark:text-gray-400">Total Processed</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-green-600 dark:text-green-400">{retrievalResults?.new_leads}</div>
-                    <div className="text-gray-600 dark:text-gray-400">New Leads</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">{retrievalResults?.existing_leads}</div>
-                    <div className="text-gray-600 dark:text-gray-400">Existing Leads</div>
-                  </div>
-                </div>
-                
-                {retrievalResults?.processed_leads && retrievalResults.processed_leads.length > 0 && (
-                  <div className="mt-6">
-                    <h5 className="font-medium mb-3 text-center">Processed Leads</h5>
-                    <div className="max-h-48 overflow-y-auto space-y-2">
-                      {retrievalResults.processed_leads.map((lead, index) => (
-                        <div key={index} className="flex items-center justify-between text-sm p-3 bg-muted rounded-lg">
-                          <span className="font-medium">{lead.name}</span>
-                          <Badge variant={lead.status === 'created' ? 'default' : 'secondary'}>
-                            {lead.status === 'created' ? 'New' : 'Existing'}
-                          </Badge>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                             </div>
-             </div>
-           )}
+            )}
           </div>
 
           <DialogFooter className="flex-shrink-0">
             {!showResults && !showProgress ? (
               // Form View Footer
               <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => {
                     setShowFacebookRetrieval(false);
                     setRetrievalResults(null);
@@ -3095,7 +3370,7 @@ export default function LeadsPage() {
                 >
                   Cancel
                 </Button>
-                <Button 
+                <Button
                   onClick={handleRetrieveFacebookLeads}
                   disabled={!selectedForm || !dateFrom || !dateTo || isRetrievingLeads}
                 >
@@ -3112,8 +3387,8 @@ export default function LeadsPage() {
             ) : showProgress ? (
               // Progress View Footer - No buttons during progress
               <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   disabled
                 >
                   Please wait...
@@ -3122,8 +3397,8 @@ export default function LeadsPage() {
             ) : (
               // Results View Footer
               <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => {
                     setShowResults(false);
                     setRetrievalResults(null);
@@ -3132,7 +3407,7 @@ export default function LeadsPage() {
                 >
                   Back to Form
                 </Button>
-                <Button 
+                <Button
                   onClick={() => {
                     setShowFacebookRetrieval(false);
                     setRetrievalResults(null);

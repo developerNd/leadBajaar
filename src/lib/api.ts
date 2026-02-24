@@ -114,7 +114,7 @@ export const logout = async () => {
       clearSession();
       return true;
     }
-    
+
     await api.post('/logout', {}, {
       headers: {
         Authorization: `Bearer ${session.token}`
@@ -180,7 +180,7 @@ export const createLead = async (data: CreateLeadDto) => {
           throw new Error(messages);
         }
       }
-      
+
       // Handle server errors (500) - Show generic message instead of actual error
       if (error.response?.status === 500) {
         // Still log the actual error for debugging
@@ -191,7 +191,7 @@ export const createLead = async (data: CreateLeadDto) => {
       // Handle other HTTP errors with generic messages
       throw new Error('Unable to create lead. Please try again.');
     }
-    
+
     // Log unexpected errors but show generic message
     console.error('Unexpected error:', error);
     throw new Error('An unexpected error occurred. Please try again later.');
@@ -213,6 +213,9 @@ export interface Lead {
   stage: string;
   status: 'Hot' | 'Warm' | 'Cold';
   source: string;
+  notes?: string;
+  deal_value?: number;
+  paid_amount?: number;
   last_contact: string;
   created_at: string;
   updated_at: string;
@@ -247,12 +250,12 @@ interface GetLeadsParams {
 export const getLeads = async (params: GetLeadsParams) => {
   try {
     const response = await api.get('/leads', { params });
-    
+
     // If the response is already in the correct format, return it
     if (response.data?.data && Array.isArray(response.data.data)) {
       return response.data;
     }
-    
+
     // If we get an array directly, wrap it in the expected format
     if (Array.isArray(response.data)) {
       return {
@@ -267,7 +270,7 @@ export const getLeads = async (params: GetLeadsParams) => {
         }
       };
     }
-    
+
     // Return the response data as is
     return response.data;
   } catch (error) {
@@ -288,13 +291,28 @@ export const bulkUpdateLeadStatus = async (ids: number[], status: string) => {
   await api.post('/leads/bulk-update-status', { ids, status });
 };
 
+export const bulkUpdateLeadStage = async (ids: number[], stage: string) => {
+  await api.post('/leads/bulk-update-stage', { ids, stage });
+};
+
 export const updateLead = async (id: number, data: Partial<Lead>) => {
   const response = await api.put<Lead>(`/leads/${id}`, data);
   return response.data;
 };
 
-export const updateLeadStage = async (id: number, stage: string) => {
-  const response = await api.patch(`/leads/${id}/stage`, { stage });
+export const updateLeadStage = async (id: number, stage: string, deal_value?: number) => {
+  const response = await api.patch(`/leads/${id}/stage`, { stage, deal_value });
+  return response.data;
+};
+
+export const createPayment = async (data: {
+  lead_id: number;
+  amount: number;
+  payment_method: string;
+  status: string;
+  payment_date: string;
+}) => {
+  const response = await api.post('/payments', data);
   return response.data;
 };
 
@@ -666,26 +684,26 @@ export const exportLeads = async (ids?: number[]) => {
         'Content-Type': 'application/json',
       }
     });
-    
+
     // Get filename from response headers or use default
-    const filename = response.headers['content-disposition']?.split('filename=')[1] || 
+    const filename = response.headers['content-disposition']?.split('filename=')[1] ||
       `leads-${new Date().toISOString().split('T')[0]}.csv`;
-    
+
     // Create download link
     const blob = new Blob([response.data], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
     link.setAttribute('download', filename);
-    
+
     // Trigger download
     document.body.appendChild(link);
     link.click();
-    
+
     // Cleanup
     document.body.removeChild(link);
     window.URL.revokeObjectURL(url);
-    
+
     return true;
   } catch (error) {
     console.error('Export error:', error);
@@ -704,7 +722,7 @@ export const sendMessage = async (data: {
   receiver_id: number;
   sender_id: number;
   message: string;
-}) => { 
+}) => {
   const response = await api.post('/send-message', data);
   return response.data;
 };
