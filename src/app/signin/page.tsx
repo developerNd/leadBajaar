@@ -6,14 +6,21 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Icons } from '@/components/icons'
 import Link from 'next/link'
-import { login, loginWithGoogle } from '@/lib/api'
-import { useToast } from "@/hooks/use-toast"
+import { login } from '@/lib/api'
+import { toast } from 'sonner'
 import { cn } from "@/lib/utils"
-
+import {
+  ArrowRight,
+  Mail,
+  Lock,
+  Zap,
+  Loader2,
+  Eye,
+  EyeOff
+} from 'lucide-react'
 
 type LoginFormData = {
   email: string
@@ -23,18 +30,21 @@ type LoginFormData = {
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
   const router = useRouter()
-  const { toast } = useToast()
   const { register, handleSubmit, formState: { errors }, setValue, setError } = useForm<LoginFormData>()
 
-  // Load saved credentials on component mount
   useEffect(() => {
     const savedCredentials = localStorage.getItem('rememberedCredentials')
     if (savedCredentials) {
-      const { email, password } = JSON.parse(savedCredentials)
-      setValue('email', email)
-      setValue('password', password)
-      setValue('remember', true)
+      try {
+        const { email, password } = JSON.parse(savedCredentials)
+        setValue('email', email)
+        setValue('password', password)
+        setValue('remember', true)
+      } catch (e) {
+        localStorage.removeItem('rememberedCredentials')
+      }
     }
   }, [setValue])
 
@@ -42,7 +52,7 @@ export default function LoginPage() {
     setIsLoading(true)
     try {
       const { email, password, remember } = data
-      
+
       if (remember) {
         localStorage.setItem('rememberedCredentials', JSON.stringify({ email, password }))
       } else {
@@ -50,161 +60,140 @@ export default function LoginPage() {
       }
 
       await login(email, password)
-      toast({
-        title: "Success",
-        description: "You have been logged in successfully.",
-      })
+      toast.success("Welcome back!")
       router.push('/dashboard')
     } catch (error) {
-      // Don't log expected errors
       setValue('password', '')
       if (error instanceof Error) {
-        setError('root', {
-          type: 'manual',
-          message: error.message
-        })
+        setError('root', { type: 'manual', message: error.message })
       } else {
-        // Only log unexpected errors
-        console.error('Unexpected login error:', error)
-        setError('root', {
-          type: 'manual',
-          message: 'An unexpected error occurred'
-        })
+        setError('root', { type: 'manual', message: 'An unexpected error occurred' })
       }
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleGoogleLogin = async () => {
-    setIsLoading(true)
-    try {
-      const token = await fakeGoogleAuth()
-      await loginWithGoogle(token)
-      router.push('/dashboard')
-    } catch (error) {
-      console.error('Google login failed:', error)
-      toast({
-        title: "Google login failed",
-        description: "An error occurred during Google login. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  // This is a placeholder function to simulate Google authentication
-  const fakeGoogleAuth = () => {
-    return new Promise<string>((resolve) => {
-      setTimeout(() => resolve("fake_google_token"), 1000)
-    })
-  }
-
-  // Function to clear saved credentials
-  const clearSavedCredentials = () => {
-    localStorage.removeItem('rememberedCredentials')
-    setValue('email', '')
-    setValue('password', '')
-    setValue('remember', false)
-  }
-
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Login</CardTitle>
-          <CardDescription>Enter your credentials to access your account</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="name@example.com"
-                className={cn(
-                  errors.email && "border-red-500 focus-visible:ring-red-500"
-                )}
-                {...register('email', { 
-                  required: 'Email is required',
-                  pattern: {
-                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                    message: "Invalid email address"
-                  }
-                })}
-              />
-              {errors.email && (
-                <p className="text-sm text-red-500">{errors.email.message}</p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                className={cn(
-                  errors.password && "border-red-500 focus-visible:ring-red-500"
-                )}
-                {...register('password', { required: 'Password is required' })}
-              />
-              {errors.password && (
-                <p className="text-sm text-red-500">{errors.password.message}</p>
-              )}
-            </div>
-            {errors.root && (
-              <div className="rounded-md bg-red-50 p-3">
-                <p className="text-sm text-red-500">{errors.root.message}</p>
-              </div>
-            )}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <Checkbox id="remember" {...register('remember')} />
-                <Label htmlFor="remember">Remember me</Label>
-              </div>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={clearSavedCredentials}
-                className="text-sm text-muted-foreground hover:text-primary"
-              >
-                Clear saved credentials
-              </Button>
-            </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading && <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />}
-              Log in
-            </Button>
-          </form>
-          <div className="relative my-4">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
-            </div>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-[#020617] p-6 antialiased">
+      {/* ── Background Detail ── */}
+      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[-15%] left-[-10%] w-[50%] h-[50%] bg-indigo-500/5 blur-[120px] rounded-full" />
+        <div className="absolute bottom-[-15%] right-[-10%] w-[50%] h-[50%] bg-violet-500/5 blur-[120px] rounded-full" />
+      </div>
+
+      <div className="w-full max-w-[420px] relative z-10 flex flex-col gap-8">
+        {/* Branding */}
+        <div className="flex flex-col items-center text-center gap-3">
+          <div className="h-12 w-12 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl flex items-center justify-center shadow-sm">
+            <Zap className="h-6 w-6 text-indigo-600 dark:text-indigo-400 fill-indigo-600/10" />
           </div>
-          <Button variant="outline" className="w-full" onClick={handleGoogleLogin} disabled={isLoading}>
-            {isLoading ? (
-              <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Icons.google className="mr-2 h-4 w-4" />
-            )}
-            Google
-          </Button>
-        </CardContent>
-        <CardFooter className="flex justify-center">
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            Don&apos;t have an account?{' '}
-            <Link href="/register" className="font-medium text-primary hover:underline">
-              Sign up
-            </Link>
-          </p>
-        </CardFooter>
-      </Card>
+          <div className="space-y-1">
+            <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Welcome back</h2>
+            <p className="text-slate-500 dark:text-slate-400 text-sm">
+              Manage your sales pipeline with <span className="text-indigo-600 dark:text-indigo-400 font-semibold tracking-tight uppercase italic text-xs">LeadBajar</span>
+            </p>
+          </div>
+        </div>
+
+        <Card className="border-slate-200 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none bg-white dark:bg-slate-900/50 backdrop-blur-sm rounded-[24px]">
+          <CardHeader className="space-y-1 pb-6 pt-8 px-8">
+            <CardTitle className="text-lg font-semibold tracking-tight">Sign in</CardTitle>
+            <CardDescription className="text-xs text-slate-500">Enter your workspace credentials</CardDescription>
+          </CardHeader>
+          <CardContent className="px-8 pb-8">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-xs font-semibold text-slate-700 dark:text-slate-300 ml-0.5">Work Email</Label>
+                <div className="relative group transition-all">
+                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="name@company.com"
+                    className="h-11 pl-10 bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 rounded-xl focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm"
+                    {...register('email', { required: 'Email is required' })}
+                  />
+                </div>
+                {errors.email && <p className="text-[11px] text-red-500 font-medium mt-1 ml-1">{errors.email.message}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between px-0.5">
+                  <Label htmlFor="password" className="text-xs font-semibold text-slate-700 dark:text-slate-300">Password</Label>
+                  <Link href="#" className="text-[11px] font-medium text-indigo-600 dark:text-indigo-400 hover:underline">Forgot password?</Link>
+                </div>
+                <div className="relative group transition-all">
+                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    className="h-11 pl-10 pr-10 bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 rounded-xl focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm"
+                    {...register('password', { required: 'Password is required' })}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 h-8 w-8 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors rounded-lg"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+                {errors.password && <p className="text-[11px] text-red-500 font-medium mt-1 ml-1">{errors.password.message}</p>}
+              </div>
+
+              <div className="flex items-center space-x-2 py-1">
+                <Checkbox
+                  id="remember"
+                  className="rounded border-slate-300 dark:border-slate-700 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600"
+                  {...register('remember')}
+                />
+                <Label htmlFor="remember" className="text-xs text-slate-600 dark:text-slate-400 font-medium cursor-pointer">Stay signed in</Label>
+              </div>
+
+              {errors.root && (
+                <div className="p-3 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/20 rounded-xl text-[11px] text-red-600 dark:text-red-400 font-medium">
+                  {errors.root.message}
+                </div>
+              )}
+
+              <Button
+                type="submit"
+                className="w-full h-11 rounded-xl bg-slate-900 dark:bg-indigo-600 hover:bg-slate-800 dark:hover:bg-indigo-700 text-white font-semibold text-sm transition-all active:scale-[0.98] mt-2 flex items-center justify-center gap-2 group"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>
+                    Sign in
+                    <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
+                  </>
+                )}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        <p className="text-center text-xs text-slate-500 font-medium">
+          Don&apos;t have an account?{' '}
+          <Link href="/register" className="text-indigo-600 dark:text-indigo-400 font-bold hover:underline">
+            Create an account
+          </Link>
+        </p>
+
+        {/* Footer info */}
+        <div className="flex items-center justify-center gap-6 mt-4">
+          <span className="text-[10px] text-slate-400 font-medium uppercase tracking-widest">Secure Login</span>
+          <div className="h-1 w-1 bg-slate-300 dark:bg-slate-800 rounded-full" />
+          <span className="text-[10px] text-slate-400 font-medium uppercase tracking-widest">Encrypted Data</span>
+        </div>
+      </div>
     </div>
   )
 }
-

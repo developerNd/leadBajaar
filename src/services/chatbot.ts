@@ -24,7 +24,7 @@ class ChatbotService {
 
   private async fetchApi(url: string, options: RequestInit = {}) {
     const token = localStorage.getItem('token') // or get from your auth system
-    
+
     const response = await fetch(url, {
       ...options,
       credentials: 'include',
@@ -37,7 +37,7 @@ class ChatbotService {
     })
 
     const data = await response.json()
-    
+
     if (!response.ok) {
       throw new Error(data.message || 'Request failed')
     }
