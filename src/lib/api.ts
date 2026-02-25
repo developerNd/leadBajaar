@@ -1,8 +1,8 @@
 import axios, { AxiosError } from 'axios';
 import { setSession, clearSession, getSession } from './auth';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
-// const API_BASE_URL ='https://api.leadbajaar.com/api'
+// const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
+const API_BASE_URL = 'https://api.leadbajaar.com/api'
 
 // Export both httpClient and api
 export const httpClient = {
@@ -62,6 +62,23 @@ api.interceptors.request.use(async (config) => {
   }
   return config;
 });
+
+// Add response interceptor to handle 401 Unauthorized
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      clearSession();
+      if (typeof window !== 'undefined') {
+        const currentPath = window.location.pathname;
+        if (currentPath !== '/signin' && currentPath !== '/signup') {
+          window.location.href = '/signin';
+        }
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 
 interface LoginError {
   message: string;
@@ -780,13 +797,8 @@ export const getConversationMessages = async (conversationId: number, lastTimest
   }
 };
 
-export const getBookings = async () => {
-  const response = await api.get('/bookings', {
-    headers: {
-      Authorization: `Bearer ${localStorage.getItem('token')}`
-    }
-  });
-  return response;
+export const getBookings = async (params?: { page?: number; per_page?: number; type?: string; search?: string }) => {
+  return api.get('/bookings', { params });
 };
 
 export default api;

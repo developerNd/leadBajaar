@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -14,6 +15,7 @@ import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import {
   User, Mail, Phone, Building2, Tag, Globe,
   CheckCircle, Clock, Star, AlertCircle, Globe2,
@@ -26,7 +28,8 @@ import {
   Computer,
   Map,
   IndianRupee,
-  Wallet
+  Wallet,
+  UserCheck
 } from 'lucide-react'
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -127,21 +130,56 @@ interface ImportStats {
 // }
 
 const defaultStages = {
-  'Lead': { color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100', icon: User },
-  'Appointment Booked': { color: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100', icon: CalendarIcon },
-  'Qualified': { color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100', icon: CheckCircle },
-  'Disqualified': { color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100', icon: AlertCircle },
-  'Not Connected': { color: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-100', icon: Phone },
-  'Deal Closed': { color: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-100', icon: CheckCircle },
-  'Closed Won': { color: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-100', icon: CheckCircle },
-  'DNP': { color: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-100', icon: AlertCircle },
-  'Follow Up': { color: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-100', icon: Clock },
-  'Call Back': { color: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-100', icon: Phone },
-  'Consultation': { color: 'bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-100', icon: MessageSquare },
-  'Not Interested': { color: 'bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-100', icon: X },
-  'Broadcast Done': { color: 'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-100', icon: Globe },
-  'Wrong Number': { color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100', icon: Phone },
-  'Payment Received': { color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100', icon: CheckCircle },
+  'Lead': { color: 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300', icon: User },
+  'Appointment Booked': { color: 'bg-purple-50 text-purple-600 dark:bg-purple-900/30 dark:text-purple-300', icon: CalendarIcon },
+  'Qualified': { color: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-300', icon: CheckCircle },
+  'Disqualified': { color: 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-300', icon: AlertCircle },
+  'Not Connected': { color: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300', icon: Phone },
+  'Deal Closed': { color: 'bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-300', icon: CheckCircle },
+  'Closed Won': { color: 'bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-300', icon: CheckCircle },
+  'DNP': { color: 'bg-orange-50 text-orange-600 dark:bg-orange-900/30 dark:text-orange-300', icon: AlertCircle },
+  'Follow Up': { color: 'bg-cyan-50 text-cyan-600 dark:bg-cyan-900/30 dark:text-cyan-300', icon: Clock },
+  'Call Back': { color: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-300', icon: Phone },
+  'Consultation': { color: 'bg-violet-50 text-violet-600 dark:bg-violet-900/30 dark:text-violet-300', icon: MessageSquare },
+  'Not Interested': { color: 'bg-rose-50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-300', icon: X },
+  'Broadcast Done': { color: 'bg-teal-50 text-teal-600 dark:bg-teal-900/30 dark:text-teal-300', icon: Globe },
+  'Wrong Number': { color: 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-300', icon: Phone },
+  'Payment Received': { color: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-300', icon: CheckCircle },
+}
+
+interface LeadFormErrors {
+  name?: string;
+  email?: string;
+  phone?: string;
+}
+
+interface TemplateComponent {
+  type: 'HEADER' | 'BODY' | 'FOOTER' | 'BUTTONS';
+  text?: string;
+  format?: 'TEXT' | 'IMAGE' | 'VIDEO' | 'DOCUMENT';
+  example?: {
+    header_handle?: string[];
+    header_text?: string[];
+    body_text?: string[];
+  };
+  file?: File;
+  buttons?: Array<{
+    type: 'QUICK_REPLY' | 'URL' | 'PHONE_NUMBER' | 'COPY_CODE';
+    text: string;
+    url?: string;
+    phone_number?: string;
+    code?: string;
+  }>;
+}
+
+interface MessageTemplate {
+  id: number;
+  template_id: string;
+  name: string;
+  category: string;
+  language: string;
+  status: string;
+  components: TemplateComponent[];
 }
 
 // Add source configuration
@@ -185,6 +223,8 @@ const iconMapping = {
 // }
 
 // Add this interface if you don't have it already
+// ─── Types & Skeleton ─────────────────────────────────────────────────────────
+
 interface NewLead {
   name: string;
   email: string;
@@ -195,110 +235,45 @@ interface NewLead {
   source?: string;
 }
 
-// Add this interface for form validation
-interface LeadFormErrors {
-  name?: string;
-  email?: string;
-  phone?: string;
-  company?: string;
-}
-
-const ErrorAlert = ({ message }: { message: string }) => (
-  <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-4">
-    <div className="flex items-center gap-3">
-      <AlertCircle className="h-5 w-5 text-red-500" />
-      <p className="text-sm text-red-700">{message}</p>
-    </div>
-  </div>
-);
-
-// Add new interfaces
-interface MessageTemplate {
-  id: number;
-  name: string;
-  category: string;
-  language: string;
-  status: string;
-  components: TemplateComponent[];
-}
-
-interface TemplateComponent {
-  type: 'HEADER' | 'BODY' | 'FOOTER' | 'BUTTONS';
-  text?: string;
-  format?: 'TEXT' | 'IMAGE' | 'VIDEO' | 'DOCUMENT';
-  example?: {
-    header_handle: string[];
-  };
-  buttons?: Array<{
-    type: 'QUICK_REPLY' | 'URL' | 'PHONE_NUMBER' | 'COPY_CODE';
-    text: string;
-    url?: string;
-    phone_number?: string;
-    code?: string;
-  }>;
-}
-
-// Update the LeadsTableSkeleton component to accept props
-interface LeadsTableSkeletonProps {
-  columns: typeof columns;
-  visibleColumns: string[];
-}
-
-const LeadsTableSkeleton = ({ columns, visibleColumns }: LeadsTableSkeletonProps) => (
-  <div className="w-full animate-pulse">
-    <div className="flex items-center justify-between mb-4">
-      <div className="h-8 w-32 bg-gray-200 rounded"></div>
-      <div className="flex gap-2">
-        <div className="h-8 w-24 bg-gray-200 rounded"></div>
-        <div className="h-8 w-24 bg-gray-200 rounded"></div>
-      </div>
-    </div>
-
+const LeadsTableSkeleton = ({ columns, visibleColumns }: { columns: any[], visibleColumns: string[] }) => (
+  <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 overflow-hidden shadow-sm">
     <Table>
       <TableHeader>
-        <TableRow>
-          <TableHead className="w-[50px]">
-            <div className="h-4 w-4 bg-gray-200 rounded"></div>
-          </TableHead>
-          {columns
-            .filter(column => visibleColumns.includes(column.id))
-            .map(column => (
-              <TableHead key={column.id}>
-                <div className="h-4 w-20 bg-gray-200 rounded"></div>
-              </TableHead>
-            ))}
+        <TableRow className="bg-slate-50 dark:bg-slate-800/60">
+          <TableHead className="w-[46px] pl-4"><Skeleton className="h-4 w-4" /></TableHead>
+          {columns.filter(c => visibleColumns.includes(c.id)).map(c => (
+            <TableHead key={c.id} className="h-10"><Skeleton className="h-3 w-16" /></TableHead>
+          ))}
         </TableRow>
       </TableHeader>
       <TableBody>
-        {[...Array(5)].map((_, index) => (
-          <TableRow key={index}>
-            <TableCell>
-              <div className="h-4 w-4 bg-gray-200 rounded"></div>
-            </TableCell>
-            {columns
-              .filter(column => visibleColumns.includes(column.id))
-              .map((column, cellIndex) => (
-                <TableCell key={cellIndex}>
-                  <div className="flex items-center gap-2">
-                    {column.icon && (
-                      <div className="h-4 w-4 bg-gray-200 rounded"></div>
-                    )}
-                    <div className="h-4 w-24 bg-gray-200 rounded"></div>
-                  </div>
-                </TableCell>
-              ))}
+        {Array.from({ length: 12 }).map((_, i) => (
+          <TableRow key={i} className="border-slate-100 dark:border-slate-800">
+            <TableCell className="pl-4"><Skeleton className="h-4 w-4" /></TableCell>
+            {columns.filter(c => visibleColumns.includes(c.id)).map(c => (
+              <TableCell key={c.id} className="py-4">
+                <div className="flex items-center gap-3">
+                  {c.id === 'name' && <Skeleton className="h-8 w-8 rounded-full shrink-0" />}
+                  <Skeleton className={cn("h-4", c.id === 'name' ? "w-24" : "w-16")} />
+                </div>
+              </TableCell>
+            ))}
           </TableRow>
         ))}
       </TableBody>
     </Table>
   </div>
-);
+)
 
-// Add this type for the date picker
-type DatePickerProps = {
-  date?: Date;
-  onChange: (date?: Date) => void;
-}
+const ErrorAlert = ({ message }: { message: string }) => (
+  <Alert variant="destructive" className="mb-4">
+    <AlertCircle className="h-4 w-4" />
+    <AlertTitle>Error</AlertTitle>
+    <AlertDescription>
+      {message}
+    </AlertDescription>
+  </Alert>
+)
 
 // // Add this component for the date picker
 // const DatePicker = ({ date, onChange }: DatePickerProps) => {
@@ -357,7 +332,9 @@ export default function LeadsPage() {
   const [importError, setImportError] = useState<string | null>(null)
   const [isImporting, setIsImporting] = useState(false)
   const [showGeneratingReport, setShowGeneratingReport] = useState(false)
+
   const [currentPage, setCurrentPage] = useState(1)
+  const [isInitialLoading, setIsInitialLoading] = useState(true)
   const itemsPerPage = 10
 
   // Add ref for file input
@@ -590,11 +567,8 @@ export default function LeadsPage() {
 
   // Move all function definitions here
   const handleFilterChange = (key: string, value: any) => {
-    setFilters(prev => ({
-      ...prev,
-      [key]: value
-    }));
-    setCurrentPage(1);
+    setFilters(prev => ({ ...prev, [key]: value }));
+    setCurrentPage(1); // Reset page on filter change
   };
 
   const clearFilters = () => {
@@ -609,7 +583,6 @@ export default function LeadsPage() {
     setCurrentPage(1);
   };
 
-  // Update the fetchLeads function to properly handle all filters
   const fetchLeads = async () => {
     try {
       setIsLoading(true);
@@ -638,11 +611,8 @@ export default function LeadsPage() {
 
       const response = await getLeads(params);
 
-      // Laravel pagination returns: { data: [...], current_page, last_page, total, ... }
-      // Check for both possible response structures
       if (response?.data && Array.isArray(response.data)) {
         setLeads(response.data);
-        // Laravel pagination has total and last_page at root level
         setTotalItems(response.total || response.meta?.total || 0);
         setTotalPages(response.last_page || response.meta?.last_page || 1);
       } else {
@@ -652,17 +622,15 @@ export default function LeadsPage() {
       console.error('Failed to fetch leads:', error);
       setError(error instanceof Error ? error.message : 'An error occurred');
       setLeads([]);
-      setTotalItems(0);
-      setTotalPages(1);
     } finally {
       setIsLoading(false);
+      setIsInitialLoading(false);
     }
   };
 
-  // Remove the old fetchLeadsConfig since we're not using it
   useEffect(() => {
     fetchLeads();
-  }, [currentPage, debouncedSearch, filters.status, filters.stage, filters.source, filters.dateRange, filters.createdAt, itemsPerPage]);
+  }, [currentPage, debouncedSearch, filters.status, filters.stage, filters.source, filters.dateRange, filters.createdAt]);
 
   // Prefill deal value when dialog opens
   useEffect(() => {
@@ -1463,10 +1431,13 @@ export default function LeadsPage() {
   // Remove duplicate useEffect - using the one above with debouncedSearch
 
   return (
-    <div className="space-y-4 p-2 h-full overflow-scroll">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <CardTitle>Leads</CardTitle>
+    <div className="flex flex-col p-6 h-full overflow-hidden">
+      <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm flex-1 flex flex-col min-h-0 overflow-hidden">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b border-slate-100 dark:border-slate-800">
+          <div>
+            <CardTitle className="text-lg font-bold text-slate-900 dark:text-white">Leads</CardTitle>
+            <p className="text-xs text-slate-500 mt-0.5">Manage and track your sales pipeline</p>
+          </div>
           <div className="flex items-center gap-2">
             <TableColumnToggle
               columns={columns}
@@ -1476,8 +1447,9 @@ export default function LeadsPage() {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="outline" size="icon" onClick={() => setShowStageManager(true)}>
-                    <Settings2 className="h-4 w-4" />
+                  <Button variant="outline" size="icon" onClick={() => setShowStageManager(true)}
+                    className="h-9 w-9 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800">
+                    <Settings2 className="h-4 w-4 text-slate-600 dark:text-slate-400" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -1485,28 +1457,22 @@ export default function LeadsPage() {
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
-            <Button onClick={() => setShowNewLead(true)}>
-              <Plus className="mr-2 h-4 w-4" />
+            <Button
+              onClick={() => setShowNewLead(true)}
+              className="h-9 bg-indigo-600 hover:bg-indigo-700 text-white gap-1.5 shadow-sm"
+            >
+              <Plus className="h-4 w-4" />
               Add Lead
             </Button>
             <Button
               variant="outline"
               size="sm"
-              className="h-8 px-2 lg:px-3"
+              className="h-9 px-3 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400"
               onClick={() => setShowExportDialog(true)}
             >
               <FileDown className="h-4 w-4 lg:mr-2" />
               <span className="hidden lg:inline">Export</span>
             </Button>
-            {/* <Button
-              variant="outline"
-              size="sm"
-              className="h-8 px-2 lg:px-3"
-              onClick={() => setShowImportDialog(true)}
-            >
-              <FileDown className="h-4 w-4 lg:mr-2" />
-              <span className="hidden lg:inline">Import</span>
-            </Button> */}
             <input
               ref={fileInputRef}
               type="file"
@@ -1514,1017 +1480,1040 @@ export default function LeadsPage() {
               onChange={handleFileChange}
               className="hidden"
             />
-            <Button onClick={handleImportClick}>
+            <Button
+              onClick={handleImportClick}
+              variant="outline"
+              className="h-9 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400"
+            >
               <FileUp className="mr-2 h-4 w-4" />
               Import CSV
             </Button>
             <Button
               variant="outline"
               onClick={openFacebookRetrieval}
-              className="h-8 px-2 lg:px-3"
+              className="h-9 px-3 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400"
             >
               <Facebook className="h-4 w-4 lg:mr-2" />
               <span className="hidden lg:inline">Sync Leads</span>
             </Button>
-
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {/* Move the filter section here */}
-            <div className="flex flex-wrap gap-2 mb-4">
-              {/* Search input */}
+        <CardContent className="flex-1 flex flex-col min-h-0 p-0 overflow-hidden">
+          {/* ── Fixed toolbar (never scrolls) ── */}
+          <div className="shrink-0 flex flex-col gap-3 px-4 pt-3 pb-2 border-b border-slate-100 dark:border-slate-800">
+            {/* Search row */}
+            <div className="flex flex-wrap gap-2">
               <div className="relative flex-1 max-w-sm">
                 {isSearching ? (
-                  <Loader2 className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500 animate-spin" />
+                  <Loader2 className="absolute left-3 top-2.5 h-4 w-4 text-slate-400 animate-spin" />
                 ) : (
-                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                  <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
                 )}
                 <Input
                   placeholder="Search leads..."
                   value={filters.search}
                   onChange={(e) => handleFilterChange('search', e.target.value)}
-                  className={cn("pl-8", isSearching && "border-blue-300")}
+                  className={cn(
+                    "pl-9 h-9 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 focus:bg-white dark:focus:bg-slate-800 transition-colors",
+                    isSearching && "border-indigo-300"
+                  )}
                 />
               </div>
             </div>
-            <div className="flex flex-wrap gap-2 mb-4">
+            {/* Filter chips row */}
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Select Status, Stage, Source group */}
+              <div className="flex items-center gap-2">
+                <Select
+                  value={filters.status}
+                  onValueChange={(value) => handleFilterChange('status', value)}
+                >
+                  <SelectTrigger className="h-9 w-[135px] border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 text-sm">
+                    <Thermometer className="mr-2 h-3.5 w-3.5 text-slate-500" />
+                    <SelectValue placeholder="Temp" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Temp</SelectItem>
+                    <SelectItem value="Hot">Hot</SelectItem>
+                    <SelectItem value="Warm">Warm</SelectItem>
+                    <SelectItem value="Cold">Cold</SelectItem>
+                  </SelectContent>
+                </Select>
 
-              {/* Status filter */}
-              <Select
-                value={filters.status}
-                onValueChange={(value) => handleFilterChange('status', value)}
-              >
-                <SelectTrigger className="w-[140px]">
-                  <Thermometer className="mr-2 h-4 w-4" />
-                  <SelectValue placeholder="Temperature" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="Hot">Hot</SelectItem>
-                  <SelectItem value="Warm">Warm</SelectItem>
-                  <SelectItem value="Cold">Cold</SelectItem>
-                </SelectContent>
-              </Select>
+                <Select
+                  value={filters.stage}
+                  onValueChange={(value) => handleFilterChange('stage', value)}
+                >
+                  <SelectTrigger className="h-9 w-[135px] border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 text-sm">
+                    <Tag className="mr-2 h-3.5 w-3.5 text-slate-500" />
+                    <SelectValue placeholder="Stage" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Stages</SelectItem>
+                    {Object.keys(defaultStages).map((stage) => (
+                      <SelectItem key={stage} value={stage}>
+                        {stage}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-              {/* Stage filter */}
-              <Select
-                value={filters.stage}
-                onValueChange={(value) => handleFilterChange('stage', value)}
-              >
-                <SelectTrigger className="w-[140px]">
-                  <Tag className="mr-2 h-4 w-4" />
-                  <SelectValue placeholder="Stage" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Stages</SelectItem>
-                  {Object.keys(defaultStages).map((stage) => (
-                    <SelectItem key={stage} value={stage}>
-                      {stage}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <Select
+                  value={filters.source}
+                  onValueChange={(value) => handleFilterChange('source', value)}
+                >
+                  <SelectTrigger className="h-9 w-[135px] border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 text-sm">
+                    <Globe className="mr-2 h-3.5 w-3.5 text-slate-500" />
+                    <SelectValue placeholder="Source" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Sources</SelectItem>
+                    {Object.keys(sourceConfig).map((source) => (
+                      <SelectItem key={source} value={source}>
+                        {source}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-              {/* Add back the source filter */}
-              <Select
-                value={filters.source}
-                onValueChange={(value) => handleFilterChange('source', value)}
-              >
-                <SelectTrigger className="w-[140px]">
-                  <Globe className="mr-2 h-4 w-4" />
-                  <SelectValue placeholder="Source" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Sources</SelectItem>
-                  {Object.keys(sourceConfig).map((source) => (
-                    <SelectItem key={source} value={source}>
-                      {source}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Separator orientation="vertical" className="hidden lg:block h-6 bg-slate-200 dark:bg-slate-800" />
 
-              {/* Date Range filter */}
-              <DateRangePicker
-                value={filters.dateRange}
-                onChange={(range) => handleFilterChange('dateRange', range)}
-                placeholder="Last Contact Date"
-                className="w-[280px]"
-              />
+              {/* Date Ranges Group */}
+              <div className="flex flex-wrap items-center gap-2">
+                <DateRangePicker
+                  value={filters.dateRange}
+                  onChange={(range) => handleFilterChange('dateRange', range)}
+                  placeholder="Last Contact Date"
+                  className="h-9 w-[260px] border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 text-sm"
+                />
 
-              {/* Created At Date Range filter */}
-              <DateRangePicker
-                value={filters.createdAt}
-                onChange={(range) => handleFilterChange('createdAt', range)}
-                placeholder="Created Date"
-                className="w-[280px]"
-              />
+                <DateRangePicker
+                  value={filters.createdAt}
+                  onChange={(range) => handleFilterChange('createdAt', range)}
+                  placeholder="Created Date"
+                  className="h-9 w-[240px] border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 text-sm"
+                />
+              </div>
+
+              <Separator orientation="vertical" className="hidden lg:block h-6 bg-slate-200 dark:bg-slate-800" />
 
               {/* Clear filters button */}
               <Button
                 variant="ghost"
                 onClick={clearFilters}
-                className="h-10"
+                className="h-9 px-3 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all rounded-lg"
               >
-                <X className="mr-2 h-4 w-4" />
-                Clear Filters
+                <RefreshCcw className="mr-2 h-3.5 w-3.5" />
+                Clear
               </Button>
             </div>
+          </div>{/* end toolbar */}
 
-            <Dialog open={showMapping} onOpenChange={(open) => !open && resetImport()}>
-              <DialogContent className="max-w-[100vw] w-full h-[100vh] p-0 m-0">
-                <div className="h-full flex flex-col overflow-scroll">
-                  <div className="border-b p-6">
-                    <DialogHeader className="flex flex-row items-center justify-between">
-                      <DialogTitle className="text-2xl">Import Leads from CSV</DialogTitle>
-                      <Button variant="ghost" size="icon" onClick={resetImport}>
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </DialogHeader>
-                  </div>
+          {/* Dialogs – rendered via portals, layout-neutral */}
+          <Dialog open={showMapping} onOpenChange={(open) => !open && resetImport()}>
+            <DialogContent className="max-w-[100vw] w-full h-[100vh] p-0 m-0">
+              <div className="h-full flex flex-col overflow-scroll">
+                <div className="border-b p-6">
+                  <DialogHeader className="flex flex-row items-center justify-between">
+                    <DialogTitle className="text-2xl">Import Leads from CSV</DialogTitle>
+                    <Button variant="ghost" size="icon" onClick={resetImport}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </DialogHeader>
+                </div>
 
-                  <div className="flex-1 overflow-y-auto p-6">
-                    <div className="max-w-[1400px] mx-auto space-y-8">
-                      {importError && (
-                        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-800">
-                          {importError}
-                        </div>
-                      )}
-
-                      {/* Mapping Section */}
-                      <div className="rounded-lg border p-6">
-                        <h3 className="text-lg font-semibold mb-4">Map CSV Columns to Lead Fields</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {columnMapping.map((mapping) => (
-                            <div
-                              key={mapping.csvHeader}
-                              className="flex flex-col space-y-2 p-3 rounded-md border "
-                            >
-                              <span className="text-sm font-medium text-gray-700">
-                                {mapping.csvHeader}
-                              </span>
-                              <Select
-                                value={mapping.leadField}
-                                onValueChange={(value) => handleColumnMapChange(mapping.csvHeader, value)}
-                              >
-                                <SelectTrigger className="w-full ">
-                                  <SelectValue placeholder="Select field" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="skip">Skip this column</SelectItem>
-                                  {columns
-                                    .filter(col => col.id !== 'actions' && col.id !== 'id')
-                                    .map(col => (
-                                      <SelectItem key={col.id} value={col.id}>
-                                        {col.label}
-                                      </SelectItem>
-                                    ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          ))}
-                        </div>
+                <div className="flex-1 overflow-y-auto p-6">
+                  <div className="max-w-[1400px] mx-auto space-y-8">
+                    {importError && (
+                      <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-800">
+                        {importError}
                       </div>
+                    )}
 
-                      {/* Preview Section */}
-                      {preview.length > 0 && (
-                        <div className="rounded-lg border p-6">
-                          <h3 className="text-lg font-semibold mb-4">Data Preview</h3>
-                          <div className="overflow-x-auto">
-                            <Table>
-                              <TableHeader>
-                                <TableRow>
-                                  {preview[0]?.map((header, index) => (
-                                    <TableHead key={index} className="whitespace-nowrap">
-                                      {header}
-                                    </TableHead>
+                    {/* Mapping Section */}
+                    <div className="rounded-lg border p-6">
+                      <h3 className="text-lg font-semibold mb-4">Map CSV Columns to Lead Fields</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {columnMapping.map((mapping) => (
+                          <div
+                            key={mapping.csvHeader}
+                            className="flex flex-col space-y-2 p-3 rounded-md border "
+                          >
+                            <span className="text-sm font-medium text-gray-700">
+                              {mapping.csvHeader}
+                            </span>
+                            <Select
+                              value={mapping.leadField}
+                              onValueChange={(value) => handleColumnMapChange(mapping.csvHeader, value)}
+                            >
+                              <SelectTrigger className="w-full ">
+                                <SelectValue placeholder="Select field" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="skip">Skip this column</SelectItem>
+                                {columns
+                                  .filter(col => col.id !== 'actions' && col.id !== 'id')
+                                  .map(col => (
+                                    <SelectItem key={col.id} value={col.id}>
+                                      {col.label}
+                                    </SelectItem>
+                                  ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Preview Section */}
+                    {preview.length > 0 && (
+                      <div className="rounded-lg border p-6">
+                        <h3 className="text-lg font-semibold mb-4">Data Preview</h3>
+                        <div className="overflow-x-auto">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                {preview[0]?.map((header, index) => (
+                                  <TableHead key={index} className="whitespace-nowrap">
+                                    {header}
+                                  </TableHead>
+                                ))}
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {preview.slice(1).map((row, rowIndex) => (
+                                <TableRow key={rowIndex}>
+                                  {row.map((cell, cellIndex) => (
+                                    <TableCell key={cellIndex} className="whitespace-nowrap">
+                                      {cell}
+                                    </TableCell>
                                   ))}
                                 </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                {preview.slice(1).map((row, rowIndex) => (
-                                  <TableRow key={rowIndex}>
-                                    {row.map((cell, cellIndex) => (
-                                      <TableCell key={cellIndex} className="whitespace-nowrap">
-                                        {cell}
-                                      </TableCell>
-                                    ))}
-                                  </TableRow>
-                                ))}
-                              </TableBody>
-                            </Table>
-                          </div>
+                              ))}
+                            </TableBody>
+                          </Table>
                         </div>
-                      )}
+                      </div>
+                    )}
 
-                      {/* Generating Report Animation */}
-                      {showGeneratingReport && (
-                        <div ref={resultsSectionRef} className="rounded-lg border border-gray-200 bg-gray-50 p-12 space-y-6">
-                          <div className="flex flex-col items-center justify-center text-center space-y-4">
-                            <div className="relative">
-                              <div className={cn(
-                                "relative transition-transform duration-700",
-                                isImporting ? "scale-90" : "scale-100"
-                              )}>
-                                <FileSpreadsheet className={cn(
-                                  "h-12 w-12 transition-colors duration-500",
-                                  isImporting ? "text-blue-400" : "text-gray-400",
-                                  "animate-pulse"
-                                )} />
-                                <div className="absolute -right-2 -top-2">
-                                  <div className="animate-spin">
-                                    <Loader2 className="h-6 w-6 text-blue-500" />
-                                  </div>
+                    {/* Generating Report Animation */}
+                    {showGeneratingReport && (
+                      <div ref={resultsSectionRef} className="rounded-lg border border-gray-200 bg-gray-50 p-12 space-y-6">
+                        <div className="flex flex-col items-center justify-center text-center space-y-4">
+                          <div className="relative">
+                            <div className={cn(
+                              "relative transition-transform duration-700",
+                              isImporting ? "scale-90" : "scale-100"
+                            )}>
+                              <FileSpreadsheet className={cn(
+                                "h-12 w-12 transition-colors duration-500",
+                                isImporting ? "text-blue-400" : "text-gray-400",
+                                "animate-pulse"
+                              )} />
+                              <div className="absolute -right-2 -top-2">
+                                <div className="animate-spin">
+                                  <Loader2 className="h-6 w-6 text-blue-500" />
                                 </div>
                               </div>
                             </div>
-                            <div className="transition-opacity duration-500">
-                              <h3 className="text-lg font-semibold">
-                                {isImporting ? 'Importing Your Data' : 'Preparing Import Process'}
-                              </h3>
-                              <p className="text-sm text-gray-500">
-                                {isImporting
-                                  ? 'Please wait while we process and validate your data...'
-                                  : 'Getting everything ready for your import...'}
-                              </p>
-                            </div>
-                            <div className="w-full max-w-xs">
-                              <div className="h-1 w-full bg-gray-200 rounded-full overflow-hidden">
-                                <div
-                                  className="h-full bg-blue-500 transition-all duration-500 ease-in-out"
-                                  style={{
-                                    animation: 'progress 1.5s ease-in-out infinite',
-                                    transformOrigin: 'left center',
-                                  }}
-                                />
-                              </div>
+                          </div>
+                          <div className="transition-opacity duration-500">
+                            <h3 className="text-lg font-semibold">
+                              {isImporting ? 'Importing Your Data' : 'Preparing Import Process'}
+                            </h3>
+                            <p className="text-sm text-gray-500">
+                              {isImporting
+                                ? 'Please wait while we process and validate your data...'
+                                : 'Getting everything ready for your import...'}
+                            </p>
+                          </div>
+                          <div className="w-full max-w-xs">
+                            <div className="h-1 w-full bg-gray-200 rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-blue-500 transition-all duration-500 ease-in-out"
+                                style={{
+                                  animation: 'progress 1.5s ease-in-out infinite',
+                                  transformOrigin: 'left center',
+                                }}
+                              />
                             </div>
                           </div>
                         </div>
-                      )}
+                      </div>
+                    )}
 
-                      {/* Import Stats Section - Moved to bottom */}
-                      {importStats && !showGeneratingReport && (
-                        <div ref={resultsSectionRef} className="rounded-lg border border-gray-200 bg-gray-50 p-6 space-y-6">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <CheckCircle2 className="h-6 w-6 text-green-500" />
-                              <h3 className="text-lg font-semibold">Import Results</h3>
-                            </div>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={resetImport}
-                              className="flex items-center gap-2"
-                            >
-                              <X className="h-4 w-4" />
-                              Close
-                            </Button>
+                    {/* Import Stats Section - Moved to bottom */}
+                    {importStats && !showGeneratingReport && (
+                      <div ref={resultsSectionRef} className="rounded-lg border border-gray-200 bg-gray-50 p-6 space-y-6">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <CheckCircle2 className="h-6 w-6 text-green-500" />
+                            <h3 className="text-lg font-semibold">Import Results</h3>
                           </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={resetImport}
+                            className="flex items-center gap-2"
+                          >
+                            <X className="h-4 w-4" />
+                            Close
+                          </Button>
+                        </div>
 
-                          <div className="grid grid-cols-3 gap-4">
-                            <div className="bg-white rounded-lg p-4 border">
-                              <div className="text-sm font-medium text-gray-500">Total Rows</div>
-                              <div className="text-2xl font-semibold">{importStats.totalRows}</div>
-                            </div>
-                            <div className="bg-white rounded-lg p-4 border">
-                              <div className="text-sm font-medium text-gray-500">Successfully Imported</div>
-                              <div className="text-2xl font-semibold text-green-600">{importStats.successfulRows}</div>
-                            </div>
-                            <div className="bg-white rounded-lg p-4 border">
-                              <div className="text-sm font-medium text-gray-500">Skipped Rows</div>
-                              <div className="text-2xl font-semibold text-yellow-600">{importStats.skippedRows}</div>
-                            </div>
+                        <div className="grid grid-cols-3 gap-4">
+                          <div className="bg-white rounded-lg p-4 border">
+                            <div className="text-sm font-medium text-gray-500">Total Rows</div>
+                            <div className="text-2xl font-semibold">{importStats.totalRows}</div>
                           </div>
-
-                          {importStats.skippedColumns.length > 0 && (
-                            <div className="bg-white rounded-lg p-4 border">
-                              <div className="text-sm font-medium text-gray-500 mb-2">Skipped Columns</div>
-                              <div className="flex flex-wrap gap-2">
-                                {importStats.skippedColumns.map((col) => (
-                                  <span key={col} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                                    {col}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          {importStats.errors.length > 0 && (
-                            <div className="bg-white rounded-lg p-4 border">
-                              <div className="text-sm font-medium text-gray-500 mb-2">Errors</div>
-                              <div className="space-y-2">
-                                {importStats.errors.map((error, index) => (
-                                  <div key={index} className="text-sm text-red-600">
-                                    Row {error.row}: {error.reason} (Field: {error.field}, Value: {error.value || 'empty'})
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          <div className="flex justify-center pt-4">
-                            <Button
-                              onClick={resetImport}
-                              className="min-w-[200px]"
-                            >
-                              Done
-                            </Button>
+                          <div className="bg-white rounded-lg p-4 border">
+                            <div className="text-sm font-medium text-gray-500">Successfully Imported</div>
+                            <div className="text-2xl font-semibold text-green-600">{importStats.successfulRows}</div>
+                          </div>
+                          <div className="bg-white rounded-lg p-4 border">
+                            <div className="text-sm font-medium text-gray-500">Skipped Rows</div>
+                            <div className="text-2xl font-semibold text-yellow-600">{importStats.skippedRows}</div>
                           </div>
                         </div>
-                      )}
-                    </div>
+
+                        {importStats.skippedColumns.length > 0 && (
+                          <div className="bg-white rounded-lg p-4 border">
+                            <div className="text-sm font-medium text-gray-500 mb-2">Skipped Columns</div>
+                            <div className="flex flex-wrap gap-2">
+                              {importStats.skippedColumns.map((col) => (
+                                <span key={col} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                  {col}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {importStats.errors.length > 0 && (
+                          <div className="bg-white rounded-lg p-4 border">
+                            <div className="text-sm font-medium text-gray-500 mb-2">Errors</div>
+                            <div className="space-y-2">
+                              {importStats.errors.map((error, index) => (
+                                <div key={index} className="text-sm text-red-600">
+                                  Row {error.row}: {error.reason} (Field: {error.field}, Value: {error.value || 'empty'})
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="flex justify-center pt-4">
+                          <Button
+                            onClick={resetImport}
+                            className="min-w-[200px]"
+                          >
+                            Done
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
+                </div>
 
-                  <div className="border-t p-6">
-                    <div className="max-w-[1400px] mx-auto flex justify-between items-center">
-                      <div className="text-sm text-gray-600">
-                        {file && <span>File: {file.name}</span>}
-                      </div>
-                      <div className="flex gap-2">
-                        <Button variant="outline" onClick={resetImport}>
-                          Cancel
-                        </Button>
-                        <Button
-                          onClick={handleImport}
-                          disabled={!file || columnMapping.every(m => m.leadField === 'skip') || isImporting}
-                        >
-                          {isImporting ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Importing...
-                            </>
-                          ) : (
-                            'Import Leads'
-                          )}
-                        </Button>
-                      </div>
+                <div className="border-t p-6">
+                  <div className="max-w-[1400px] mx-auto flex justify-between items-center">
+                    <div className="text-sm text-gray-600">
+                      {file && <span>File: {file.name}</span>}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button variant="outline" onClick={resetImport}>
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={handleImport}
+                        disabled={!file || columnMapping.every(m => m.leadField === 'skip') || isImporting}
+                      >
+                        {isImporting ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Importing...
+                          </>
+                        ) : (
+                          'Import Leads'
+                        )}
+                      </Button>
                     </div>
                   </div>
                 </div>
-              </DialogContent>
-            </Dialog>
+              </div>
+            </DialogContent>
+          </Dialog>
 
-            {/* Add Stage Manager Dialog */}
-            <Dialog open={showStageManager} onOpenChange={setShowStageManager}>
-              <DialogContent className="sm:max-w-[500px]">
-                <DialogHeader>
-                  <DialogTitle>Manage Lead Stages</DialogTitle>
-                  <DialogDescription>
-                    Create and manage your lead stages to track your sales pipeline.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  {/* Add New Stage Section */}
-                  <div className="flex gap-2">
-                    <div className="flex-1">
-                      <Input
-                        placeholder="New stage name"
-                        value={newStageName}
-                        onChange={(e) => setNewStageName(e.target.value)}
-                      />
+          {/* Add Stage Manager Dialog */}
+          <Dialog open={showStageManager} onOpenChange={setShowStageManager}>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>Manage Lead Stages</DialogTitle>
+                <DialogDescription>
+                  Create and manage your lead stages to track your sales pipeline.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                {/* Add New Stage Section */}
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <Input
+                      placeholder="New stage name"
+                      value={newStageName}
+                      onChange={(e) => setNewStageName(e.target.value)}
+                    />
+                  </div>
+                  <Select value={selectedColor} onValueChange={setSelectedColor}>
+                    <SelectTrigger className="w-[100px]">
+                      <SelectValue placeholder="Color" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {['blue', 'green', 'red', 'yellow', 'purple', 'pink', 'orange', 'cyan', 'indigo'].map(color => (
+                        <SelectItem key={color} value={color}>
+                          <div className="flex items-center gap-2">
+                            <div className={`w-4 h-4 rounded-full bg-${color}-500`} />
+                            {color}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button onClick={handleAddStage}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add
+                  </Button>
+                </div>
+
+                {/* Stages List */}
+                <div className="border rounded-md">
+                  <div className="max-h-[400px] overflow-y-auto">
+                    <div className="space-y-0">
+                      {Object.entries(stages).map(([name, config]) => (
+                        <div
+                          key={name}
+                          className={cn(
+                            "flex items-center justify-between p-3 border-b last:border-0",
+                            editingStage === name ? "bg-gray-50" : ""
+                          )}
+                        >
+                          {editingStage === name ? (
+                            <div className="flex items-center gap-2 flex-1">
+                              <Input
+                                value={editedStageName}
+                                onChange={(e) => setEditedStageName(e.target.value)}
+                                className="max-w-[200px]"
+                              />
+                              <Select value={editedStageColor} onValueChange={setEditedStageColor}>
+                                <SelectTrigger className="w-[100px]">
+                                  <SelectValue placeholder="Color" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {['blue', 'green', 'red', 'yellow', 'purple', 'pink', 'orange', 'cyan', 'indigo'].map(color => (
+                                    <SelectItem key={color} value={color}>
+                                      <div className="flex items-center gap-2">
+                                        <div className={`w-4 h-4 rounded-full bg-${color}-500`} />
+                                        {color}
+                                      </div>
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={handleUpdateStage}
+                                >
+                                  <CheckCircle className="h-4 w-4 text-green-600" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setEditingStage(null)}
+                                >
+                                  <X className="h-4 w-4 text-red-600" />
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="flex items-center gap-2">
+                                {React.createElement(config.icon, { className: "h-4 w-4" })}
+                                <span>{name}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Badge className={cn("w-fit", config.color)}>
+                                  Example
+                                </Badge>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleEditStage(name)}
+                                >
+                                  <Pencil className="h-4 w-4 text-blue-600" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleDeleteStage(name)}
+                                  disabled={Object.keys(stages).length <= 1}
+                                >
+                                  <Trash className="h-4 w-4 text-red-600" />
+                                </Button>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      ))}
                     </div>
-                    <Select value={selectedColor} onValueChange={setSelectedColor}>
-                      <SelectTrigger className="w-[100px]">
-                        <SelectValue placeholder="Color" />
+                  </div>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Add Stage Change Dialog */}
+          <Dialog open={showStageChange} onOpenChange={setShowStageChange}>
+            <DialogContent className="max-w-[400px]">
+              <DialogHeader>
+                <DialogTitle>Change Lead Stage</DialogTitle>
+                <DialogDescription>
+                  Select a new stage for {editingLead ? editingLead.name : `${selectedLeads.length} leads`}.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="max-h-[60vh] overflow-y-auto pr-2">
+                <div className="grid gap-2 py-4">
+                  {Object.entries(stages).map(([name, config]) => (
+                    <Button
+                      key={name}
+                      variant={selectedStage === name ? "default" : "outline"}
+                      className={cn(
+                        "justify-start",
+                        selectedStage === name && "border-blue-500 bg-blue-50 text-blue-700 hover:bg-blue-100 hover:text-blue-800"
+                      )}
+                      onClick={() => setSelectedStage(name)}
+                    >
+                      <div className="flex items-center gap-2">
+                        {React.createElement(config.icon, { className: "h-4 w-4" })}
+                        <span>{name}</span>
+                      </div>
+                      {selectedStage === name && (
+                        <CheckCircle2 className="ml-auto h-4 w-4 text-blue-600" />
+                      )}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+              <DialogFooter className="gap-2 sm:gap-0 border-t pt-4">
+                <Button variant="outline" onClick={() => setShowStageChange(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  disabled={!selectedStage}
+                  onClick={() => {
+                    if (!selectedStage) return;
+                    if (editingLead?.id !== undefined) {
+                      handleStageChange(editingLead.id, selectedStage)
+                    } else if (selectedLeads.length === 1) {
+                      handleStageChange(selectedLeads[0], selectedStage)
+                    } else if (selectedLeads.length > 1) {
+                      handleBulkStageChange(selectedStage)
+                    }
+                  }}
+                >
+                  Save Changes
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Deal Value Dialog */}
+          <Dialog open={showDealValue} onOpenChange={setShowDealValue}>
+            <DialogContent className="max-w-[450px]">
+              <DialogHeader>
+                <DialogTitle>Contract Details</DialogTitle>
+                <DialogDescription>
+                  Set the agreement details for {editingLead?.name}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-6 py-4">
+                <div className="grid gap-2">
+                  <Label>Total Deal Amount (Contract Value)</Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-2.5 text-gray-500">₹</span>
+                    <Input
+                      type="number"
+                      placeholder="0.00"
+                      className="pl-7"
+                      value={dealValueAmount}
+                      onChange={(e) => setDealValueAmount(e.target.value)}
+                      autoFocus
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="recordPayment"
+                    className="h-4 w-4 rounded border-gray-300"
+                    checked={recordInitialPayment}
+                    onChange={(e) => setRecordInitialPayment(e.target.checked)}
+                  />
+                  <Label htmlFor="recordPayment" className="cursor-pointer">Record an initial payment now</Label>
+                </div>
+
+                {recordInitialPayment && (
+                  <div className="grid gap-4 p-4 bg-blue-50/50 rounded-lg border border-blue-100">
+                    <div className="grid gap-2">
+                      <Label>Initial Paid Amount</Label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-2.5 text-gray-500">₹</span>
+                        <Input
+                          type="number"
+                          placeholder="0.00"
+                          className="pl-7 bg-white"
+                          value={initialPaymentAmount}
+                          onChange={(e) => setInitialPaymentAmount(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>Payment Method</Label>
+                      <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                        <SelectTrigger className="bg-white">
+                          <SelectValue placeholder="Select method" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="UPI">UPI</SelectItem>
+                          <SelectItem value="Cash">Cash</SelectItem>
+                          <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowDealValue(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleSaveDealValue}
+                  disabled={!dealValueAmount || isSavingDealValue}
+                >
+                  {isSavingDealValue ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    'Confirm Contract & Payment'
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Add Edit Lead Dialog */}
+          <Dialog open={showEditLead} onOpenChange={setShowEditLead}>
+            <DialogContent className="max-w-[500px] h-[90vh] p-0 flex flex-col">
+              <DialogHeader className="px-6 py-4 border-b">
+                <DialogTitle>Edit Lead</DialogTitle>
+                <DialogDescription>
+                  Update lead information and stage.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="flex-1 overflow-y-auto px-6 py-4">
+                <div className="grid gap-4">
+                  <div className="grid gap-2">
+                    <Label>Name</Label>
+                    <Input
+                      value={editedLead?.name || ''}
+                      onChange={(e) => setEditedLead(prev => prev ? { ...prev, name: e.target.value } : null)}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label>Email</Label>
+                    <Input
+                      value={editedLead?.email || ''}
+                      onChange={(e) => setEditedLead(prev => prev ? { ...prev, email: e.target.value } : null)}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label>Phone</Label>
+                    <Input
+                      value={editedLead?.phone || ''}
+                      onChange={(e) => setEditedLead(prev => prev ? { ...prev, phone: e.target.value } : null)}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label>Company</Label>
+                    <Input
+                      value={editedLead?.company || ''}
+                      onChange={(e) => setEditedLead(prev => prev ? { ...prev, company: e.target.value } : null)}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label>Stage</Label>
+                    <Select
+                      value={editedLead?.stage || ''}
+                      onValueChange={(value) => setEditedLead(prev => prev ? { ...prev, stage: value } : null)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select stage" />
                       </SelectTrigger>
                       <SelectContent>
-                        {['blue', 'green', 'red', 'yellow', 'purple', 'pink', 'orange', 'cyan', 'indigo'].map(color => (
-                          <SelectItem key={color} value={color}>
+                        {Object.entries(stages).map(([name, config]) => (
+                          <SelectItem key={name} value={name}>
                             <div className="flex items-center gap-2">
-                              <div className={`w-4 h-4 rounded-full bg-${color}-500`} />
-                              {color}
+                              {React.createElement(config.icon, { className: "h-4 w-4" })}
+                              <span>{name}</span>
                             </div>
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                    <Button onClick={handleAddStage}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add
-                    </Button>
                   </div>
-
-                  {/* Stages List */}
-                  <div className="border rounded-md">
-                    <div className="max-h-[400px] overflow-y-auto">
-                      <div className="space-y-0">
-                        {Object.entries(stages).map(([name, config]) => (
-                          <div
-                            key={name}
-                            className={cn(
-                              "flex items-center justify-between p-3 border-b last:border-0",
-                              editingStage === name ? "bg-gray-50" : ""
-                            )}
-                          >
-                            {editingStage === name ? (
-                              <div className="flex items-center gap-2 flex-1">
-                                <Input
-                                  value={editedStageName}
-                                  onChange={(e) => setEditedStageName(e.target.value)}
-                                  className="max-w-[200px]"
-                                />
-                                <Select value={editedStageColor} onValueChange={setEditedStageColor}>
-                                  <SelectTrigger className="w-[100px]">
-                                    <SelectValue placeholder="Color" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {['blue', 'green', 'red', 'yellow', 'purple', 'pink', 'orange', 'cyan', 'indigo'].map(color => (
-                                      <SelectItem key={color} value={color}>
-                                        <div className="flex items-center gap-2">
-                                          <div className={`w-4 h-4 rounded-full bg-${color}-500`} />
-                                          {color}
-                                        </div>
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                                <div className="flex items-center gap-1">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={handleUpdateStage}
-                                  >
-                                    <CheckCircle className="h-4 w-4 text-green-600" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => setEditingStage(null)}
-                                  >
-                                    <X className="h-4 w-4 text-red-600" />
-                                  </Button>
-                                </div>
-                              </div>
-                            ) : (
-                              <>
-                                <div className="flex items-center gap-2">
-                                  {React.createElement(config.icon, { className: "h-4 w-4" })}
-                                  <span>{name}</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <Badge className={cn("w-fit", config.color)}>
-                                    Example
-                                  </Badge>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleEditStage(name)}
-                                  >
-                                    <Pencil className="h-4 w-4 text-blue-600" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleDeleteStage(name)}
-                                    disabled={Object.keys(stages).length <= 1}
-                                  >
-                                    <Trash className="h-4 w-4 text-red-600" />
-                                  </Button>
-                                </div>
-                              </>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
-
-            {/* Add Stage Change Dialog */}
-            <Dialog open={showStageChange} onOpenChange={setShowStageChange}>
-              <DialogContent className="max-w-[400px]">
-                <DialogHeader>
-                  <DialogTitle>Change Lead Stage</DialogTitle>
-                  <DialogDescription>
-                    Select a new stage for {editingLead ? editingLead.name : `${selectedLeads.length} leads`}.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="max-h-[60vh] overflow-y-auto pr-2">
-                  <div className="grid gap-2 py-4">
-                    {Object.entries(stages).map(([name, config]) => (
-                      <Button
-                        key={name}
-                        variant={selectedStage === name ? "default" : "outline"}
-                        className={cn(
-                          "justify-start",
-                          selectedStage === name && "border-blue-500 bg-blue-50 text-blue-700 hover:bg-blue-100 hover:text-blue-800"
-                        )}
-                        onClick={() => setSelectedStage(name)}
-                      >
-                        <div className="flex items-center gap-2">
-                          {React.createElement(config.icon, { className: "h-4 w-4" })}
-                          <span>{name}</span>
-                        </div>
-                        {selectedStage === name && (
-                          <CheckCircle2 className="ml-auto h-4 w-4 text-blue-600" />
-                        )}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-                <DialogFooter className="gap-2 sm:gap-0 border-t pt-4">
-                  <Button variant="outline" onClick={() => setShowStageChange(false)}>
-                    Cancel
-                  </Button>
-                  <Button
-                    disabled={!selectedStage}
-                    onClick={() => {
-                      if (!selectedStage) return;
-                      if (editingLead?.id !== undefined) {
-                        handleStageChange(editingLead.id, selectedStage)
-                      } else if (selectedLeads.length === 1) {
-                        handleStageChange(selectedLeads[0], selectedStage)
-                      } else if (selectedLeads.length > 1) {
-                        handleBulkStageChange(selectedStage)
-                      }
-                    }}
-                  >
-                    Save Changes
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-
-            {/* Deal Value Dialog */}
-            <Dialog open={showDealValue} onOpenChange={setShowDealValue}>
-              <DialogContent className="max-w-[450px]">
-                <DialogHeader>
-                  <DialogTitle>Contract Details</DialogTitle>
-                  <DialogDescription>
-                    Set the agreement details for {editingLead?.name}
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-6 py-4">
                   <div className="grid gap-2">
-                    <Label>Total Deal Amount (Contract Value)</Label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-2.5 text-gray-500">₹</span>
-                      <Input
-                        type="number"
-                        placeholder="0.00"
-                        className="pl-7"
-                        value={dealValueAmount}
-                        onChange={(e) => setDealValueAmount(e.target.value)}
-                        autoFocus
-                      />
-                    </div>
+                    <Label htmlFor="temperature">Temperature</Label>
+                    <Select
+                      value={editedLead?.status || ''}
+                      onValueChange={(value) => {
+                        if (value in temperatureConfig) {
+                          setEditedLead(prev => prev ? { ...prev, status: value as 'Hot' | 'Warm' | 'Cold' } : null)
+                        }
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select temperature" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(Object.keys(temperatureConfig) as Array<'Hot' | 'Warm' | 'Cold'>).map((temp) => (
+                          <SelectItem key={temp} value={temp}>
+                            <div className="flex items-center gap-2">
+                              {React.createElement(temperatureConfig[temp].icon, { className: "h-4 w-4" })}
+                              <span>{temp}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label>Source</Label>
+                    <Select
+                      value={editedLead?.source || ''}
+                      onValueChange={(value) => setEditedLead(prev => prev ? { ...prev, source: value } : null)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select source" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.keys(sourceConfig).map((source) => (
+                          <SelectItem key={source} value={source}>
+                            <div className="flex items-center gap-2">
+                              {React.createElement(sourceConfig[source as keyof typeof sourceConfig].icon, { className: "h-4 w-4" })}
+                              <span>{source}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
 
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="recordPayment"
-                      className="h-4 w-4 rounded border-gray-300"
-                      checked={recordInitialPayment}
-                      onChange={(e) => setRecordInitialPayment(e.target.checked)}
-                    />
-                    <Label htmlFor="recordPayment" className="cursor-pointer">Record an initial payment now</Label>
-                  </div>
-
-                  {recordInitialPayment && (
-                    <div className="grid gap-4 p-4 bg-blue-50/50 rounded-lg border border-blue-100">
+                  {/* Payment Related Options */}
+                  <div className="mt-4 pt-4 border-t">
+                    <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                      <Wallet className="h-4 w-4 text-blue-600" />
+                      Financial Details
+                    </h3>
+                    <div className="grid grid-cols-2 gap-4">
                       <div className="grid gap-2">
-                        <Label>Initial Paid Amount</Label>
+                        <Label>Total Deal Value</Label>
                         <div className="relative">
-                          <span className="absolute left-3 top-2.5 text-gray-500">₹</span>
+                          <IndianRupee className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
                           <Input
                             type="number"
+                            className="pl-8"
                             placeholder="0.00"
-                            className="pl-7 bg-white"
-                            value={initialPaymentAmount}
-                            onChange={(e) => setInitialPaymentAmount(e.target.value)}
+                            value={editedLead?.deal_value || ''}
+                            onChange={(e) => setEditedLead(prev => prev ? { ...prev, deal_value: parseFloat(e.target.value) || 0 } : null)}
                           />
                         </div>
                       </div>
                       <div className="grid gap-2">
-                        <Label>Payment Method</Label>
-                        <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                          <SelectTrigger className="bg-white">
-                            <SelectValue placeholder="Select method" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="UPI">UPI</SelectItem>
-                            <SelectItem value="Cash">Cash</SelectItem>
-                            <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <Label>Paid Amount</Label>
+                        <div className="relative">
+                          <IndianRupee className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                          <Input
+                            type="number"
+                            className="pl-8"
+                            placeholder="0.00"
+                            value={editedLead?.paid_amount || ''}
+                            onChange={(e) => setEditedLead(prev => prev ? { ...prev, paid_amount: parseFloat(e.target.value) || 0 } : null)}
+                          />
+                        </div>
                       </div>
                     </div>
+                    {editedLead && editedLead.deal_value !== undefined && editedLead.paid_amount !== undefined && (
+                      <div className="mt-3 p-3 bg-blue-50/50 rounded-lg border border-blue-100 text-sm flex justify-between items-center">
+                        <span className="text-blue-700 font-medium">Balance Amount</span>
+                        <span className={cn(
+                          "font-bold text-lg",
+                          (editedLead.deal_value - editedLead.paid_amount) > 0 ? "text-red-600" : "text-green-600"
+                        )}>
+                          ₹{(editedLead.deal_value - editedLead.paid_amount).toLocaleString()}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Notes Section */}
+                  <div className="mt-2 pt-4 border-t">
+                    <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                      <MessageSquare className="h-4 w-4 text-orange-500" />
+                      Notes / History
+                    </h3>
+                    <div className="grid gap-2">
+                      <Textarea
+                        placeholder="Add notes about this lead..."
+                        className="min-h-[100px] bg-gray-50/50"
+                        value={editedLead?.notes || ''}
+                        onChange={(e) => setEditedLead(prev => prev ? { ...prev, notes: e.target.value } : null)}
+                      />
+                      <p className="text-[10px] text-gray-400 italic">
+                        Notes are stored with timestamps automatically when updated.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <DialogFooter className="px-6 py-4 border-t">
+                <Button variant="outline" onClick={() => setShowEditLead(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    handleUpdateLead(editedLead)
+                  }}
+                >
+                  Save Changes
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Add New Lead Dialog */}
+          <Dialog open={showNewLead} onOpenChange={setShowNewLead}>
+            <DialogContent className="max-w-[500px] max-h-[85vh] flex flex-col">
+              <DialogHeader className="px-6 py-4 border-b">
+                <DialogTitle>Add New Lead</DialogTitle>
+                <DialogDescription>
+                  Enter the details for the new lead.
+                </DialogDescription>
+              </DialogHeader>
+
+              {/* Make the form body scrollable */}
+              <div className="flex-1 overflow-y-auto px-6 py-4">
+                {/* Show error alert if there's a submit error */}
+                {submitError && <ErrorAlert message={submitError} />}
+
+                <div className="grid gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="name">
+                      Name <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="name"
+                      value={newLead.name}
+                      onChange={(e) => {
+                        setNewLead(prev => ({ ...prev, name: e.target.value }));
+                        // Clear error when user types
+                        if (formErrors.name) {
+                          setFormErrors(prev => ({ ...prev, name: undefined }));
+                        }
+                      }}
+                      placeholder="John Doe"
+                      className={cn(formErrors.name && "border-red-500")}
+                    />
+                    {formErrors.name && (
+                      <p className="text-sm text-red-500">{formErrors.name}</p>
+                    )}
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor="email">
+                      Email <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={newLead.email}
+                      onChange={(e) => {
+                        setNewLead(prev => ({ ...prev, email: e.target.value }));
+                        if (formErrors.email) {
+                          setFormErrors(prev => ({ ...prev, email: undefined }));
+                        }
+                      }}
+                      placeholder="john@example.com"
+                      className={cn(formErrors.email && "border-red-500")}
+                    />
+                    {formErrors.email && (
+                      <p className="text-sm text-red-500">{formErrors.email}</p>
+                    )}
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor="phone">Phone</Label>
+                    <Input
+                      id="phone"
+                      value={newLead.phone}
+                      onChange={(e) => {
+                        setNewLead(prev => ({ ...prev, phone: e.target.value }));
+                        if (formErrors.phone) {
+                          setFormErrors(prev => ({ ...prev, phone: undefined }));
+                        }
+                      }}
+                      placeholder="+1234567890"
+                      className={cn(formErrors.phone && "border-red-500")}
+                    />
+                    {formErrors.phone && (
+                      <p className="text-sm text-red-500">{formErrors.phone}</p>
+                    )}
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor="company">Company</Label>
+                    <Input
+                      id="company"
+                      value={newLead.company}
+                      onChange={(e) => setNewLead(prev => ({ ...prev, company: e.target.value }))}
+                      placeholder="Company Name"
+                    />
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor="stage">Stage</Label>
+                    <Select
+                      value={newLead.stage}
+                      onValueChange={(value) => setNewLead(prev => ({ ...prev, stage: value }))}>
+                      <SelectTrigger id="stage">
+                        <SelectValue placeholder="Select stage" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(stages).map(([name, config]) => (
+                          <SelectItem key={name} value={name}>
+                            <div className="flex items-center gap-2">
+                              {React.createElement(config.icon, { className: "h-4 w-4" })}
+                              <span>{name}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor="temperature">Temperature</Label>
+                    <Select
+                      value={newLead.status}
+                      onValueChange={(value) => setNewLead(prev => ({ ...prev, status: value as 'Hot' | 'Warm' | 'Cold' }))}>
+                      <SelectTrigger id="temperature">
+                        <SelectValue placeholder="Select temperature" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(Object.keys(temperatureConfig) as Array<'Hot' | 'Warm' | 'Cold'>).map((temp) => (
+                          <SelectItem key={temp} value={temp}>
+                            <div className="flex items-center gap-2">
+                              {React.createElement(temperatureConfig[temp].icon, { className: "h-4 w-4" })}
+                              <span>{temp}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor="source">Source</Label>
+                    <Select
+                      value={newLead.source}
+                      onValueChange={(value) => setNewLead(prev => ({ ...prev, source: value }))}>
+                      <SelectTrigger id="source">
+                        <SelectValue placeholder="Select source" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.keys(sourceConfig).map((source) => (
+                          <SelectItem key={source} value={source}>
+                            <div className="flex items-center gap-2">
+                              {React.createElement(sourceConfig[source as keyof typeof sourceConfig].icon, { className: "h-4 w-4" })}
+                              <span>{source}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+
+              <DialogFooter className="px-6 py-4 border-t">
+                <Button variant="outline" onClick={() => {
+                  setShowNewLead(false);
+                  setFormErrors({});
+                }}>
+                  Cancel
+                </Button>
+                <Button
+                  onClick={validateAndSubmit}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Adding...
+                    </>
+                  ) : (
+                    'Add Lead'
                   )}
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setShowDealValue(false)}>
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={handleSaveDealValue}
-                    disabled={!dealValueAmount || isSavingDealValue}
-                  >
-                    {isSavingDealValue ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      'Confirm Contract & Payment'
-                    )}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
-            {/* Add Edit Lead Dialog */}
-            <Dialog open={showEditLead} onOpenChange={setShowEditLead}>
-              <DialogContent className="max-w-[500px] h-[90vh] p-0 flex flex-col">
-                <DialogHeader className="px-6 py-4 border-b">
-                  <DialogTitle>Edit Lead</DialogTitle>
-                  <DialogDescription>
-                    Update lead information and stage.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="flex-1 overflow-y-auto px-6 py-4">
-                  <div className="grid gap-4">
-                    <div className="grid gap-2">
-                      <Label>Name</Label>
-                      <Input
-                        value={editedLead?.name || ''}
-                        onChange={(e) => setEditedLead(prev => prev ? { ...prev, name: e.target.value } : null)}
-                      />
-                    </div>
-                    <div className="grid gap-2">
-                      <Label>Email</Label>
-                      <Input
-                        value={editedLead?.email || ''}
-                        onChange={(e) => setEditedLead(prev => prev ? { ...prev, email: e.target.value } : null)}
-                      />
-                    </div>
-                    <div className="grid gap-2">
-                      <Label>Phone</Label>
-                      <Input
-                        value={editedLead?.phone || ''}
-                        onChange={(e) => setEditedLead(prev => prev ? { ...prev, phone: e.target.value } : null)}
-                      />
-                    </div>
-                    <div className="grid gap-2">
-                      <Label>Company</Label>
-                      <Input
-                        value={editedLead?.company || ''}
-                        onChange={(e) => setEditedLead(prev => prev ? { ...prev, company: e.target.value } : null)}
-                      />
-                    </div>
-                    <div className="grid gap-2">
-                      <Label>Stage</Label>
-                      <Select
-                        value={editedLead?.stage || ''}
-                        onValueChange={(value) => setEditedLead(prev => prev ? { ...prev, stage: value } : null)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select stage" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Object.entries(stages).map(([name, config]) => (
-                            <SelectItem key={name} value={name}>
-                              <div className="flex items-center gap-2">
-                                {React.createElement(config.icon, { className: "h-4 w-4" })}
-                                <span>{name}</span>
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="temperature">Temperature</Label>
-                      <Select
-                        value={editedLead?.status || ''}
-                        onValueChange={(value) => {
-                          if (value in temperatureConfig) {
-                            setEditedLead(prev => prev ? { ...prev, status: value as 'Hot' | 'Warm' | 'Cold' } : null)
-                          }
-                        }}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select temperature" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {(Object.keys(temperatureConfig) as Array<'Hot' | 'Warm' | 'Cold'>).map((temp) => (
-                            <SelectItem key={temp} value={temp}>
-                              <div className="flex items-center gap-2">
-                                {React.createElement(temperatureConfig[temp].icon, { className: "h-4 w-4" })}
-                                <span>{temp}</span>
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="grid gap-2">
-                      <Label>Source</Label>
-                      <Select
-                        value={editedLead?.source || ''}
-                        onValueChange={(value) => setEditedLead(prev => prev ? { ...prev, source: value } : null)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select source" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Object.keys(sourceConfig).map((source) => (
-                            <SelectItem key={source} value={source}>
-                              <div className="flex items-center gap-2">
-                                {React.createElement(sourceConfig[source as keyof typeof sourceConfig].icon, { className: "h-4 w-4" })}
-                                <span>{source}</span>
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Payment Related Options */}
-                    <div className="mt-4 pt-4 border-t">
-                      <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                        <Wallet className="h-4 w-4 text-blue-600" />
-                        Financial Details
-                      </h3>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="grid gap-2">
-                          <Label>Total Deal Value</Label>
-                          <div className="relative">
-                            <IndianRupee className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
-                            <Input
-                              type="number"
-                              className="pl-8"
-                              placeholder="0.00"
-                              value={editedLead?.deal_value || ''}
-                              onChange={(e) => setEditedLead(prev => prev ? { ...prev, deal_value: parseFloat(e.target.value) || 0 } : null)}
-                            />
-                          </div>
-                        </div>
-                        <div className="grid gap-2">
-                          <Label>Paid Amount</Label>
-                          <div className="relative">
-                            <IndianRupee className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
-                            <Input
-                              type="number"
-                              className="pl-8"
-                              placeholder="0.00"
-                              value={editedLead?.paid_amount || ''}
-                              onChange={(e) => setEditedLead(prev => prev ? { ...prev, paid_amount: parseFloat(e.target.value) || 0 } : null)}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                      {editedLead && editedLead.deal_value !== undefined && editedLead.paid_amount !== undefined && (
-                        <div className="mt-3 p-3 bg-blue-50/50 rounded-lg border border-blue-100 text-sm flex justify-between items-center">
-                          <span className="text-blue-700 font-medium">Balance Amount</span>
-                          <span className={cn(
-                            "font-bold text-lg",
-                            (editedLead.deal_value - editedLead.paid_amount) > 0 ? "text-red-600" : "text-green-600"
-                          )}>
-                            ₹{(editedLead.deal_value - editedLead.paid_amount).toLocaleString()}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Notes Section */}
-                    <div className="mt-2 pt-4 border-t">
-                      <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                        <MessageSquare className="h-4 w-4 text-orange-500" />
-                        Notes / History
-                      </h3>
-                      <div className="grid gap-2">
-                        <Textarea
-                          placeholder="Add notes about this lead..."
-                          className="min-h-[100px] bg-gray-50/50"
-                          value={editedLead?.notes || ''}
-                          onChange={(e) => setEditedLead(prev => prev ? { ...prev, notes: e.target.value } : null)}
-                        />
-                        <p className="text-[10px] text-gray-400 italic">
-                          Notes are stored with timestamps automatically when updated.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <DialogFooter className="px-6 py-4 border-t">
-                  <Button variant="outline" onClick={() => setShowEditLead(false)}>
-                    Cancel
-                  </Button>
-                  <Button
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault()
-                      e.stopPropagation()
-                      handleUpdateLead(editedLead)
-                    }}
-                  >
-                    Save Changes
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-
-            {/* Add New Lead Dialog */}
-            <Dialog open={showNewLead} onOpenChange={setShowNewLead}>
-              <DialogContent className="max-w-[500px] max-h-[85vh] flex flex-col">
-                <DialogHeader className="px-6 py-4 border-b">
-                  <DialogTitle>Add New Lead</DialogTitle>
-                  <DialogDescription>
-                    Enter the details for the new lead.
-                  </DialogDescription>
-                </DialogHeader>
-
-                {/* Make the form body scrollable */}
-                <div className="flex-1 overflow-y-auto px-6 py-4">
-                  {/* Show error alert if there's a submit error */}
-                  {submitError && <ErrorAlert message={submitError} />}
-
-                  <div className="grid gap-4">
-                    <div className="grid gap-2">
-                      <Label htmlFor="name">
-                        Name <span className="text-red-500">*</span>
-                      </Label>
-                      <Input
-                        id="name"
-                        value={newLead.name}
-                        onChange={(e) => {
-                          setNewLead(prev => ({ ...prev, name: e.target.value }));
-                          // Clear error when user types
-                          if (formErrors.name) {
-                            setFormErrors(prev => ({ ...prev, name: undefined }));
-                          }
-                        }}
-                        placeholder="John Doe"
-                        className={cn(formErrors.name && "border-red-500")}
-                      />
-                      {formErrors.name && (
-                        <p className="text-sm text-red-500">{formErrors.name}</p>
-                      )}
-                    </div>
-
-                    <div className="grid gap-2">
-                      <Label htmlFor="email">
-                        Email <span className="text-red-500">*</span>
-                      </Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={newLead.email}
-                        onChange={(e) => {
-                          setNewLead(prev => ({ ...prev, email: e.target.value }));
-                          if (formErrors.email) {
-                            setFormErrors(prev => ({ ...prev, email: undefined }));
-                          }
-                        }}
-                        placeholder="john@example.com"
-                        className={cn(formErrors.email && "border-red-500")}
-                      />
-                      {formErrors.email && (
-                        <p className="text-sm text-red-500">{formErrors.email}</p>
-                      )}
-                    </div>
-
-                    <div className="grid gap-2">
-                      <Label htmlFor="phone">Phone</Label>
-                      <Input
-                        id="phone"
-                        value={newLead.phone}
-                        onChange={(e) => {
-                          setNewLead(prev => ({ ...prev, phone: e.target.value }));
-                          if (formErrors.phone) {
-                            setFormErrors(prev => ({ ...prev, phone: undefined }));
-                          }
-                        }}
-                        placeholder="+1234567890"
-                        className={cn(formErrors.phone && "border-red-500")}
-                      />
-                      {formErrors.phone && (
-                        <p className="text-sm text-red-500">{formErrors.phone}</p>
-                      )}
-                    </div>
-
-                    <div className="grid gap-2">
-                      <Label htmlFor="company">Company</Label>
-                      <Input
-                        id="company"
-                        value={newLead.company}
-                        onChange={(e) => setNewLead(prev => ({ ...prev, company: e.target.value }))}
-                        placeholder="Company Name"
-                      />
-                    </div>
-
-                    <div className="grid gap-2">
-                      <Label htmlFor="stage">Stage</Label>
-                      <Select
-                        value={newLead.stage}
-                        onValueChange={(value) => setNewLead(prev => ({ ...prev, stage: value }))}>
-                        <SelectTrigger id="stage">
-                          <SelectValue placeholder="Select stage" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Object.entries(stages).map(([name, config]) => (
-                            <SelectItem key={name} value={name}>
-                              <div className="flex items-center gap-2">
-                                {React.createElement(config.icon, { className: "h-4 w-4" })}
-                                <span>{name}</span>
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="grid gap-2">
-                      <Label htmlFor="temperature">Temperature</Label>
-                      <Select
-                        value={newLead.status}
-                        onValueChange={(value) => setNewLead(prev => ({ ...prev, status: value as 'Hot' | 'Warm' | 'Cold' }))}>
-                        <SelectTrigger id="temperature">
-                          <SelectValue placeholder="Select temperature" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {(Object.keys(temperatureConfig) as Array<'Hot' | 'Warm' | 'Cold'>).map((temp) => (
-                            <SelectItem key={temp} value={temp}>
-                              <div className="flex items-center gap-2">
-                                {React.createElement(temperatureConfig[temp].icon, { className: "h-4 w-4" })}
-                                <span>{temp}</span>
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="grid gap-2">
-                      <Label htmlFor="source">Source</Label>
-                      <Select
-                        value={newLead.source}
-                        onValueChange={(value) => setNewLead(prev => ({ ...prev, source: value }))}>
-                        <SelectTrigger id="source">
-                          <SelectValue placeholder="Select source" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Object.keys(sourceConfig).map((source) => (
-                            <SelectItem key={source} value={source}>
-                              <div className="flex items-center gap-2">
-                                {React.createElement(sourceConfig[source as keyof typeof sourceConfig].icon, { className: "h-4 w-4" })}
-                                <span>{source}</span>
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </div>
-
-                <DialogFooter className="px-6 py-4 border-t">
-                  <Button variant="outline" onClick={() => {
-                    setShowNewLead(false);
-                    setFormErrors({});
-                  }}>
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={validateAndSubmit}
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Adding...
-                      </>
-                    ) : (
-                      'Add Lead'
-                    )}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-
-            {/* Add bulk actions above the table when leads are selected */}
+          {/* ── Scrollable table area (only this scrolls) ── */}
+          {/* ── Table Container (strictly controlled layout) ── */}
+          <div className="flex-1 flex flex-col min-h-0 px-4 pb-4 overflow-hidden">
+            {/* ── Bulk actions bar ── (inside scroll area at top) */}
             {selectedLeads.length > 0 && (
-              <div className="mb-4 p-4 bg-gray-50 rounded-lg border flex items-center justify-between">
-                <div className="text-sm text-gray-600">
-                  {selectedLeads.length} lead{selectedLeads.length > 1 ? 's' : ''} selected
+              <div className="flex items-center justify-between rounded-xl bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 px-4 py-2.5 mb-2">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-600 text-white text-xs font-bold">
+                    {selectedLeads.length}
+                  </div>
+                  <span className="text-sm font-medium text-indigo-800 dark:text-indigo-200">
+                    lead{selectedLeads.length > 1 ? 's' : ''} selected
+                  </span>
                 </div>
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
                     size="sm"
+                    className="h-8 border-indigo-200 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-800/40"
                     onClick={() => setShowBroadcastDialog(true)}
                   >
-                    <MessageSquare className="h-4 w-4 mr-2" />
+                    <MessageSquare className="h-3.5 w-3.5 mr-1.5" />
                     Send Message
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
+                    className="h-8 border-indigo-200 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-800/40"
                     onClick={() => {
                       setEditingLead(null);
                       setSelectedStage(null);
@@ -2536,7 +2525,7 @@ export default function LeadsPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="text-red-600 hover:text-red-700"
+                    className="h-8 border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
                     onClick={handleBulkDelete}
                   >
                     Delete Selected
@@ -2546,194 +2535,194 @@ export default function LeadsPage() {
             )}
 
             {error ? (
-              <div className="p-8 flex flex-col items-center justify-center text-center">
-                <div className="rounded-full bg-red-100 p-3 mb-4">
-                  <XCircle className="h-6 w-6 text-red-600" />
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/20 mb-4">
+                  <XCircle className="h-7 w-7 text-red-600" />
                 </div>
-                <h3 className="text-lg font-medium text-red-900 mb-2">Error Loading Leads</h3>
-                <p className="text-sm text-red-600 max-w-md mb-4">{error}</p>
+                <h3 className="text-base font-semibold text-slate-900 dark:text-white mb-1">Error Loading Leads</h3>
+                <p className="text-sm text-slate-500 max-w-sm mb-4">{error}</p>
                 <Button
                   variant="outline"
-                  onClick={() => {
-                    setError(null);
-                    fetchLeads();
-                  }}
+                  className="gap-2"
+                  onClick={() => { setError(null); fetchLeads(); }}
                 >
-                  <RefreshCcw className="mr-2 h-4 w-4" />
+                  <RefreshCcw className="h-4 w-4" />
                   Try Again
                 </Button>
               </div>
             ) : isLoading ? (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Search leads..."
-                      className="w-64 bg-gray-50"
-                      disabled
-                    />
-                    <Select disabled>
-                      <SelectTrigger className="w-36 bg-gray-50">
-                        <SelectValue placeholder="All Statuses" />
-                      </SelectTrigger>
-                    </Select>
-                  </div>
-                </div>
+              <div className="space-y-3">
                 <LeadsTableSkeleton columns={columns} visibleColumns={visibleColumns} />
               </div>
             ) : leads.length === 0 ? (
-              <div className="p-8 text-center">
-                <p className="text-gray-500">No leads found</p>
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 mb-4">
+                  <UserCheck className="h-7 w-7 text-slate-400" />
+                </div>
+                <h3 className="text-base font-semibold text-slate-900 dark:text-white mb-1">No leads found</h3>
+                <p className="text-sm text-slate-500">Try adjusting your filters or add a new lead.</p>
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[50px]">
-                      <input
-                        type="checkbox"
-                        className="h-4 w-4 rounded border-gray-300"
-                        checked={selectedLeads.length > 0 && selectedLeads.length === leads.length}
-                        onChange={handleSelectAll}
-                      />
-                    </TableHead>
-                    {columns
-                      .filter(column => visibleColumns.includes(column.id))
-                      .map(column => (
-                        <TableHead key={column.id}>{column.label}</TableHead>
-                      ))}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {leads.map((lead) => (
-                    <TableRow key={`lead-${lead.id}`}>
-                      <TableCell>
-                        <input
-                          type="checkbox"
-                          className="h-4 w-4 rounded border-gray-300"
-                          checked={selectedLeads.includes(lead.id)}
-                          onChange={() => handleSelectLead(lead.id)}
-                        />
-                      </TableCell>
-                      {columns
-                        .filter(column => visibleColumns.includes(column.id))
-                        .map(column => (
-                          <TableCell key={`${lead.id}-${column.id}`}>
-                            {column.id === 'actions' ? (
-                              <div className="flex gap-2">
-                                <TooltipProvider>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-8 w-8 p-0"
-                                        onClick={() => handleEditLead(lead)}
-                                      >
-                                        <Pencil className="h-4 w-4 text-blue-600" />
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      <p>Edit Lead</p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-
-                                <TooltipProvider>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-8 w-8 p-0"
-                                        onClick={() => handleDelete(lead)}
-                                      >
-                                        <Trash className="h-4 w-4 text-red-600" />
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      <p>Delete Lead</p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                              </div>
-                            ) : column.id === 'stage' ? (
-                              <Badge
-                                onClick={() => {
-                                  setEditingLead(lead);
-                                  setSelectedStage(lead.stage);
-                                  setShowStageChange(true);
-                                }}
-                                className={cn(
-                                  stages[lead.stage]?.color || 'bg-gray-100 text-gray-800',
-                                  'flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity'
-                                )}
-                              >
-                                {React.createElement(stages[lead.stage]?.icon || Tag, {
-                                  className: "h-3 w-3"
-                                })}
-                                {lead.stage}
-                              </Badge>
-                            ) : column.id === 'status' ? (
-                              <Badge
-                                className={cn(
-                                  temperatureConfig[lead.status as TemperatureType]?.color || 'bg-gray-100 text-gray-800',
-                                  'flex items-center gap-1'
-                                )}
-                              >
-                                {React.createElement(temperatureConfig[lead.status as TemperatureType]?.icon || Thermometer, {
-                                  className: "h-3 w-3"
-                                })}
-                                {lead.status}
-                              </Badge>
-                            ) : column.id === 'source' ? (
-                              <Badge
-                                className={cn(
-                                  sourceConfig[lead.source as keyof typeof sourceConfig]?.color || 'bg-gray-100 text-gray-800',
-                                  'flex items-center gap-1'
-                                )}
-                              >
-                                {React.createElement(sourceConfig[lead.source as keyof typeof sourceConfig]?.icon || Globe, {
-                                  className: "h-3 w-3"
-                                })}
-                                {lead.source}
-                              </Badge>
-                            ) : column.id === 'deal_value' || column.id === 'paid_amount' ? (
-                              <div className="flex items-center gap-1 font-medium">
-                                <span className="text-gray-500">₹</span>
-                                <span>{lead[column.id as keyof typeof lead]?.toLocaleString() || '0'}</span>
-                              </div>
-                            ) : column.id === 'lastContact' ? (
-                              <div className="flex items-center gap-2">
-                                {column.icon && React.createElement(column.icon, {
-                                  className: "h-4 w-4 text-gray-500"
-                                })}
-                                <span>{format(new Date(lead.last_contact), "MMM dd, yyyy")}</span>
-                              </div>
-                            ) : column.id === 'created_at' ? (
-                              <div className="flex items-center gap-2">
-                                {column.icon && React.createElement(column.icon, {
-                                  className: "h-4 w-4 text-gray-500"
-                                })}
-                                {/* <span>{format(new Date(lead.created_at), "MMM dd, yyyy")}</span> */}
-                                <span>{format(new Date(lead.created_at), "MMM dd, yyyy 'at' hh:mm a")}</span>
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-2">
-                                {column.icon && React.createElement(column.icon, {
-                                  className: "h-4 w-4 text-gray-500"
-                                })}
-                                <span>{lead[column.id as keyof typeof lead]}</span>
-                              </div>
-                            )}
+              <div className="flex-1 flex flex-col min-h-0 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 overflow-hidden shadow-sm">
+                <div className="flex-1 overflow-auto scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800">
+                  <Table className="min-w-full relative border-separate border-spacing-0">
+                    <TableHeader>
+                      <TableRow className="bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-50 dark:hover:bg-slate-800/60">
+                        <TableHead className="sticky top-0 z-30 w-[46px] pl-4 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+                          <input
+                            type="checkbox"
+                            className="h-4 w-4 rounded border-slate-300 dark:border-slate-600 accent-indigo-600"
+                            checked={selectedLeads.length > 0 && selectedLeads.length === leads.length}
+                            onChange={handleSelectAll}
+                          />
+                        </TableHead>
+                        {columns
+                          .filter(column => visibleColumns.includes(column.id))
+                          .map(column => (
+                            <TableHead key={column.id}
+                              className="sticky top-0 z-30 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700"
+                            >{column.label}</TableHead>
+                          ))}
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {leads.map((lead) => (
+                        <TableRow
+                          key={`lead-${lead.id}`}
+                          className="border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors"
+                        >
+                          <TableCell className="pl-4">
+                            <input
+                              type="checkbox"
+                              className="h-4 w-4 rounded border-slate-300 dark:border-slate-600 accent-indigo-600"
+                              checked={selectedLeads.includes(lead.id)}
+                              onChange={() => handleSelectLead(lead.id)}
+                            />
                           </TableCell>
-                        ))}
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                          {columns
+                            .filter(column => visibleColumns.includes(column.id))
+                            .map(column => (
+                              <TableCell key={`${lead.id}-${column.id}`}>
+                                {column.id === 'actions' ? (
+                                  <div className="flex gap-2">
+                                    <TooltipProvider>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-8 w-8 p-0"
+                                            onClick={() => handleEditLead(lead)}
+                                          >
+                                            <Pencil className="h-4 w-4 text-blue-600" />
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p>Edit Lead</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
+
+                                    <TooltipProvider>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-8 w-8 p-0"
+                                            onClick={() => handleDelete(lead)}
+                                          >
+                                            <Trash className="h-4 w-4 text-red-600" />
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p>Delete Lead</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
+                                  </div>
+                                ) : column.id === 'stage' ? (
+                                  <Badge
+                                    variant="outline"
+                                    onClick={() => {
+                                      setEditingLead(lead);
+                                      setSelectedStage(lead.stage);
+                                      setShowStageChange(true);
+                                    }}
+                                    className={cn(
+                                      stages[lead.stage]?.color || 'bg-slate-50 text-slate-600',
+                                      'flex items-center gap-1.5 cursor-pointer transition-all px-2.5 py-0.5 border-none font-semibold ring-1 ring-inset ring-current/20 hover:ring-current/50 hover:bg-current/10 hover:shadow-sm active:scale-95'
+                                    )}
+                                  >
+                                    {React.createElement(stages[lead.stage]?.icon || Tag, {
+                                      className: "h-3 w-3"
+                                    })}
+                                    {lead.stage}
+                                  </Badge>
+                                ) : column.id === 'status' ? (
+                                  <Badge
+                                    className={cn(
+                                      temperatureConfig[lead.status as TemperatureType]?.color || 'bg-gray-100 text-gray-800',
+                                      'flex items-center gap-1'
+                                    )}
+                                  >
+                                    {React.createElement(temperatureConfig[lead.status as TemperatureType]?.icon || Thermometer, {
+                                      className: "h-3 w-3"
+                                    })}
+                                    {lead.status}
+                                  </Badge>
+                                ) : column.id === 'source' ? (
+                                  <Badge
+                                    className={cn(
+                                      sourceConfig[lead.source as keyof typeof sourceConfig]?.color || 'bg-gray-100 text-gray-800',
+                                      'flex items-center gap-1'
+                                    )}
+                                  >
+                                    {React.createElement(sourceConfig[lead.source as keyof typeof sourceConfig]?.icon || Globe, {
+                                      className: "h-3 w-3"
+                                    })}
+                                    {lead.source}
+                                  </Badge>
+                                ) : column.id === 'deal_value' || column.id === 'paid_amount' ? (
+                                  <div className="flex items-center gap-1 font-medium">
+                                    <span className="text-gray-500">₹</span>
+                                    <span>{lead[column.id as keyof typeof lead]?.toLocaleString() || '0'}</span>
+                                  </div>
+                                ) : column.id === 'lastContact' ? (
+                                  <div className="flex items-center gap-2">
+                                    {column.icon && React.createElement(column.icon, {
+                                      className: "h-4 w-4 text-gray-500"
+                                    })}
+                                    <span>{format(new Date(lead.last_contact), "MMM dd, yyyy")}</span>
+                                  </div>
+                                ) : column.id === 'created_at' ? (
+                                  <div className="flex items-center gap-2">
+                                    {column.icon && React.createElement(column.icon, {
+                                      className: "h-4 w-4 text-gray-500"
+                                    })}
+                                    {/* <span>{format(new Date(lead.created_at), "MMM dd, yyyy")}</span> */}
+                                    <span>{format(new Date(lead.created_at), "MMM dd, yyyy 'at' hh:mm a")}</span>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-2">
+                                    {column.icon && React.createElement(column.icon, {
+                                      className: "h-4 w-4 text-gray-500"
+                                    })}
+                                    <span>{lead[column.id as keyof typeof lead]}</span>
+                                  </div>
+                                )}
+                              </TableCell>
+                            ))}
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+                <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40">
+                  <PaginationControls />
+                </div>
+              </div>
             )}
-            {totalItems > 0 && <PaginationControls />}
           </div>
         </CardContent>
       </Card>

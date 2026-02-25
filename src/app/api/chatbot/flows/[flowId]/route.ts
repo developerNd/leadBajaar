@@ -49,7 +49,7 @@ export async function PUT(
 ) {
   try {
     const body = await request.json()
-    
+
     const response = await fetch(`${API_URL}/chatbot/flows/${params.flowId}`, {
       method: 'PUT',
       headers: {

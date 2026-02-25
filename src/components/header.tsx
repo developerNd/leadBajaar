@@ -4,45 +4,40 @@ import { usePathname } from "next/navigation"
 import { ModeToggle } from "@/components/mode-toggle"
 import { NotificationBell } from "@/components/notification-bell"
 
-const getPageTitle = (pathname: string) => {
-  switch (pathname) {
-    case '/dashboard':
-      return 'Dashboard'
-    case '/leads':
-      return 'Leads Management'
-    case '/live-chat':
-      return 'Live Chat'
-    case '/chatbot':
-      return 'Chatbot'
-    case '/imports':
-      return 'Import Contacts'
-    case '/analytics':
-      return 'Analytics'
-    case '/settings':
-      return 'Settings'
-    default:
-      return 'Dashboard'
-  }
+const pageMeta: Record<string, { title: string; description: string }> = {
+  '/dashboard': { title: 'Dashboard', description: 'Overview of your performance' },
+  '/leads': { title: 'Leads', description: 'Manage and track your leads' },
+  '/live-chat': { title: 'Live Chat', description: 'Real-time conversations' },
+  '/chatbot': { title: 'Chatbot', description: 'Automated messaging flows' },
+  '/meetings': { title: 'Meetings', description: 'Schedule and manage meetings' },
+  '/integrations': { title: 'Integrations', description: 'Connect your tools' },
+  '/analytics': { title: 'Analytics', description: 'Insights and reports' },
+  '/settings': { title: 'Settings', description: 'Preferences and configuration' },
 }
 
 export function Header() {
   const pathname = usePathname()
-  const pageTitle = getPageTitle(pathname)
+  const meta = pageMeta[pathname] ?? { title: 'Dashboard', description: '' }
 
   return (
-    <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="flex h-14 items-center px-4 gap-4">
-        <div className="flex-1">
-          <h1 className="text-xl font-semibold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-gray-100 dark:to-gray-400 bg-clip-text text-transparent">
-            {pageTitle}
-          </h1>
-        </div>
-        <div className="flex items-center gap-4">
-          <NotificationBell />
-          <ModeToggle />
-        </div>
+    <header className="sticky top-0 z-40 flex h-14 items-center border-b border-slate-200/70 dark:border-slate-800/70 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl px-6 gap-4">
+      {/* Page title */}
+      <div className="flex-1 min-w-0">
+        <h1 className="text-base font-semibold text-slate-900 dark:text-white truncate">
+          {meta.title}
+        </h1>
+        {meta.description && (
+          <p className="hidden sm:block text-xs text-slate-400 dark:text-slate-500 truncate leading-none mt-0.5">
+            {meta.description}
+          </p>
+        )}
+      </div>
+
+      {/* Right-side actions */}
+      <div className="flex items-center gap-2 shrink-0">
+        <NotificationBell />
+        <ModeToggle />
       </div>
     </header>
   )
 }
-
