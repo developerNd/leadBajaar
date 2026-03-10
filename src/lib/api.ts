@@ -941,7 +941,69 @@ export const integrationApi = {
       throw new Error(message);
     }
   },
+
+  // Meta Pixel Methods
+  getMetaPixels: async () => {
+    try {
+      const response = await api.get('/meta/pixels');
+      return response.data;
+    } catch (error: any) {
+      const message = error.response?.data?.error || 'Failed to fetch Meta pixels';
+      throw new Error(message);
+    }
+  },
+
+  syncMetaPixels: async () => {
+    try {
+      const response = await api.post('/meta/pixels/sync');
+      return response.data;
+    } catch (error: any) {
+      const message = error.response?.data?.error || 'Failed to sync Meta pixels';
+      throw new Error(message);
+    }
+  },
+
+  updateMetaPixel: async (id: number, data: { name?: string; is_active?: boolean }) => {
+    try {
+      const response = await api.patch(`/meta/pixels/${id}`, data);
+      return response.data;
+    } catch (error: any) {
+      const message = error.response?.data?.error || 'Failed to update Meta pixel';
+      throw new Error(message);
+    }
+  },
+
+  deleteMetaPixel: async (id: number) => {
+    try {
+      const response = await api.delete(`/meta/pixels/${id}`);
+      return response.data;
+    } catch (error: any) {
+      const message = error.response?.data?.error || 'Failed to delete Meta pixel';
+      throw new Error(message);
+    }
+  },
+
+  getMetaPixelRoiSummary: async (days = 30) => {
+    try {
+      const response = await api.get('/meta/pixels/roi-summary', { params: { days } });
+      return response.data;
+    } catch (error: any) {
+      const message = error.response?.data?.error || 'Failed to fetch ROI summary';
+      throw new Error(message);
+    }
+  },
+
+  createMetaPixel: async (data: { name: string; ad_account_id: string }) => {
+    try {
+      const response = await api.post('/meta/pixels/create', data);
+      return response.data;
+    } catch (error: any) {
+      const message = error.response?.data?.message || error.response?.data?.error || 'Failed to create pixel';
+      throw new Error(message);
+    }
+  },
 };
+
 
 // Add export functions
 export const exportLeads = async (ids?: number[]) => {

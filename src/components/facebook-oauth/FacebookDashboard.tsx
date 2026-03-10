@@ -35,10 +35,13 @@ import {
   Play,
   Pause,
   Zap,
-  Eye
+  Eye,
+  Info
 } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
 import { integrationApi } from '@/lib/api'
+import { PixelTestConsole } from './PixelTestConsole'
+import { RoiDashboard } from './RoiDashboard'
 import {
   Dialog,
   DialogContent,
@@ -129,6 +132,11 @@ export function FacebookDashboard() {
   const [isCreatingCreative, setIsCreatingCreative] = useState(false)
   const [lastError, setLastError] = useState<{ title: string, description: string, action: string } | null>(null)
   const [isErrorDialogOpen, setIsErrorDialogOpen] = useState(false)
+  const [pixels, setPixels] = useState<any[]>([])
+  const [isSyncingPixels, setIsSyncingPixels] = useState(false)
+  const [isLoadingPixels, setIsLoadingPixels] = useState(false)
+  const [isPixelScriptDialogOpen, setIsPixelScriptDialogOpen] = useState(false)
+  const [selectedPixelForScript, setSelectedPixelForScript] = useState<any | null>(null)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -153,6 +161,7 @@ export function FacebookDashboard() {
     loadPages()
     loadAdAccounts()
     loadTemplates()
+    loadPixels()
   }, [])
 
   useEffect(() => {
@@ -814,6 +823,48 @@ export function FacebookDashboard() {
     }
   }
 
+  const loadPixels = async () => {
+    try {
+      setIsLoadingPixels(true)
+      const response = await integrationApi.getMetaPixels()
+      if (response.status === 'success') {
+        setPixels(response.pixels || [])
+      }
+    } catch (error: any) {
+      console.error('Failed to load pixels:', error)
+    } finally {
+      setIsLoadingPixels(false)
+    }
+  }
+
+  const handleSyncPixels = async () => {
+    try {
+      setIsSyncingPixels(true)
+      const response = await integrationApi.syncMetaPixels()
+      if (response.status === 'success') {
+        setPixels(response.pixels || [])
+        toast({ title: "Pixels Synced", description: "Your Meta Pixels have been updated." })
+      }
+    } catch (error: any) {
+      toast({ title: "Sync Failed", description: error.message, variant: "destructive" })
+    } finally {
+      setIsSyncingPixels(false)
+    }
+  }
+
+  const handleTogglePixelStatus = async (pixel: any) => {
+    try {
+      const newStatus = !pixel.is_active
+      const response = await integrationApi.updateMetaPixel(pixel.id, { is_active: newStatus })
+      if (response.status === 'success') {
+        setPixels(pixels.map(p => p.id === pixel.id ? { ...p, is_active: newStatus } : p))
+        toast({ title: "Status Updated", description: `Pixel ${pixel.name} is now ${newStatus ? 'active' : 'inactive'}.` })
+      }
+    } catch (error: any) {
+      toast({ title: "Update Failed", description: error.message, variant: "destructive" })
+    }
+  }
+
   const handleUpdateBudget = async (adSetId: string, newBudget: number) => {
     try {
       const response = await integrationApi.updateMetaAdSet(adSetId, { daily_budget: newBudget * 100 }) // Facebook cents
@@ -887,7 +938,7 @@ export function FacebookDashboard() {
       </div>
 
       <Tabs defaultValue="pages" className="w-full">
-        <TabsList className="grid w-full grid-cols-4 mb-8 max-w-lg">
+        <TabsList className="grid w-full grid-cols-6 mb-8 max-w-3xl">
           <TabsTrigger value="pages" className="flex items-center space-x-2">
             <Globe className="h-4 w-4" />
             <span>Pages & Leads</span>
@@ -903,6 +954,14 @@ export function FacebookDashboard() {
           <TabsTrigger value="templates" className="flex items-center space-x-2">
             <BarChart3 className="h-4 w-4" />
             <span>Ad Templates</span>
+          </TabsTrigger>
+          <TabsTrigger value="pixels" className="flex items-center space-x-2">
+            <Zap className="h-4 w-4" />
+            <span>Pixels / CAPI</span>
+          </TabsTrigger>
+          <TabsTrigger value="roi" className="flex items-center space-x-2">
+            <TrendingUp className="h-4 w-4" />
+            <span>ROI Analytics</span>
           </TabsTrigger>
         </TabsList>
 
@@ -1866,6 +1925,109 @@ export function FacebookDashboard() {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="pixels" className="space-y-6">
+          {/* Header */}
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+              <h3 className="text-2xl font-extrabold tracking-tight">Pixels & CAPI Console</h3>
+              <p className="text-sm text-muted-foreground">Sync pixels, fire test events, and generate tracking scripts.</p>
+            </div>
+            <Button
+              onClick={handleSyncPixels}
+              disabled={isSyncingPixels}
+              className="bg-blue-600 hover:bg-blue-700 shadow-md"
+            >
+              {isSyncingPixels ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+              Sync Pixels from Meta
+            </Button>
+          </div>
+
+          {/* Pixels status table */}
+          <Card className="border-none shadow-md bg-white dark:bg-slate-900">
+            <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800">
+              <CardTitle className="text-sm font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
+                <Zap className="h-4 w-4" /> Connected Pixels
+                <Badge variant="secondary" className="ml-auto">{pixels.length}</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent border-slate-100 dark:border-slate-800">
+                    <TableHead className="font-bold text-slate-700 dark:text-slate-300">Pixel</TableHead>
+                    <TableHead className="font-bold text-slate-700 dark:text-slate-300">Pixel ID</TableHead>
+                    <TableHead className="font-bold text-slate-700 dark:text-slate-300">Ad Account</TableHead>
+                    <TableHead className="font-bold text-slate-700 dark:text-slate-300">Status</TableHead>
+                    <TableHead className="text-right font-bold text-slate-700 dark:text-slate-300">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {isLoadingPixels ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="h-24 text-center">
+                        <Loader2 className="h-6 w-6 animate-spin mx-auto text-blue-500" />
+                      </TableCell>
+                    </TableRow>
+                  ) : pixels.length > 0 ? (
+                    pixels.map((pixel) => (
+                      <TableRow key={pixel.id} className="border-slate-50 dark:border-slate-800/50">
+                        <TableCell className="font-medium">
+                          <div className="flex items-center space-x-2">
+                            <div className="h-8 w-8 bg-purple-100 dark:bg-purple-900/40 rounded-lg flex items-center justify-center text-purple-600">
+                              <Zap className="h-4 w-4" />
+                            </div>
+                            <span className="font-semibold">{pixel.name}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-mono text-xs text-slate-500">{pixel.pixel_id}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{pixel.ad_account_id || '—'}</TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={pixel.is_active ? 'default' : 'secondary'}
+                            className={pixel.is_active ? 'bg-green-100 text-green-700 hover:bg-green-100' : ''}
+                          >
+                            {pixel.is_active ? 'Active' : 'Inactive'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost" size="icon"
+                            className={`h-8 w-8 ${pixel.is_active ? 'text-amber-500' : 'text-green-500'}`}
+                            onClick={() => handleTogglePixelStatus(pixel)}
+                          >
+                            {pixel.is_active ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={5} className="h-28 text-center text-muted-foreground">
+                        <div className="flex flex-col items-center gap-2">
+                          <Zap className="h-10 w-10 opacity-10" />
+                          <p>No pixels synced. Click "Sync Pixels from Meta" to get started.</p>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+
+          {/* Test Console + Script Generator */}
+          <PixelTestConsole
+            pixels={pixels}
+            adAccounts={adAccounts}
+            onRefreshPixels={handleSyncPixels}
+            isSyncingPixels={isSyncingPixels}
+          />
+        </TabsContent>
+
+        <TabsContent value="roi" className="space-y-6">
+          <RoiDashboard />
         </TabsContent>
       </Tabs>
       <Dialog open={isErrorDialogOpen} onOpenChange={setIsErrorDialogOpen}>
