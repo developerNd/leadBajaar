@@ -346,6 +346,21 @@ export interface IntegrationConfig {
   environment: 'sandbox' | 'production';
 }
 
+const formatMetaErrorMessage = (error: any, defaultMessage: string): string => {
+  const errorData = error.response?.data?.error || error.response?.data;
+
+  if (errorData && typeof errorData === 'object') {
+    // If it's a rich Meta error, stringify it so formatMetaError in UI can parse codes
+    if (errorData.error_subcode || errorData.code) {
+      return JSON.stringify(errorData);
+    }
+    if (errorData.message) return errorData.message;
+    return JSON.stringify(errorData);
+  }
+
+  return (typeof errorData === 'string' ? errorData : null) || error.message || defaultMessage;
+};
+
 // API functions for integrations
 export const integrationApi = {
   // Get all integrations
@@ -654,7 +669,7 @@ export const integrationApi = {
     }
   },
 
-  updateMetaStatus: async (objectId: string, status: 'ACTIVE' | 'PAUSED') => {
+  updateMetaStatus: async (objectId: string, status: 'ACTIVE' | 'PAUSED' | 'ARCHIVED') => {
     try {
       const response = await api.post(`/meta/ads/${objectId}/status`, { status });
       return response.data;
@@ -782,13 +797,13 @@ export const integrationApi = {
     }
   },
 
+
   createMetaCampaign: async (adAccountId: string, data: { name: string; objective?: string; status?: string }) => {
     try {
       const response = await api.post(`/meta/ads/adaccounts/${adAccountId}/campaigns`, data);
       return response.data;
     } catch (error: any) {
-      const message = error.response?.data?.error || 'Failed to create Meta campaign';
-      throw new Error(message);
+      throw new Error(formatMetaErrorMessage(error, 'Failed to create Meta campaign'));
     }
   },
 
@@ -797,8 +812,7 @@ export const integrationApi = {
       const response = await api.post(`/meta/ads/adaccounts/${adAccountId}/adsets`, data);
       return response.data;
     } catch (error: any) {
-      const message = error.response?.data?.error || 'Failed to create Meta ad set';
-      throw new Error(message);
+      throw new Error(formatMetaErrorMessage(error, 'Failed to create Meta ad set'));
     }
   },
 
@@ -807,8 +821,7 @@ export const integrationApi = {
       const response = await api.post(`/meta/ads/adsets/${adSetId}`, data);
       return response.data;
     } catch (error: any) {
-      const message = error.response?.data?.error || 'Failed to update Meta ad set';
-      throw new Error(message);
+      throw new Error(formatMetaErrorMessage(error, 'Failed to update Meta ad set'));
     }
   },
 
@@ -817,8 +830,25 @@ export const integrationApi = {
       const response = await api.post(`/meta/ads/adaccounts/${adAccountId}/ads`, data);
       return response.data;
     } catch (error: any) {
-      const message = error.response?.data?.error || 'Failed to create Meta ad';
-      throw new Error(message);
+      throw new Error(formatMetaErrorMessage(error, 'Failed to create Meta ad'));
+    }
+  },
+
+  getMetaAdCreatives: async (adAccountId: string) => {
+    try {
+      const response = await api.get(`/meta/ads/adaccounts/${adAccountId}/adcreatives`);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(formatMetaErrorMessage(error, 'Failed to fetch Meta ad creatives'));
+    }
+  },
+
+  createMetaAdCreativeStandalone: async (adAccountId: string, data: any) => {
+    try {
+      const response = await api.post(`/meta/ads/adaccounts/${adAccountId}/adcreatives`, data);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(formatMetaErrorMessage(error, 'Failed to create Meta ad creative'));
     }
   },
 
@@ -827,8 +857,7 @@ export const integrationApi = {
       const response = await api.post(`/meta/pages/${pageId}/forms`, formData);
       return response.data;
     } catch (error: any) {
-      const message = error.response?.data?.error || 'Failed to create Meta Lead Form';
-      throw new Error(message);
+      throw new Error(formatMetaErrorMessage(error, 'Failed to create Meta Lead Form'));
     }
   },
 
@@ -839,6 +868,16 @@ export const integrationApi = {
       return response.data;
     } catch (error: any) {
       const message = error.response?.data?.error || 'Failed to sync Meta assets';
+      throw new Error(message);
+    }
+  },
+
+  syncMetaAdAccountDetails: async (adAccountId: string) => {
+    try {
+      const response = await api.post(`/meta/ads/adaccounts/${adAccountId}/sync`);
+      return response.data;
+    } catch (error: any) {
+      const message = error.response?.data?.error || 'Failed to sync ad account details';
       throw new Error(message);
     }
   },
@@ -869,6 +908,36 @@ export const integrationApi = {
       return response.data;
     } catch (error: any) {
       const message = error.response?.data?.error || 'Failed to launch Meta template';
+      throw new Error(message);
+    }
+  },
+
+  deleteMetaObject: async (objectId: string) => {
+    try {
+      const response = await api.delete(`/meta/ads/${objectId}`);
+      return response.data;
+    } catch (error: any) {
+      const message = error.response?.data?.error || 'Failed to delete Meta object';
+      throw new Error(message);
+    }
+  },
+
+  updateMetaCampaign: async (campaignId: string, data: any) => {
+    try {
+      const response = await api.post(`/meta/ads/campaigns/${campaignId}`, data);
+      return response.data;
+    } catch (error: any) {
+      const message = error.response?.data?.error || 'Failed to update Meta campaign';
+      throw new Error(message);
+    }
+  },
+
+  createMetaCustomAudience: async (adAccountId: string, data: { name: string; subtype?: string; description?: string }) => {
+    try {
+      const response = await api.post(`/meta/ads/adaccounts/${adAccountId}/customaudiences`, data);
+      return response.data;
+    } catch (error: any) {
+      const message = error.response?.data?.error || 'Failed to create Meta custom audience';
       throw new Error(message);
     }
   },
