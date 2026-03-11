@@ -17,7 +17,9 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
+  ChevronRight as ChevronRightIcon,
   Bell,
+  Code2,
 } from 'lucide-react'
 import { logout } from '@/lib/api'
 import { clearSession } from '@/lib/auth'
@@ -45,6 +47,12 @@ const mainNav = [
       { name: 'Meetings', href: '/meetings', icon: CalendarCheck2, color: '#F59E0B' },
       { name: 'Integrations', href: '/integrations', icon: Plug2, color: '#EC4899' },
       { name: 'Analytics', href: '/analytics', icon: TrendingUp, color: '#14B8A6' },
+    ]
+  },
+  {
+    label: 'Development',
+    items: [
+      { name: 'Dev Hub', href: '/developer', icon: Code2, color: '#10B981' },
     ]
   },
 ]
