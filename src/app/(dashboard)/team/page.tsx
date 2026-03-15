@@ -16,6 +16,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
 import { teamApi } from '@/lib/api'
 import { useEffect } from 'react'
+import { RoleGuard } from '@/components/RoleGuard'
+
 
 // Mock Data
 type Role = 'Admin' | 'Manager' | 'Agent'
@@ -168,87 +170,88 @@ export default function TeamManagementPage() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-slate-50 dark:bg-slate-950/20">
-      <div className="px-4 lg:px-6 py-6 space-y-4 w-full">
-        {/* Header content and main flow will now align with the top header */}
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-          <div>
-            <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">Team Management</h1>
-            <p className="text-sm text-slate-500 font-medium">Members, roles, and access permissions.</p>
+    <RoleGuard allowedRoles={['Super Admin', 'Admin']}>
+      <div className="flex flex-col min-h-screen bg-slate-50 dark:bg-slate-950/20">
+        <div className="px-4 lg:px-6 py-6 space-y-4 w-full">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <div>
+              <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">Team Management</h1>
+              <p className="text-sm text-slate-500 font-medium italic">Members, roles, and access permissions.</p>
+            </div>
+            
+            <Dialog open={isInviteModalOpen} onOpenChange={setIsInviteModalOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-md shadow-indigo-500/20 rounded-xl px-5 h-10 text-sm transition-all hover:scale-[1.02]">
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Invite Member
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px] rounded-2xl">
+                <DialogHeader>
+                  <DialogTitle className="text-xl font-bold">Invite Team Member</DialogTitle>
+                  <DialogDescription className="font-medium text-slate-500">
+                    Send an email invitation to add a new member.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-5 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="email" className="font-bold text-slate-700 dark:text-slate-300">Email address</Label>
+                    <Input 
+                      id="email" 
+                      placeholder="colleague@company.com" 
+                      type="email"
+                      value={inviteEmail}
+                      onChange={(e) => setInviteEmail(e.target.value)}
+                      className="h-11 rounded-xl bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="role" className="font-bold text-slate-700 dark:text-slate-300">Assign Role</Label>
+                    <Select value={inviteRole} onValueChange={(v: Role) => setInviteRole(v)}>
+                      <SelectTrigger className="h-11 rounded-xl bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+                        <SelectValue placeholder="Select a role" />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl border-slate-200 dark:border-slate-800 p-1">
+                        <SelectItem value="Admin" className="rounded-lg">
+                          <div className="flex items-center py-0.5">
+                            <ShieldCheck className="h-4 w-4 text-purple-500 mr-3" />
+                            <div className="text-left">
+                              <p className="font-bold text-sm">Admin</p>
+                              <p className="text-[10px] text-slate-500 font-medium">Full workspace control</p>
+                            </div>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="Manager" className="rounded-lg">
+                          <div className="flex items-center py-0.5">
+                            <Star className="h-4 w-4 text-amber-500 mr-3" />
+                            <div className="text-left">
+                              <p className="font-bold text-sm">Manager</p>
+                              <p className="text-[10px] text-slate-500 font-medium">Manage leads & reports</p>
+                            </div>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="Agent" className="rounded-lg">
+                          <div className="flex items-center py-0.5">
+                            <User className="h-4 w-4 text-blue-500 mr-3" />
+                            <div className="text-left">
+                              <p className="font-bold text-sm">Agent</p>
+                              <p className="text-[10px] text-slate-500 font-medium">Handle assigned leads</p>
+                            </div>
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="ghost" onClick={() => setIsInviteModalOpen(false)} className="rounded-xl h-11 font-bold">Cancel</Button>
+                  <Button onClick={handleInvite} className="rounded-xl h-11 font-black bg-slate-900 dark:bg-white dark:text-slate-900 px-8" disabled={!inviteEmail}>Send Invitation</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
-          
-          <Dialog open={isInviteModalOpen} onOpenChange={setIsInviteModalOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-md shadow-indigo-500/20 rounded-xl px-5 h-10 text-sm">
-                <UserPlus className="h-4 w-4 mr-2" />
-                Invite Member
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle className="text-xl">Invite Team Member</DialogTitle>
-                <DialogDescription>
-                  Send an email invitation to add a new member to your workspace.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email" className="font-bold text-slate-700">Email address</Label>
-                  <Input 
-                    id="email" 
-                    placeholder="colleague@company.com" 
-                    type="email"
-                    value={inviteEmail}
-                    onChange={(e) => setInviteEmail(e.target.value)}
-                    className="h-11 rounded-lg bg-slate-50 border-slate-200"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="role" className="font-bold text-slate-700">Role & Permissions</Label>
-                  <Select value={inviteRole} onValueChange={(v: Role) => setInviteRole(v)}>
-                    <SelectTrigger className="h-11 rounded-lg bg-slate-50 border-slate-200">
-                      <SelectValue placeholder="Select a role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Admin">
-                        <div className="flex items-center">
-                          <ShieldCheck className="h-4 w-4 text-purple-500 mr-2" />
-                          <div>
-                            <p className="font-bold">Admin</p>
-                            <p className="text-[10px] text-slate-500">Full access to all settings and billing</p>
-                          </div>
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="Manager">
-                        <div className="flex items-center">
-                          <Star className="h-4 w-4 text-amber-500 mr-2" />
-                          <div>
-                            <p className="font-bold">Manager</p>
-                            <p className="text-[10px] text-slate-500">Can manage leads, agents, and reports</p>
-                          </div>
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="Agent">
-                        <div className="flex items-center">
-                          <User className="h-4 w-4 text-blue-500 mr-2" />
-                          <div>
-                            <p className="font-bold">Agent</p>
-                            <p className="text-[10px] text-slate-500">Can only handle assigned leads and calls</p>
-                          </div>
-                        </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsInviteModalOpen(false)} className="rounded-lg h-10 font-bold border-slate-200">Cancel</Button>
-                <Button onClick={handleInvite} className="rounded-lg h-10 font-bold bg-indigo-600 hover:bg-indigo-700 shadow-sm" disabled={!inviteEmail}>Send Invite</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </div>
+
 
         <Tabs defaultValue="directory" className="space-y-4">
           <TabsList className="bg-slate-100 dark:bg-slate-900/50 p-1 rounded-xl h-11 border border-slate-200 dark:border-slate-800 w-fit">
@@ -532,5 +535,7 @@ export default function TeamManagementPage() {
         </Dialog>
       </div>
     </div>
+  </RoleGuard>
   )
 }
+

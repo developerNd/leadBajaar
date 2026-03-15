@@ -287,6 +287,8 @@ const dummyLogs = [
   },
 ];
 
+import { RoleGuard } from "@/components/RoleGuard";
+
 export default function IntegrationsPage() {
   const { toast } = useToast();
   const [activeIntegrations, setActiveIntegrations] = useState<string[]>([]);
@@ -766,7 +768,8 @@ export default function IntegrationsPage() {
   };
 
   return (
-    <div className="w-full h-full overflow-y-auto p-4 md:p-6 lg:p-10">
+    <RoleGuard allowedRoles={['Super Admin', 'Admin']}>
+      <div className="w-full h-full overflow-y-auto p-4 md:p-6 lg:p-10">
       
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -3196,5 +3199,6 @@ export default function IntegrationsPage() {
         </DialogContent>
       </Dialog>
     </div>
+    </RoleGuard>
   );
 }

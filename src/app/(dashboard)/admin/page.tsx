@@ -81,6 +81,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { useToast } from '@/components/ui/use-toast'
 import { cn } from '@/lib/utils'
+import { RoleGuard } from '@/components/RoleGuard'
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -339,7 +340,7 @@ export default function SuperAdminPage() {
     if (!editingPlan) return
     const exists = plans.some(p => p.id === editingPlan.id)
     if (exists) {
-      setPlans(plans.map(p => p.id === editingPlan.id ? editingPlan : p))
+      setPlans(plans.map(p => p.id === editingPlan.id ? editingPlan : p) as any)
       toast({ title: "Plan Synchronized", description: `${editingPlan.name} features updated across system.` })
     } else {
       setPlans([...plans, editingPlan])
@@ -373,24 +374,25 @@ export default function SuperAdminPage() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-slate-50 dark:bg-slate-950/20">
-      <div className="px-4 lg:px-6 py-6 space-y-6 w-full">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <div className="h-6 w-6 rounded bg-indigo-600 flex items-center justify-center text-[10px] font-black text-white">SA</div>
-              <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">Super Admin Portal</h1>
+    <RoleGuard allowedRoles={['Super Admin']}>
+      <div className="flex flex-col min-h-screen bg-slate-50 dark:bg-slate-950/20">
+        <div className="px-4 lg:px-6 py-6 space-y-6 w-full">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <div className="h-6 w-6 rounded bg-indigo-600 flex items-center justify-center text-[10px] font-black text-white">SA</div>
+                <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">Super Admin Portal</h1>
+              </div>
+              <p className="text-sm text-slate-500 font-medium italic">Master control for LeadBajaar Platform</p>
             </div>
-            <p className="text-sm text-slate-500 font-medium italic">Master control for LeadBajaar Platform</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={handleSync} className="rounded-xl border-slate-200 h-10 font-bold text-sm">
-              <RefreshCw className="h-4 w-4 mr-2" /> Sync Data
-            </Button>
-            <Button onClick={() => toast({ title: "System Healthy", description: "All 14 services operating within normal parameters." })} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-md rounded-xl h-10 px-5">
-              <Zap className="h-4 w-4 mr-2" /> System Status
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={handleSync} className="rounded-xl border-slate-200 h-10 font-bold text-sm">
+                <RefreshCw className="h-4 w-4 mr-2" /> Sync Data
+              </Button>
+              <Button onClick={() => toast({ title: "System Healthy", description: "All 14 services operating within normal parameters." })} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-md rounded-xl h-10 px-5">
+                <Zap className="h-4 w-4 mr-2" /> System Status
+              </Button>
           </div>
         </div>
 
@@ -906,7 +908,8 @@ export default function SuperAdminPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
-    </div>
+    </RoleGuard>
   )
 }
