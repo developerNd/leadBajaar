@@ -3,6 +3,7 @@ import { setSession, clearSession, getSession } from './auth';
 
 // const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
 const API_BASE_URL = 'https://api.leadbajaar.com/api'
+// const API_BASE_URL = 'http://localhost:8000/api'
 
 // Export both httpClient and api
 export const httpClient = {
@@ -1295,6 +1296,85 @@ export const getBookings = async (params?: { page?: number; per_page?: number; t
   return api.get('/bookings', { params });
 };
 
+// Team API Methods
+export const teamApi = {
+  getMembers: async () => {
+    try {
+      const response = await api.get('/team');
+      return response.data.members;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to fetch team members');
+    }
+  },
+
+  inviteMember: async (data: { email: string, role: string }) => {
+    try {
+      const response = await api.post('/team/invite', data);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to send invitation');
+    }
+  },
+
+  updateRole: async (id: string, role: string) => {
+    try {
+      const response = await api.patch(`/team/${id}/role`, { role });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to update role');
+    }
+  },
+
+  removeMember: async (id: string) => {
+    try {
+      const response = await api.delete(`/team/${id}`);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to remove member');
+    }
+  },
+
+  setupAccount: async (data: any) => {
+    try {
+      const response = await api.post('/setup-account', data);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to setup account');
+    }
+  }
+};
+
+// Super Admin API Methods
+export const adminApi = {
+  getStats: async () => {
+    try {
+      const response = await api.get('/admin/stats');
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to fetch admin stats');
+    }
+  },
+
+  getCompanies: async () => {
+    try {
+      const response = await api.get('/admin/companies');
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to fetch companies');
+    }
+  },
+
+  updateCompany: async (id: number, data: { plan?: string, status?: string }) => {
+    try {
+      const response = await api.patch(`/admin/companies/${id}`, data);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to update company');
+    }
+  }
+};
+
 export default api;
+
 
 

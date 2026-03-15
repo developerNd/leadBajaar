@@ -18,8 +18,11 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronRight as ChevronRightIcon,
-  Bell,
   Code2,
+  Users,
+  Shield,
+  Activity,
+  Bell
 } from 'lucide-react'
 import { logout } from '@/lib/api'
 import { clearSession } from '@/lib/auth'
@@ -50,14 +53,16 @@ const mainNav = [
     ]
   },
   {
-    label: 'Development',
+    label: 'Platform Control',
     items: [
+      { name: 'Admin Portal', href: '/admin', icon: Shield, color: '#EF4444' },
       { name: 'Dev Hub', href: '/developer', icon: Code2, color: '#10B981' },
     ]
   },
 ]
 
 const bottomNav = [
+  { name: 'Team', href: '/team', icon: Users, color: '#6366F1' },
   { name: 'Settings', href: '/settings', icon: Settings2, color: '#94A3B8' },
 ]
 
@@ -87,7 +92,7 @@ export function Sidebar({ mobileOpen, setMobileOpen }: SidebarProps) {
         className={cn(
           // Base — NO overflow-hidden so the toggle button peeks out
           'fixed inset-y-0 left-0 z-[100] flex flex-col h-full shrink-0',
-          'lg:relative lg:z-0',
+          'lg:relative lg:z-[999]',
           // Dark sidebar background
           'bg-slate-900 dark:bg-slate-950',
           // Border

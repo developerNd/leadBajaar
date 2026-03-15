@@ -937,35 +937,56 @@ export function FacebookDashboard() {
         </div>
       </div>
 
-      <Tabs defaultValue="pages" className="w-full">
-        <TabsList className="grid w-full grid-cols-6 mb-8 max-w-3xl">
-          <TabsTrigger value="pages" className="flex items-center space-x-2">
-            <Globe className="h-4 w-4" />
-            <span>Pages & Leads</span>
-          </TabsTrigger>
-          <TabsTrigger value="ads" className="flex items-center space-x-2">
-            <TrendingUp className="h-4 w-4" />
-            <span>Ads Manager</span>
-          </TabsTrigger>
-          <TabsTrigger value="creatives" className="flex items-center space-x-2">
-            <FileText className="h-4 w-4" />
-            <span>Ad Creatives</span>
-          </TabsTrigger>
-          <TabsTrigger value="templates" className="flex items-center space-x-2">
-            <BarChart3 className="h-4 w-4" />
-            <span>Ad Templates</span>
-          </TabsTrigger>
-          <TabsTrigger value="pixels" className="flex items-center space-x-2">
-            <Zap className="h-4 w-4" />
-            <span>Pixels / CAPI</span>
-          </TabsTrigger>
-          <TabsTrigger value="roi" className="flex items-center space-x-2">
-            <TrendingUp className="h-4 w-4" />
-            <span>ROI Analytics</span>
-          </TabsTrigger>
-        </TabsList>
+      <Tabs defaultValue="pages" className="flex flex-col md:flex-row gap-6 w-full">
+        <div className="w-full md:w-48 lg:w-52 shrink-0">
+          <TabsList className="flex flex-col h-auto w-full bg-transparent p-0 space-y-2 pb-4">
+            <TabsTrigger value="pages" className="w-full relative flex items-center justify-start space-x-3 px-4 py-3.5 rounded-xl border border-transparent data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-700 dark:data-[state=active]:text-blue-400 bg-transparent hover:bg-white/60 dark:hover:bg-slate-800/50 transition-all duration-300 font-bold text-sm data-[state=active]:shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] data-[state=active]:ring-1 data-[state=active]:ring-slate-200 dark:data-[state=active]:ring-slate-800 group overflow-hidden">
+              <div className="absolute inset-y-0 left-0 w-1 bg-blue-600 rounded-r-md scale-y-0 opacity-0 group-data-[state=active]:scale-y-100 group-data-[state=active]:opacity-100 transition-all duration-300 origin-center" />
+              <div className="flex items-center justify-center p-1.5 rounded-lg group-data-[state=active]:bg-blue-100 dark:group-data-[state=active]:bg-blue-900/30 transition-colors">
+                <Globe className="h-4 w-4" />
+              </div>
+              <span>Pages & Leads</span>
+            </TabsTrigger>
+            <TabsTrigger value="ads" className="w-full relative flex items-center justify-start space-x-3 px-4 py-3.5 rounded-xl border border-transparent data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-indigo-700 dark:data-[state=active]:text-indigo-400 bg-transparent hover:bg-white/60 dark:hover:bg-slate-800/50 transition-all duration-300 font-bold text-sm data-[state=active]:shadow-[0_2px_10px_-3px_rgba(99,102,241,0.1)] data-[state=active]:ring-1 data-[state=active]:ring-slate-200 dark:data-[state=active]:ring-slate-800 group overflow-hidden">
+              <div className="absolute inset-y-0 left-0 w-1 bg-indigo-600 rounded-r-md scale-y-0 opacity-0 group-data-[state=active]:scale-y-100 group-data-[state=active]:opacity-100 transition-all duration-300 origin-center" />
+              <div className="flex items-center justify-center p-1.5 rounded-lg group-data-[state=active]:bg-indigo-100 dark:group-data-[state=active]:bg-indigo-900/30 transition-colors">
+                <TrendingUp className="h-4 w-4" />
+              </div>
+              <span>Ads Manager</span>
+            </TabsTrigger>
+            <TabsTrigger value="creatives" className="w-full relative flex items-center justify-start space-x-3 px-4 py-3.5 rounded-xl border border-transparent data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-purple-700 dark:data-[state=active]:text-purple-400 bg-transparent hover:bg-white/60 dark:hover:bg-slate-800/50 transition-all duration-300 font-bold text-sm data-[state=active]:shadow-[0_2px_10px_-3px_rgba(168,85,247,0.1)] data-[state=active]:ring-1 data-[state=active]:ring-slate-200 dark:data-[state=active]:ring-slate-800 group overflow-hidden">
+              <div className="absolute inset-y-0 left-0 w-1 bg-purple-600 rounded-r-md scale-y-0 opacity-0 group-data-[state=active]:scale-y-100 group-data-[state=active]:opacity-100 transition-all duration-300 origin-center" />
+              <div className="flex items-center justify-center p-1.5 rounded-lg group-data-[state=active]:bg-purple-100 dark:group-data-[state=active]:bg-purple-900/30 transition-colors">
+                <FileText className="h-4 w-4" />
+              </div>
+              <span>Ad Creatives</span>
+            </TabsTrigger>
+            <TabsTrigger value="templates" className="w-full relative flex items-center justify-start space-x-3 px-4 py-3.5 rounded-xl border border-transparent data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-emerald-700 dark:data-[state=active]:text-emerald-400 bg-transparent hover:bg-white/60 dark:hover:bg-slate-800/50 transition-all duration-300 font-bold text-sm data-[state=active]:shadow-[0_2px_10px_-3px_rgba(16,185,129,0.1)] data-[state=active]:ring-1 data-[state=active]:ring-slate-200 dark:data-[state=active]:ring-slate-800 group overflow-hidden">
+              <div className="absolute inset-y-0 left-0 w-1 bg-emerald-600 rounded-r-md scale-y-0 opacity-0 group-data-[state=active]:scale-y-100 group-data-[state=active]:opacity-100 transition-all duration-300 origin-center" />
+              <div className="flex items-center justify-center p-1.5 rounded-lg group-data-[state=active]:bg-emerald-100 dark:group-data-[state=active]:bg-emerald-900/30 transition-colors">
+                <BarChart3 className="h-4 w-4" />
+              </div>
+              <span>Ad Templates</span>
+            </TabsTrigger>
+            <TabsTrigger value="pixels" className="w-full relative flex items-center justify-start space-x-3 px-4 py-3.5 rounded-xl border border-transparent data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-amber-700 dark:data-[state=active]:text-amber-400 bg-transparent hover:bg-white/60 dark:hover:bg-slate-800/50 transition-all duration-300 font-bold text-sm data-[state=active]:shadow-[0_2px_10px_-3px_rgba(245,158,11,0.1)] data-[state=active]:ring-1 data-[state=active]:ring-slate-200 dark:data-[state=active]:ring-slate-800 group overflow-hidden">
+              <div className="absolute inset-y-0 left-0 w-1 bg-amber-600 rounded-r-md scale-y-0 opacity-0 group-data-[state=active]:scale-y-100 group-data-[state=active]:opacity-100 transition-all duration-300 origin-center" />
+              <div className="flex items-center justify-center p-1.5 rounded-lg group-data-[state=active]:bg-amber-100 dark:group-data-[state=active]:bg-amber-900/30 transition-colors">
+                <Zap className="h-4 w-4" />
+              </div>
+              <span>Pixels / CAPI</span>
+            </TabsTrigger>
+            <TabsTrigger value="roi" className="w-full relative flex items-center justify-start space-x-3 px-4 py-3.5 rounded-xl border border-transparent data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-rose-700 dark:data-[state=active]:text-rose-400 bg-transparent hover:bg-white/60 dark:hover:bg-slate-800/50 transition-all duration-300 font-bold text-sm data-[state=active]:shadow-[0_2px_10px_-3px_rgba(225,29,72,0.1)] data-[state=active]:ring-1 data-[state=active]:ring-slate-200 dark:data-[state=active]:ring-slate-800 group overflow-hidden">
+              <div className="absolute inset-y-0 left-0 w-1 bg-rose-600 rounded-r-md scale-y-0 opacity-0 group-data-[state=active]:scale-y-100 group-data-[state=active]:opacity-100 transition-all duration-300 origin-center" />
+              <div className="flex items-center justify-center p-1.5 rounded-lg group-data-[state=active]:bg-rose-100 dark:group-data-[state=active]:bg-rose-900/30 transition-colors">
+                <TrendingUp className="h-4 w-4" />
+              </div>
+              <span>ROI Analytics</span>
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
-        <TabsContent value="pages" className="space-y-6">
+        <div className="flex-1 min-w-0 w-full">
+        <TabsContent value="pages" className="m-0 space-y-6">
 
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -1137,10 +1158,10 @@ export function FacebookDashboard() {
           </div>
         </TabsContent>
 
-        <TabsContent value="ads" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <TabsContent value="ads" className="m-0 space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Ad Accounts Sidebar */}
-            <Card className="lg:col-span-1 border-none shadow-md bg-white dark:bg-slate-900 h-fit flex flex-col max-h-[700px]">
+            <Card className="lg:col-span-1 border-none shadow-md bg-white dark:bg-slate-900 h-fit flex flex-col max-h-[500px]">
               <CardHeader className="flex-shrink-0">
                 <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
                   <div className="flex items-center">
@@ -1211,7 +1232,7 @@ export function FacebookDashboard() {
             </Card>
 
             {/* Ads Explorer Area */}
-            <div className="lg:col-span-3 space-y-6">
+            <div className="lg:col-span-2 space-y-6">
               {selectedAdAccount ? (
                 <>
                   {/* Insights Cards */}
@@ -1694,7 +1715,7 @@ export function FacebookDashboard() {
           </div>
         </TabsContent>
 
-        <TabsContent value="templates" className="space-y-6">
+        <TabsContent value="templates" className="m-0 space-y-6">
           <div className="flex flex-col items-center justify-center p-8 text-center bg-blue-50/30 dark:bg-blue-900/10 rounded-2xl border border-blue-100 dark:border-blue-900/30 mb-8">
             <h2 className="text-2xl font-black text-blue-600 dark:text-blue-400">One-Click Lead Ads</h2>
             <p className="text-muted-foreground mt-2 max-w-lg">Launch high-converting lead campaigns using our pre-built industry templates. We handle targeting and optimization defaults.</p>
@@ -1739,9 +1760,9 @@ export function FacebookDashboard() {
           </div>
         </TabsContent>
 
-        <TabsContent value="creatives" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            <Card className="lg:col-span-1 border-none shadow-md bg-white dark:bg-slate-900 h-fit flex flex-col max-h-[700px]">
+        <TabsContent value="creatives" className="m-0 space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <Card className="lg:col-span-1 border-none shadow-md bg-white dark:bg-slate-900 h-fit flex flex-col max-h-[500px]">
               <CardHeader className="flex-shrink-0">
                 <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
                   <div className="flex items-center">
@@ -1817,7 +1838,7 @@ export function FacebookDashboard() {
               </CardContent>
             </Card>
 
-            <Card className="lg:col-span-3 border-none shadow-md bg-white dark:bg-slate-900">
+            <Card className="lg:col-span-2 border-none shadow-md bg-white dark:bg-slate-900">
               <CardHeader className="border-b">
                 <div className="flex items-center justify-between">
                   <div>
@@ -1927,7 +1948,7 @@ export function FacebookDashboard() {
           </div>
         </TabsContent>
 
-        <TabsContent value="pixels" className="space-y-6">
+        <TabsContent value="pixels" className="m-0 space-y-6">
           {/* Header */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
@@ -1945,15 +1966,15 @@ export function FacebookDashboard() {
           </div>
 
           {/* Pixels status table */}
-          <Card className="border-none shadow-md bg-white dark:bg-slate-900">
+          <Card className="border-none shadow-md bg-white dark:bg-slate-900 overflow-hidden">
             <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800">
               <CardTitle className="text-sm font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
                 <Zap className="h-4 w-4" /> Connected Pixels
                 <Badge variant="secondary" className="ml-auto">{pixels.length}</Badge>
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-0">
-              <Table>
+            <CardContent className="p-0 overflow-x-auto w-full">
+              <Table className="min-w-full">
                 <TableHeader>
                   <TableRow className="hover:bg-transparent border-slate-100 dark:border-slate-800">
                     <TableHead className="font-bold text-slate-700 dark:text-slate-300">Pixel</TableHead>
@@ -2026,9 +2047,10 @@ export function FacebookDashboard() {
           />
         </TabsContent>
 
-        <TabsContent value="roi" className="space-y-6">
+        <TabsContent value="roi" className="m-0 space-y-6">
           <RoiDashboard />
         </TabsContent>
+        </div>
       </Tabs>
       <Dialog open={isErrorDialogOpen} onOpenChange={setIsErrorDialogOpen}>
         <DialogContent className="sm:max-w-md border-red-100 bg-red-50/10 backdrop-blur-xl">

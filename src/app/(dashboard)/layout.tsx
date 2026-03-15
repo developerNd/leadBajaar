@@ -26,7 +26,7 @@ export default function DashboardLayout({
 
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         <Header mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} />
-        <main className="flex-1 overflow-hidden relative">
+        <main className="flex-1 overflow-y-auto relative">
           {children}
         </main>
       </div>

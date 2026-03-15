@@ -315,8 +315,8 @@ export function PixelTestConsole({ pixels, adAccounts, onRefreshPixels, isSyncin
                 <TabsContent value="tester" className="mt-6">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         {/* Left: Config Panel */}
-                        <div className="space-y-4">
-                            <Card className="border-none shadow-md bg-white dark:bg-slate-900">
+                        <div className="space-y-4 min-w-0">
+                            <Card className="border-none shadow-md bg-white dark:bg-slate-900 overflow-hidden min-w-0">
                                 <CardHeader className="pb-3">
                                     <CardTitle className="text-sm font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
                                         <Terminal className="h-4 w-4" /> Event Configuration
@@ -451,7 +451,7 @@ export function PixelTestConsole({ pixels, adAccounts, onRefreshPixels, isSyncin
                         </div>
 
                         {/* Right: Live Log Panel */}
-                        <div className="space-y-3">
+                        <div className="space-y-3 min-w-0">
                             <div className="flex items-center justify-between">
                                 <h4 className="text-xs font-bold uppercase tracking-widest text-slate-500">Live Event Log</h4>
                                 <Button variant="ghost" size="sm" className="h-7 text-[10px]" onClick={clearLogs}>
@@ -459,7 +459,7 @@ export function PixelTestConsole({ pixels, adAccounts, onRefreshPixels, isSyncin
                                 </Button>
                             </div>
 
-                            <div className="bg-slate-950 rounded-2xl p-4 h-[480px] overflow-y-auto font-mono text-xs space-y-2 border border-slate-800 theme-scrollbar">
+                            <div className="bg-slate-950 rounded-2xl p-4 h-[480px] overflow-x-hidden overflow-y-auto font-mono text-xs space-y-2 border border-slate-800 theme-scrollbar break-all">
                                 {logs.length === 0 ? (
                                     <div className="h-full flex flex-col items-center justify-center text-slate-600">
                                         <Terminal className="h-8 w-8 mb-3 opacity-30" />
@@ -520,8 +520,8 @@ export function PixelTestConsole({ pixels, adAccounts, onRefreshPixels, isSyncin
                 <TabsContent value="script" className="mt-6">
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         {/* Pixel Selector */}
-                        <div className="lg:col-span-1">
-                            <Card className="border-none shadow-md bg-white dark:bg-slate-900">
+                        <div className="lg:col-span-1 min-w-0">
+                            <Card className="border-none shadow-md bg-white dark:bg-slate-900 overflow-hidden min-w-0">
                                 <CardHeader className="pb-2">
                                     <CardTitle className="text-sm font-bold uppercase tracking-wider text-slate-500">
                                         Select Pixel
@@ -567,8 +567,8 @@ export function PixelTestConsole({ pixels, adAccounts, onRefreshPixels, isSyncin
                         </div>
 
                         {/* Script Panel */}
-                        <div className="lg:col-span-2">
-                            <Card className="border-none shadow-md bg-white dark:bg-slate-900 h-full flex flex-col">
+                        <div className="lg:col-span-2 min-w-0">
+                            <Card className="border-none shadow-md bg-white dark:bg-slate-900 h-full flex flex-col overflow-hidden min-w-0">
                                 <CardHeader className="border-b pb-3">
                                     <div className="flex items-center justify-between">
                                         <div>
