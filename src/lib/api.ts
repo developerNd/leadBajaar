@@ -348,18 +348,22 @@ export interface IntegrationConfig {
 }
 
 const formatMetaErrorMessage = (error: any, defaultMessage: string): string => {
-  const errorData = error.response?.data?.error || error.response?.data;
+  try {
+    const errorData = error.response?.data?.error || error.response?.data;
 
-  if (errorData && typeof errorData === 'object') {
-    // If it's a rich Meta error, stringify it so formatMetaError in UI can parse codes
-    if (errorData.error_subcode || errorData.code) {
-      return JSON.stringify(errorData);
+    if (errorData) {
+      if (typeof errorData === 'object') {
+        // Meta errors usually have message, code, or error_subcode
+        // We stringify the whole object so the frontend formatMetaError can parse it
+        return JSON.stringify(errorData);
+      }
+      return String(errorData);
     }
-    if (errorData.message) return errorData.message;
-    return JSON.stringify(errorData);
-  }
 
-  return (typeof errorData === 'string' ? errorData : null) || error.message || defaultMessage;
+    return error.message || defaultMessage;
+  } catch (e) {
+    return error?.message || defaultMessage;
+  }
 };
 
 // API functions for integrations
@@ -938,8 +942,7 @@ export const integrationApi = {
       const response = await api.post(`/meta/ads/campaigns/${campaignId}`, data);
       return response.data;
     } catch (error: any) {
-      const message = error.response?.data?.error || 'Failed to update Meta campaign';
-      throw new Error(message);
+      throw new Error(formatMetaErrorMessage(error, 'Failed to update Meta campaign'));
     }
   },
 
@@ -948,8 +951,7 @@ export const integrationApi = {
       const response = await api.post(`/meta/ads/adaccounts/${adAccountId}/customaudiences`, data);
       return response.data;
     } catch (error: any) {
-      const message = error.response?.data?.error || 'Failed to create Meta custom audience';
-      throw new Error(message);
+      throw new Error(formatMetaErrorMessage(error, 'Failed to create Meta custom audience'));
     }
   },
 
@@ -965,8 +967,7 @@ export const integrationApi = {
       const response = await api.post(`/meta/ads/adaccounts/${adAccountId}/lookalike-audiences`, data);
       return response.data;
     } catch (error: any) {
-      const message = error.response?.data?.message || error.response?.data?.error || 'Failed to create Meta lookalike audience';
-      throw new Error(message);
+      throw new Error(formatMetaErrorMessage(error, 'Failed to create Meta lookalike audience'));
     }
   },
 
@@ -984,8 +985,7 @@ export const integrationApi = {
       }
       return response.data;
     } catch (error: any) {
-      const message = error.response?.data?.message || error.response?.data?.error || 'Failed to upload Meta ad image';
-      throw new Error(message);
+      throw new Error(formatMetaErrorMessage(error, 'Failed to upload Meta ad image'));
     }
   },
 
@@ -1004,8 +1004,7 @@ export const integrationApi = {
       }
       return response.data;
     } catch (error: any) {
-      const message = error.response?.data?.message || error.response?.data?.error || 'Failed to upload Meta ad video';
-      throw new Error(message);
+      throw new Error(formatMetaErrorMessage(error, 'Failed to upload Meta ad video'));
     }
   },
 
@@ -1016,8 +1015,7 @@ export const integrationApi = {
       });
       return response.data;
     } catch (error: any) {
-      const message = error.response?.data?.error || 'Failed to fetch Meta ad preview';
-      throw new Error(message);
+      throw new Error(formatMetaErrorMessage(error, 'Failed to fetch Meta ad preview'));
     }
   },
 
@@ -1026,8 +1024,7 @@ export const integrationApi = {
       const response = await api.post(`/meta/ads/campaigns/${campaignId}/duplicate`, options);
       return response.data;
     } catch (error: any) {
-      const message = error.response?.data?.error || 'Failed to duplicate Meta campaign';
-      throw new Error(message);
+      throw new Error(formatMetaErrorMessage(error, 'Failed to duplicate Meta campaign'));
     }
   },
 
@@ -1036,8 +1033,7 @@ export const integrationApi = {
       const response = await api.get(`/meta/ads/offline-event-sets/${objectId}`);
       return response.data;
     } catch (error: any) {
-      const message = error.response?.data?.error || 'Failed to fetch offline event sets';
-      throw new Error(message);
+      throw new Error(formatMetaErrorMessage(error, 'Failed to fetch offline event sets'));
     }
   },
 
@@ -1046,8 +1042,7 @@ export const integrationApi = {
       const response = await api.post(`/meta/ads/offline-event-sets/${businessId}`, data);
       return response.data;
     } catch (error: any) {
-      const message = error.response?.data?.error || 'Failed to create offline event set';
-      throw new Error(message);
+      throw new Error(formatMetaErrorMessage(error, 'Failed to create offline event set'));
     }
   },
 
@@ -1056,8 +1051,7 @@ export const integrationApi = {
       const response = await api.get(`/meta/ads/adaccounts/${adAccountId}/adrules`);
       return response.data;
     } catch (error: any) {
-      const message = error.response?.data?.error || 'Failed to fetch automated rules';
-      throw new Error(message);
+      throw new Error(formatMetaErrorMessage(error, 'Failed to fetch automated rules'));
     }
   },
 
@@ -1066,8 +1060,7 @@ export const integrationApi = {
       const response = await api.post(`/meta/ads/adaccounts/${adAccountId}/adrules`, data);
       return response.data;
     } catch (error: any) {
-      const message = error.response?.data?.error || 'Failed to create automated rule';
-      throw new Error(message);
+      throw new Error(formatMetaErrorMessage(error, 'Failed to create automated rule'));
     }
   },
 
@@ -1076,8 +1069,7 @@ export const integrationApi = {
       const response = await api.delete(`/meta/ads/adrules/${ruleId}`);
       return response.data;
     } catch (error: any) {
-      const message = error.response?.data?.error || 'Failed to delete automated rule';
-      throw new Error(message);
+      throw new Error(formatMetaErrorMessage(error, 'Failed to delete automated rule'));
     }
   },
 
@@ -1086,8 +1078,7 @@ export const integrationApi = {
       const response = await api.get(`/meta/forms/${formId}`);
       return response.data;
     } catch (error: any) {
-      const message = error.response?.data?.error || 'Failed to fetch Meta form details';
-      throw new Error(message);
+      throw new Error(formatMetaErrorMessage(error, 'Failed to fetch Meta form details'));
     }
   },
 
@@ -1096,8 +1087,7 @@ export const integrationApi = {
       const response = await api.post(`/meta/forms/${formId}/status`, { status });
       return response.data;
     } catch (error: any) {
-      const message = error.response?.data?.error || 'Failed to update Meta form status';
-      throw new Error(message);
+      throw new Error(formatMetaErrorMessage(error, 'Failed to update Meta form status'));
     }
   },
 
@@ -1108,8 +1098,34 @@ export const integrationApi = {
       });
       return response.data;
     } catch (error: any) {
-      const message = error.response?.data?.error || 'Failed to fetch delivery estimate';
-      throw new Error(message);
+      throw new Error(formatMetaErrorMessage(error, 'Failed to fetch delivery estimate'));
+    }
+  },
+
+  getMetaAccountAds: async (adAccountId: string) => {
+    try {
+      const response = await api.get(`/meta/ads/adaccounts/${adAccountId}/ads`);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(formatMetaErrorMessage(error, 'Failed to fetch account ads'));
+    }
+  },
+
+  getMetaCampaignAds: async (campaignId: string) => {
+    try {
+      const response = await api.get(`/meta/ads/campaigns/${campaignId}/ads`);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(formatMetaErrorMessage(error, 'Failed to fetch campaign ads'));
+    }
+  },
+
+  updateMetaAd: async (adId: string, data: any) => {
+    try {
+      const response = await api.post(`/meta/ads/ads/${adId}`, data);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(formatMetaErrorMessage(error, 'Failed to update Meta ad'));
     }
   },
 
@@ -1119,8 +1135,7 @@ export const integrationApi = {
       const response = await api.get('/meta/pixels');
       return response.data;
     } catch (error: any) {
-      const message = error.response?.data?.error || 'Failed to fetch Meta pixels';
-      throw new Error(message);
+      throw new Error(formatMetaErrorMessage(error, 'Failed to fetch Meta pixels'));
     }
   },
 
@@ -1129,8 +1144,7 @@ export const integrationApi = {
       const response = await api.get(`/meta/pixels/${pixelId}/diagnostics`);
       return response.data;
     } catch (error: any) {
-      const message = error.response?.data?.error || 'Failed to fetch pixel diagnostics';
-      throw new Error(message);
+      throw new Error(formatMetaErrorMessage(error, 'Failed to fetch pixel diagnostics'));
     }
   },
 
@@ -1139,8 +1153,7 @@ export const integrationApi = {
       const response = await api.post('/meta/pixels/sync');
       return response.data;
     } catch (error: any) {
-      const message = error.response?.data?.error || 'Failed to sync Meta pixels';
-      throw new Error(message);
+      throw new Error(formatMetaErrorMessage(error, 'Failed to sync Meta pixels'));
     }
   },
 
@@ -1169,8 +1182,7 @@ export const integrationApi = {
       const response = await api.get('/meta/pixels/roi-summary', { params: { days } });
       return response.data;
     } catch (error: any) {
-      const message = error.response?.data?.error || 'Failed to fetch ROI summary';
-      throw new Error(message);
+      throw new Error(formatMetaErrorMessage(error, 'Failed to fetch ROI summary'));
     }
   },
 
@@ -1179,8 +1191,7 @@ export const integrationApi = {
       const response = await api.post('/meta/pixels/create', data);
       return response.data;
     } catch (error: any) {
-      const message = error.response?.data?.message || error.response?.data?.error || 'Failed to create pixel';
-      throw new Error(message);
+      throw new Error(formatMetaErrorMessage(error, 'Failed to create pixel'));
     }
   },
 };
