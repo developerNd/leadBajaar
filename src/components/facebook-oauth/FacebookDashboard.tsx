@@ -52,6 +52,7 @@ import { toast } from 'sonner'
 import { integrationApi } from '@/lib/api'
 import { PixelTestConsole } from './PixelTestConsole'
 import { RoiDashboard } from './RoiDashboard'
+import { WebhookVerificationDialog } from './WebhookVerificationDialog'
 import {
   Dialog,
   DialogContent,
@@ -199,6 +200,7 @@ export function FacebookDashboard() {
   const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean, id: string, label: string }>({ isOpen: false, id: '', label: '' })
   const [isDeletingObject, setIsDeletingObject] = useState(false)
   const [resourceFilter, setResourceFilter] = useState<'all' | 'active'>('all')
+  const [isSyncingHistory, setIsSyncingHistory] = useState<string | null>(null)
 
   useEffect(() => {
     // Check for success/error parameters from Meta OAuth redirect
@@ -484,22 +486,22 @@ export function FacebookDashboard() {
 
   const handleSyncHistory = async (form: LeadForm) => {
     try {
+      setIsSyncingHistory(form.id)
       toast.info("Manual Sync Started", {
-        description: `Fetching historical leads for ${form.name}...`
+        description: `Fetching recent leads for "${form.name}"...`
       })
 
-      const response = await integrationApi.retrieveFacebookLeads({
-        form_id: form.id,
-        integration_id: 0
-      })
+      const response = await integrationApi.syncMetaLeads(form.id, 7)
 
-      toast.success("Sync Completed", {
-        description: `Successfully retrieved ${response.count || 0} leads from Meta.`,
-      })
+      if (response.status === 'success') {
+        toast.success("Sync Completed", {
+          description: `Successfully imported ${response.synced_count || 0} leads into CRM.`,
+        })
+      }
     } catch (error: any) {
-      toast.error("Sync Failed", {
-        description: error.message || "Could not retrieve historical leads",
-      })
+      toast.error("Sync Failed", { description: error.message })
+    } finally {
+      setIsSyncingHistory(null)
     }
   }
   const handleDeepSyncAccount = async () => {
@@ -1235,22 +1237,10 @@ export function FacebookDashboard() {
                             </DialogFooter>
                           </DialogContent>
                         </Dialog>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className={`h-7 text-[11px] font-black uppercase text-slate-600 tracking-tight border-blue-200 dark:border-blue-900 ${isSubscribed ? 'bg-green-50 text-green-600 border-slate-200' : 'bg-blue-50/50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'}`}
-                          onClick={handleSubscribePage}
-                          disabled={isSubscribing || isSubscribed}
-                        >
-                          {isSubscribing ? (
-                            <Loader2 className="h-2.5 w-2.5 animate-spin mr-1" />
-                          ) : isSubscribed ? (
-                            <CheckCircle2 className="h-2.5 w-2.5 mr-1 text-green-500" />
-                          ) : (
-                            <Settings className="h-2.5 w-2.5 mr-1" />
-                          )}
-                          {isSubscribed ? 'Verified' : 'Verify Webhook'}
-                        </Button>
+                        <WebhookVerificationDialog 
+                          pageId={selectedPage.id} 
+                          pageName={selectedPage.name} 
+                        />
                         <Badge variant="outline" className="bg-green-50 text-green-700 border-slate-200">
                           Active
                         </Badge>
@@ -1285,8 +1275,14 @@ export function FacebookDashboard() {
                                 variant="secondary"
                                 className="h-8 text-xs font-semibold px-3"
                                 onClick={() => handleSyncHistory(form)}
+                                disabled={isSyncingHistory === form.id}
                               >
-                                <RefreshCw className="h-3 w-3 mr-2" /> Sync History
+                                {isSyncingHistory === form.id ? (
+                                  <Loader2 className="h-3 w-3 animate-spin mr-2" />
+                                ) : (
+                                  <RefreshCw className="h-3 w-3 mr-2" />
+                                )}
+                                {isSyncingHistory === form.id ? 'Syncing...' : 'Sync History'}
                               </Button>
                             </div>
                           </div>

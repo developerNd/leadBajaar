@@ -788,6 +788,26 @@ export const integrationApi = {
     }
   },
 
+  getMetaWebhookChecklist: async (pageId: string) => {
+    try {
+      const response = await api.get(`/meta/pages/${pageId}/webhook-checklist`);
+      return response.data;
+    } catch (error: any) {
+      const message = error.response?.data?.error || 'Failed to fetch webhook checklist';
+      throw new Error(message);
+    }
+  },
+
+  testMetaLeadRetrieval: async (leadId: string) => {
+    try {
+      const response = await api.get(`/meta/debug/lead/${leadId}`);
+      return response.data;
+    } catch (error: any) {
+      const message = error.response?.data?.error || 'Failed to fetch lead details';
+      throw new Error(message);
+    }
+  },
+
   updateConversionApiConfiguration: async (data: {
     integration_id: number;
     pixel_id: string;
@@ -809,6 +829,15 @@ export const integrationApi = {
     } catch (error: any) {
       const message = error.response?.data?.error || 'Failed to fetch Meta status';
       throw new Error(message);
+    }
+  },
+
+  syncMetaLeads: async (formId: string, days: number = 7) => {
+    try {
+      const response = await api.post(`/meta/forms/${formId}/sync-leads`, { days });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(formatMetaErrorMessage(error, 'Failed to sync leads'));
     }
   },
 
