@@ -813,7 +813,7 @@ export const integrationApi = {
   },
 
 
-  createMetaCampaign: async (adAccountId: string, data: { name: string; objective?: string; status?: string }) => {
+  createMetaCampaign: async (adAccountId: string, data: { name: string; objective?: string; status?: string; special_ad_categories?: string[] }) => {
     try {
       const response = await api.post(`/meta/ads/adaccounts/${adAccountId}/campaigns`, data);
       return response.data;
@@ -1025,6 +1025,15 @@ export const integrationApi = {
       return response.data;
     } catch (error: any) {
       throw new Error(formatMetaErrorMessage(error, 'Failed to duplicate Meta campaign'));
+    }
+  },
+
+  duplicateMetaObject: async (objectId: string) => {
+    try {
+      const response = await api.post(`/meta/ads/${objectId}/duplicate`);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(formatMetaErrorMessage(error, 'Failed to duplicate Meta object'));
     }
   },
 
