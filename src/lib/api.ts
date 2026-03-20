@@ -429,6 +429,28 @@ export const integrationApi = {
     }
   },
 
+  // Get the most recent log for an integration (used for testing webhooks)
+  getLatestLog: async (id: string) => {
+    try {
+      const response = await api.get(`/integrations/${id}/latest-log`);
+      return response.data;
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Failed to fetch latest log';
+      throw new Error(message);
+    }
+  },
+
+  // Delete integration
+  deleteIntegration: async (id: string) => {
+    try {
+      const response = await api.delete(`/integrations/${id}`);
+      return response.data;
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Failed to delete integration';
+      throw new Error(message);
+    }
+  },
+
   getWhatsAppProfiles: async () => {
     try {
       const response = await api.get('/integrations/whatsapp/profiles');
