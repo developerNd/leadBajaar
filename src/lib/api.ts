@@ -172,6 +172,8 @@ export interface CreateLeadDto {
   stage: string;
   status?: 'Hot' | 'Warm' | 'Cold';
   source?: string;
+  city?: string;
+  profession?: string;
 }
 
 export interface ImportLeadDto {
@@ -231,6 +233,8 @@ export interface Lead {
   stage: string;
   status: 'Hot' | 'Warm' | 'Cold';
   source: string;
+  city: string;
+  profession: string;
   notes?: string;
   deal_value?: number;
   paid_amount?: number;
@@ -295,6 +299,11 @@ export const getLeads = async (params: GetLeadsParams) => {
     console.error('Error fetching leads:', error);
     throw error;
   }
+};
+
+export const getLead = async (id: number) => {
+  const response = await api.get<Lead>(`/leads/${id}`);
+  return response.data;
 };
 
 export const deleteLead = async (id: number) => {
