@@ -6,6 +6,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
@@ -48,7 +49,7 @@ export const ImportLeadsDialog: React.FC<ImportLeadsDialogProps> = ({
             </div>
             <div>
               <DialogTitle className="text-xl font-bold text-slate-900 dark:text-white">Import Leads from CSV</DialogTitle>
-              <p className="text-sm text-slate-500 font-medium mt-0.5">Map your CSV columns to LeadBajaar fields</p>
+              <DialogDescription className="text-sm text-slate-500 font-medium mt-0.5">Map your CSV columns to LeadBajaar fields</DialogDescription>
             </div>
           </div>
         </DialogHeader>
