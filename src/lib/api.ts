@@ -1479,3 +1479,8 @@ export const getDashboardStats = async () => {
   const response = await api.get('/dashboard/stats');
   return response.data;
 };
+
+export const getAnalyticsData = async () => {
+  const response = await api.get('/analytics');
+  return response.data;
+};
