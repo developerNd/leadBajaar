@@ -26,6 +26,37 @@ interface DashboardData {
   recent_activity: any[]
 }
 
+const demoDashboardData: DashboardData = {
+  stats: [
+    { label: 'Total Leads', value: '1,284', key: 'leads', trend: 'up', change: '+12%' },
+    { label: 'Meetings Set', value: '42', key: 'meetings', trend: 'up', change: '+8%' },
+    { label: 'Conversion Rate', value: '18.5%', key: 'conversion', trend: 'up', change: '+2.4%' },
+    { label: 'Avg Response', value: '4m 12s', key: 'response', trend: 'down', change: '-15%' },
+  ],
+  monthly_overview: [
+    { name: 'Jan', value: 400, meetings: 120 },
+    { name: 'Feb', value: 520, meetings: 156 },
+    { name: 'Mar', value: 480, meetings: 142 },
+    { name: 'Apr', value: 610, meetings: 184 },
+    { name: 'May', value: 590, meetings: 172 },
+    { name: 'Jun', value: 720, meetings: 210 },
+    { name: 'Jul', value: 840, meetings: 245 },
+    { name: 'Aug', value: 950, meetings: 280 },
+  ],
+  pipeline: [
+    { stage: 'New Leads', count: 450, pct: 100, color: 'bg-blue-500' },
+    { stage: 'Qualified', count: 280, pct: 62, color: 'bg-indigo-500' },
+    { stage: 'Negotiating', count: 120, pct: 26, color: 'bg-violet-500' },
+    { stage: 'Closing', count: 42, pct: 9, color: 'bg-emerald-500' },
+  ],
+  recent_activity: [
+    { label: 'Sarah Connor', sub: 'Scheduled a viewing for Hubli Residency', time: '2m ago', icon_name: 'CalendarCheck2', color: 'text-emerald-500' },
+    { label: 'New Meta Lead', sub: 'Came through "Premium Villas" campaign', time: '15m ago', icon_name: 'Target', color: 'text-indigo-500' },
+    { label: 'Vikram Singh', sub: 'Replied via WhatsApp integration', time: '1h ago', icon_name: 'MessageCircle', color: 'text-blue-500' },
+    { label: 'Email Opened', sub: 'Amit Shah viewed "Pricing Catalog"', time: '3h ago', icon_name: 'Mail', color: 'text-slate-500' },
+  ]
+}
+
 // ─────────────────────────────────────────────────────────────
 // Skeleton components
 // ─────────────────────────────────────────────────────────────
@@ -124,6 +155,7 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [data, setData] = useState<DashboardData | null>(null)
   const [todayLabel, setTodayLabel] = useState<string | null>(null)
+  const [isDemo, setIsDemo] = useState(false)
 
   useEffect(() => {
     setTodayLabel(format(new Date(), 'EEEE, d MMM yyyy'))
@@ -133,9 +165,18 @@ export default function DashboardPage() {
     const fetchDashboardData = async () => {
       try {
         const statsData = await getDashboardStats()
-        setData(statsData)
+        // If data is empty or brand new, use high-fidelity demo data to show potential
+        if (!statsData || !statsData.stats || statsData.stats.length === 0 || statsData.stats.every((s: any) => s.value == 0)) {
+          setData(demoDashboardData)
+          setIsDemo(true)
+        } else {
+          setData(statsData)
+          setIsDemo(false)
+        }
       } catch (error) {
         console.error('Failed to fetch dashboard stats:', error)
+        setData(demoDashboardData) // Fallback to demo on error for preview
+        setIsDemo(true)
       } finally {
         setIsLoading(false)
       }
@@ -198,6 +239,11 @@ export default function DashboardPage() {
           >
             <Clock className="h-3 w-3" />
             {todayLabel}
+          </Badge>
+        )}
+        {isDemo && !isLoading && (
+          <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-[10px] font-black uppercase tracking-widest px-2 py-0.5 ml-2">
+            Demo Preview Mode
           </Badge>
         )}
       </div>
