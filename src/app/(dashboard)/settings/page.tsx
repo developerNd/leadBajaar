@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils'
 import { useUser } from '@/contexts/UserContext'
 import { api } from '@/lib/api'
 import { toast } from 'sonner'
+import { RoleGuard } from '@/components/RoleGuard'
 import {
   User, Bell, Shield, Mail,
   Settings, ChevronRight, Camera,
@@ -100,7 +101,8 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="flex flex-col lg:flex-row h-full p-4 md:p-6 lg:p-8 gap-6 lg:gap-8 overflow-hidden bg-slate-50/50 dark:bg-slate-950/20">
+    <RoleGuard allowedRoles={['Super Admin', 'Admin', 'Manager', 'Agent']}>
+      <div className="flex flex-col lg:flex-row h-full p-4 md:p-6 lg:p-8 gap-6 lg:gap-8 overflow-hidden bg-slate-50/50 dark:bg-slate-950/20">
 
       {/* ── Sidebar Navigation ── */}
       <div className="w-full lg:w-72 flex flex-col gap-4 lg:gap-6 shrink-0">
@@ -323,5 +325,6 @@ export default function SettingsPage() {
         </div>
       </div>
     </div>
+    </RoleGuard>
   )
 }
