@@ -467,6 +467,38 @@ export default function IntegrationsPage() {
     }
   };
 
+  /**
+   * Recursively flatten a nested object/array into dot-notation key-value pairs.
+   * e.g. { body: { data: ["a", "b"], event: "x" } }
+   *   → [{ key: "body.data.0", value: "a" }, { key: "body.data.1", value: "b" }, { key: "body.event", value: "x" }]
+   */
+  const flattenPayload = (obj: any, prefix = ''): { key: string; value: any }[] => {
+    const result: { key: string; value: any }[] = [];
+    if (obj === null || obj === undefined) return result;
+
+    for (const [k, v] of Object.entries(obj)) {
+      const dotKey = prefix ? `${prefix}.${k}` : k;
+
+      if (v !== null && typeof v === 'object' && !Array.isArray(v)) {
+        // Recurse into nested objects
+        result.push(...flattenPayload(v, dotKey));
+      } else if (Array.isArray(v)) {
+        // Recurse into arrays with numeric index
+        v.forEach((item, i) => {
+          if (item !== null && typeof item === 'object') {
+            result.push(...flattenPayload(item, `${dotKey}.${i}`));
+          } else {
+            result.push({ key: `${dotKey}.${i}`, value: item });
+          }
+        });
+      } else {
+        // Scalar value — leaf node
+        result.push({ key: dotKey, value: v });
+      }
+    }
+    return result;
+  };
+
   const startListening = async (id: string) => {
     setIsListeningForWebhook(true);
     setAvailablePayloadFields([]);
@@ -480,10 +512,8 @@ export default function IntegrationsPage() {
           const payloadData = result.log.details.payload || result.log.details;
           const payload = typeof payloadData === 'string' ? JSON.parse(payloadData) : payloadData;
           
-          const fields = Object.entries(payload).map(([k, v]) => ({ 
-            key: k, 
-            value: v 
-          }));
+          // Flatten nested structures into dot-notation field paths
+          const fields = flattenPayload(payload);
           
           setAvailablePayloadFields(fields);
           setIsListeningForWebhook(false);
@@ -493,7 +523,7 @@ export default function IntegrationsPage() {
           addFieldMapping(id);
           
           console.log("Captured fields:", fields);
-          toast.success("Webhook data captured successfully!");
+          toast.success(`Webhook captured — ${fields.length} mappable fields detected!`);
         }
       } catch (e) {
         console.error("Polling error:", e);
