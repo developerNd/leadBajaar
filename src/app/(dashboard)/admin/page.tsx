@@ -1344,6 +1344,7 @@ export default function SuperAdminPage() {
                       setCustomExpEnd(range.to ? format(range.to, 'yyyy-MM-dd') : '')
                     }}
                     placeholder="Expiration Filter"
+                    isIconTriggerOnly={true}
                     icon={<Clock className="h-3.5 w-3.5 text-indigo-500" />}
                   />
 
@@ -1365,6 +1366,7 @@ export default function SuperAdminPage() {
                       setCustomStartEnd(range.to ? format(range.to, 'yyyy-MM-dd') : '')
                     }}
                     placeholder="Started Filter"
+                    isIconTriggerOnly={true}
                     icon={<Calendar className="h-3.5 w-3.5 text-indigo-500" />}
                   />
 
