@@ -18,8 +18,11 @@ interface User {
   user_type: UserType
   company_id: number | null
   company?: {
+    id?: number;
     name?: string;
     plan?: string;
+    type?: string;
+    monthly_email_count?: number;
   };
 }
 
