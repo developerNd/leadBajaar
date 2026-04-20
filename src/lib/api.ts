@@ -86,6 +86,13 @@ api.interceptors.response.use(
       }
     }
 
+    // Subscription Expired (402)
+    if (parsedError.status === 402) {
+      // The SubscriptionGuard will handle the UI overlay, 
+      // but we can also trigger a toast or log here
+      logger.warn("Subscription Expired", parsedError);
+    }
+
     return Promise.reject(parsedError);
   }
 );

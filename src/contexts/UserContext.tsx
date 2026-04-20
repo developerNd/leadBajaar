@@ -21,7 +21,9 @@ interface User {
     id?: number;
     name?: string;
     plan?: string;
+    status?: string;
     type?: string;
+    expires_at?: string;
     monthly_email_count?: number;
   };
 }
