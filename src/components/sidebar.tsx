@@ -47,7 +47,7 @@ type NavItemDef = {
   href: string
   icon: React.ElementType
   color: string
-  roles: UserRole[] 
+  roles: UserRole[]
   types?: UserType[] // Optional filter for Agency/Individual panels
   plans?: string[] // Optional filter for plan level (e.g. ['pro', 'enterprise'])
 }
@@ -73,6 +73,7 @@ const mainNav: NavSection[] = [
     items: [
       { name: 'Meetings', href: '/meetings', icon: CalendarCheck2, color: '#F59E0B', roles: ['Super Admin', 'Admin', 'Manager', 'Agent'] },
       { name: 'Automations', href: '/automations', icon: Zap, color: '#6366F1', roles: ['Super Admin', 'Admin'], types: ['agency', 'super_admin', 'individual'], plans: ['pro', 'enterprise'] },
+      // { name: 'WhatsApp Bot', href: '/whatsapp-bot', icon: Bot, color: '#10B981', roles: ['Super Admin', 'Admin'], types: ['agency', 'super_admin', 'individual'], plans: ['pro', 'enterprise'] },
       { name: 'Integrations', href: '/integrations', icon: Plug2, color: '#EC4899', roles: ['Super Admin', 'Admin'], types: ['agency', 'super_admin', 'individual'], plans: ['pro', 'enterprise'] },
       { name: 'Analytics', href: '/analytics', icon: TrendingUp, color: '#14B8A6', roles: ['Super Admin', 'Admin', 'Manager'], types: ['agency', 'super_admin', 'individual'], plans: ['pro', 'enterprise'] },
     ]
@@ -179,9 +180,9 @@ export function Sidebar({ mobileOpen, setMobileOpen }: SidebarProps) {
 
         {mounted && isImpersonating && (
           <div className="px-4 py-3 bg-indigo-600/20 border-b border-indigo-500/20">
-            <Button 
+            <Button
               onClick={handleExitImpersonation}
-              variant="ghost" 
+              variant="ghost"
               className="w-full h-9 rounded-xl text-[10px] font-black uppercase tracking-widest text-indigo-400 hover:bg-indigo-600 hover:text-white transition-all gap-2"
             >
               <ArrowLeft className="h-3 w-3" /> Return to Agency

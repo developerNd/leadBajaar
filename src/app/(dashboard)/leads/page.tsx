@@ -660,7 +660,7 @@ export default function LeadsPage() {
         const value = row[csvHeaders.indexOf(mapping.csvHeader)]
 
         // Validate required fields
-        if (['name', 'email'].includes(mapping.leadField) && !value) {
+        if (['name'].includes(mapping.leadField) && !value) {
           errors.push({
             row: rowIndex + 2, // Add 2 to account for 1-based indexing and header row
             field: mapping.leadField,
@@ -721,6 +721,8 @@ export default function LeadsPage() {
                     case 'company':
                     case 'stage':
                     case 'source':
+                    case 'city':
+                    case 'profession':
                       lead[mapping.leadField] = value;
                       break;
                     case 'status':
@@ -1371,6 +1373,15 @@ export default function LeadsPage() {
               <span className="text-[13px] font-semibold text-slate-600 dark:text-slate-300">Selected</span>
             </div>
             <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 px-3 text-xs font-bold text-emerald-600 hover:bg-white dark:hover:bg-slate-800"
+                onClick={() => setShowBroadcastDialog(true)}
+              >
+                <MessageSquare className="mr-2 h-3.5 w-3.5" />
+                Broadcast
+              </Button>
               <Button
                 variant="ghost"
                 size="sm"
