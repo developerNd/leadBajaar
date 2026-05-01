@@ -99,6 +99,38 @@ const ErrorAlert = ({ message }: { message: string }) => (
   </Alert>
 )
 
+/**
+ * Robustly parses a CSV line, respecting double quotes and trimming values.
+ * Removes surrounding quotes from the resulting values.
+ */
+const parseCSVLine = (line: string): string[] => {
+  const result: string[] = [];
+  let current = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    if (char === '"') {
+      // Toggle quote state
+      if (inQuotes && line[i + 1] === '"') {
+        // Handle escaped quotes ""
+        current += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (char === ',' && !inQuotes) {
+      // End of field
+      result.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  result.push(current.trim());
+  return result;
+};
+
 // // Add this component for the date picker
 // const DatePicker = ({ date, onChange }: DatePickerProps) => {
 //   return (
@@ -408,7 +440,7 @@ export default function LeadsPage() {
           return
         }
 
-        const result = lines.map(line => line.split(',').map(cell => cell.trim()))
+        const result = lines.filter(l => l.trim()).map(line => parseCSVLine(line))
         setPreview(result.slice(0, 5))
 
         // Initialize column mapping
@@ -695,11 +727,12 @@ export default function LeadsPage() {
       reader.onload = async (event) => {
         try {
           const csv = event.target?.result as string;
-          const lines = csv.split('\n');
-          const headers = lines[0].split(',').map(h => h.trim());
+          const lines = csv.split('\n').filter(line => line.trim());
+          if (lines.length === 0) return;
+
+          const headers = parseCSVLine(lines[0]);
           const dataRows = lines.slice(1)
-            .filter(line => line.trim())
-            .map(line => line.split(',').map(cell => cell.trim()));
+            .map(line => parseCSVLine(line));
 
           const leads = dataRows.map(row => {
             const lead: CreateLeadDto = {
