@@ -304,7 +304,7 @@ export default function EventTypeForm() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-slate-950 overflow-hidden font-sans">
+    <div className="flex flex-col bg-white dark:bg-slate-950 font-sans">
       <div className="shrink-0 flex flex-col border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm z-50">
         <div className="px-6 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-4">
@@ -323,7 +323,7 @@ export default function EventTypeForm() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto no-scrollbar scroll-smooth bg-slate-50/30 dark:bg-slate-900/10">
+      <div className="flex-1 scroll-smooth bg-slate-50/30 dark:bg-slate-900/10">
         <Tabs defaultValue="basic" className="w-full">
           <div className="sticky top-0 z-40 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 px-6 py-2">
             <div className="max-w-4xl mx-auto flex items-center justify-between">

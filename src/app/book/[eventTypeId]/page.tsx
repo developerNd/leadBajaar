@@ -502,9 +502,12 @@ export default function BookingPage() {
       setShowSuccess(true);
 
       // Handle Redirection if configured
-      if (eventType?.redirect_url) {
+      if (eventType?.redirect_url && eventType.redirect_url.trim() !== '') {
         setTimeout(() => {
-          window.location.href = eventType.redirect_url!;
+          // Double check the value just before redirecting
+          if (eventType.redirect_url) {
+            window.location.href = eventType.redirect_url;
+          }
         }, 2500); 
       }
       
@@ -910,7 +913,10 @@ export default function BookingPage() {
               className="w-full sm:w-auto px-10 font-bold uppercase tracking-widest text-[11px]"
               onClick={() => {
                 setShowSuccess(false)
-                router.push('/')
+                // Only redirect if a custom redirect_url is explicitly set
+                if (eventType?.redirect_url) {
+                  window.location.href = eventType.redirect_url;
+                }
               }}
             >
               Done

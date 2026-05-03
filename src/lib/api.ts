@@ -1687,6 +1687,37 @@ export const adminApi = {
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to fetch tags');
     }
+  },
+
+  sendBroadcast: async (data: { 
+    title: string, 
+    message: string, 
+    type: string, 
+    target?: 'all' | 'company', 
+    company_id?: number, 
+    company_ids?: number[], 
+    image_url?: string,
+    is_modal?: boolean,
+    frequency?: 'once' | 'session' | 'always',
+    cta_text?: string,
+    cta_link?: string,
+    expires_at?: string
+  }) => {
+    try {
+      const response = await api.post('/admin/broadcast', data);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to send broadcast');
+    }
+  },
+
+  getBroadcastHistory: async () => {
+    try {
+      const response = await api.get('/admin/broadcast/history');
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to fetch broadcast history');
+    }
   }
 };
 
