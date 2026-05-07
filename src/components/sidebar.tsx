@@ -120,6 +120,8 @@ export function Sidebar({ mobileOpen, setMobileOpen }: SidebarProps) {
   // Clear loading state when pathname changes (navigation finished)
   useEffect(() => {
     setLoadingHref(null)
+    setMobileOpen?.(false)
+    setMoreOpen(false)
   }, [pathname])
 
   // Derive which flyout item is currently active
@@ -288,7 +290,7 @@ export function Sidebar({ mobileOpen, setMobileOpen }: SidebarProps) {
                   )}
                 >
                   <MoreHorizontal className="h-[18px] w-[18px] shrink-0" />
-                  <span className="text-[11px] lg:text-[8px] font-medium uppercase tracking-wide lg:tracking-tight leading-none opacity-100 transition-opacity truncate flex-1 lg:flex-none lg:text-center w-full lg:px-1">
+                  <span className="text-[11px] lg:text-[8px] font-medium uppercase tracking-wide lg:tracking-tight leading-none truncate lg:text-center">
                     More
                   </span>
                 </button>
@@ -306,7 +308,7 @@ export function Sidebar({ mobileOpen, setMobileOpen }: SidebarProps) {
                   className="group flex flex-row lg:flex-col items-center lg:justify-center gap-3 lg:gap-1 w-full lg:w-[60px] px-4 lg:px-0 py-3 lg:py-2.5 rounded-xl text-[#9CA3AF] hover:text-[#EF4444] hover:bg-[#1E293B] transition-all duration-200 border border-transparent"
                 >
                   <LogOut className="h-[18px] w-[18px] shrink-0" />
-                  <span className="text-[11px] lg:text-[8px] font-medium uppercase tracking-wide lg:tracking-tight leading-none opacity-100 transition-opacity truncate flex-1 lg:flex-none lg:text-center w-full lg:px-1">
+                  <span className="text-[11px] lg:text-[8px] font-medium uppercase tracking-wide lg:tracking-tight leading-none truncate lg:text-center">
                     Exit
                   </span>
                 </button>
@@ -339,15 +341,19 @@ export function Sidebar({ mobileOpen, setMobileOpen }: SidebarProps) {
         ──────────────────────────────────────────────────── */}
         <div
           className={cn(
-            "absolute left-[84px] top-0 bottom-0 w-[248px] rounded-xl pointer-events-auto",
+            "absolute top-0 bottom-0 z-[101] pointer-events-auto",
             "bg-[#0B1220] backdrop-blur-md border border-slate-800/60 shadow-2xl",
-            "flex flex-col overflow-hidden",
-            "transition-all duration-300 ease-out origin-left",
+            "flex flex-col overflow-hidden transition-all duration-300 ease-out origin-left",
+            "w-[280px] lg:w-[260px] rounded-xl lg:left-[84px] left-0",
             moreOpen
               ? "opacity-100 scale-x-100 translate-x-0 pointer-events-auto"
-              : "opacity-0 scale-x-95 -translate-x-2 pointer-events-none"
+              : "opacity-0 scale-x-95 -translate-x-4 pointer-events-none"
           )}
         >
+          {/* Decorative Background for Flyout */}
+          <div className="absolute top-0 right-0 -mt-10 -mr-10 h-40 w-40 bg-indigo-500/10 blur-[80px] rounded-full pointer-events-none" />
+          <div className="absolute bottom-0 left-0 -mb-10 -ml-10 h-40 w-40 bg-blue-500/10 blur-[80px] rounded-full pointer-events-none" />
+
           {/* Flyout header */}
           <div className="flex items-center justify-between px-4 h-16 shrink-0 border-b border-slate-800/40">
             <div>
@@ -443,7 +449,7 @@ function PinnedNavItem({
           href={item.href}
           onClick={() => {
             if (!isActive) setLoadingHref(item.href)
-            setMobileOpen?.(false)
+            else setMobileOpen?.(false) // Close if already active
           }}
           className={cn(
             "relative flex flex-row lg:flex-col items-center lg:justify-center gap-3 lg:gap-1",
@@ -480,9 +486,8 @@ function PinnedNavItem({
           {/* Label */}
           <span
             className={cn(
-              "text-[11px] lg:text-[8px] font-medium uppercase tracking-wide lg:tracking-tight leading-none truncate flex-1 lg:flex-none lg:text-center w-full lg:px-1",
-              "transition-opacity duration-200",
-              isActive ? "opacity-100" : "opacity-100"
+              "relative z-10 text-[11px] lg:text-[8px] font-medium uppercase tracking-wide lg:tracking-tight leading-none truncate lg:text-center",
+              "transition-opacity duration-200"
             )}
           >
             {item.name}
@@ -490,41 +495,6 @@ function PinnedNavItem({
         </Link>
       </TooltipTrigger>
       
-      {/* Mobile Link (No tooltip) */}
-      <Link
-        href={item.href}
-        onClick={() => {
-          if (!isActive) setLoadingHref(item.href)
-          setMobileOpen?.(false)
-        }}
-        className={cn(
-          "relative lg:hidden flex flex-row items-center gap-3",
-          "w-full px-4 py-3 rounded-xl transition-all duration-200 group",
-          isActive
-            ? "text-white bg-white/10 border border-white/10 shadow-sm"
-            : "text-[#9CA3AF] hover:text-[#E5E7EB] hover:bg-[#1E293B] border border-transparent"
-        )}
-      >
-        <div className="relative z-10">
-          <item.icon
-            className={cn(
-              "h-[18px] w-[18px] shrink-0 transition-all duration-200",
-              isActive ? "scale-110" : "group-hover:scale-105"
-            )}
-            style={isActive || isLoading ? { color: item.color } : { color: '#9CA3AF' }}
-          />
-        </div>
-        <span
-          className={cn(
-            "text-[11px] font-medium uppercase tracking-wide leading-none truncate flex-1",
-            "transition-opacity duration-200",
-            isActive ? "text-[#FFFFFF]" : "text-[#9CA3AF] group-hover:text-[#E5E7EB]"
-          )}
-        >
-          {item.name}
-        </span>
-      </Link>
-
       <TooltipContent side="right" className="bg-slate-900 border-slate-800 text-white text-[10px] font-black uppercase tracking-widest lg:block hidden">
         {item.name}
       </TooltipContent>
@@ -553,7 +523,7 @@ function FlyoutNavItem({
       href={item.href}
       onClick={() => {
         if (!isActive) setLoadingHref(item.href)
-        onClose()
+        else onClose() // Close if already active
       }}
       className={cn(
         "relative flex items-center gap-3 w-full px-3 py-2.5 rounded-xl transition-all duration-200 group overflow-hidden",
@@ -596,7 +566,7 @@ function FlyoutNavItem({
       </div>
 
       {/* Text */}
-      <div className="min-w-0 flex-1">
+      <div className="relative z-10 min-w-0 flex-1">
         <p className={cn(
           "text-[12px] font-medium leading-none truncate transition-colors duration-200",
           isActive ? "text-[#FFFFFF]" : "text-[#9CA3AF] group-hover:text-[#E5E7EB]"
