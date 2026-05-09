@@ -80,9 +80,9 @@ import { useRouter } from "next/navigation";
 import { FacebookOAuthButton } from "@/components/facebook-oauth/FacebookOAuthButton";
 import { FacebookServicesManager } from "@/components/facebook-oauth/FacebookServicesManager";
 import { FacebookDashboard } from "@/components/facebook-oauth/FacebookDashboard";
-import { FacebookConversionApiManager } from "@/components/facebook-oauth/FacebookConversionApiManager";
-import { LeadConversionTracker } from "@/components/facebook-oauth/LeadConversionTracker";
-import { ConversionApiTester } from "@/components/facebook-oauth/ConversionApiTester";
+import { FacebookConversionApiManager } from "@/components/meta-capi/FacebookConversionApiManager";
+import { LeadConversionTracker } from "@/components/meta-capi/LeadConversionTracker";
+import { ConversionApiTester } from "@/components/meta-capi/ConversionApiTester";
 import { WebhookConfigDialog } from "@/components/integrations/WebhookConfigDialog";
 import { EmailConfigDialog } from "@/components/integrations/EmailConfigDialog";
 import { TestEmailDialog } from "@/components/integrations/TestEmailDialog";
@@ -994,6 +994,16 @@ export default function IntegrationsPage() {
                                       onClick={() => router.push("/integrations/whatsapp")}
                                     >
                                       Manage WhatsApp
+                                    </Button>
+                                  )}
+                                  {integration.id === "facebook_conversion_api" && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="flex-1 text-indigo-600 border-indigo-200 hover:bg-indigo-50"
+                                      onClick={() => router.push("/integrations/meta-capi")}
+                                    >
+                                      Manage CAPI Hub
                                     </Button>
                                   )}
                                   <Button

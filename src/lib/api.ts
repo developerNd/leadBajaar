@@ -860,6 +860,7 @@ export const integrationApi = {
     event_name: string;
     event_data: any;
     user_data?: any;
+    event_id?: string;
     integration_id?: number;
   }) => {
     try {
@@ -895,6 +896,7 @@ export const integrationApi = {
     event_name: string;
     event_data: any;
     user_data?: any;
+    event_id?: string;
     integration_id?: number;
   }) => {
     try {
@@ -1302,6 +1304,24 @@ export const integrationApi = {
       return response.data;
     } catch (error: any) {
       throw new Error(formatMetaErrorMessage(error, 'Failed to fetch Meta pixels'));
+    }
+  },
+
+  sendMetaCapiEvent: async (data: {
+    pixel_id: string;
+    event_name: string;
+    event_data: any;
+    user_data?: any;
+    test_event_code?: string;
+  }) => {
+    try {
+      // Use the test endpoint if a code is provided, otherwise standard send
+      const endpoint = data.test_event_code ? '/meta/pixels/test-event' : '/meta/pixels/send-event';
+      const response = await api.post(endpoint, data);
+      return response.data;
+    } catch (error: any) {
+      const message = error.response?.data?.error || 'Failed to send Meta CAPI event';
+      throw new Error(message);
     }
   },
 
