@@ -25,6 +25,7 @@ import {
   MoreHorizontal,
   X,
   CornerUpLeft,
+  DollarSign,
 } from 'lucide-react'
 import { logout } from '@/lib/api'
 import { clearSession, setSession } from '@/lib/auth'
@@ -85,6 +86,7 @@ const flyoutNav: NavSection[] = [
       { name: 'Admin', desc: 'System-level controls', href: '/admin', icon: Shield, color: '#EF4444', roles: ['Super Admin'], types: ['super_admin'] },
       { name: 'Emails', desc: 'Monitor transactional emails', href: '/admin/emails', icon: Mail, color: '#6366F1', roles: ['Super Admin'], types: ['super_admin'] },
       { name: 'Error Logs', desc: 'View platform error logs', href: '/admin/errors', icon: Activity, color: '#F43F5E', roles: ['Super Admin'], types: ['super_admin'] },
+      { name: 'Finance', desc: 'P&L, expenses & payroll', href: '/admin/finance/dashboard', icon: DollarSign, color: '#10B981', roles: ['Super Admin'], types: ['super_admin'] },
       { name: 'Dev Hub', desc: 'API keys & developer tools', href: '/developer', icon: Code2, color: '#10B981', roles: ['Super Admin', 'Admin'] },
     ],
   },
