@@ -7,7 +7,7 @@ import { logger } from '@/utils/logger';
 export const API_BASE_URL = 'https://api.leadbajaar.com/api'
 // export const API_BASE_URL = 'http://localhost:8000/api'
 // export const WHATSAPP_BASE_URL = 'http://localhost:3000/api'
-export const WHATSAPP_BASE_URL = 'https://api.leadbajaar.com/ap'
+export const WHATSAPP_BASE_URL = 'https://wp.leadbajaar.com/api'
 
 // Export both httpClient and api
 export const httpClient = {
@@ -1713,6 +1713,15 @@ export const adminApi = {
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to fetch plans');
+    }
+  },
+  
+  createPlan: async (data: any) => {
+    try {
+      const response = await api.post('/admin/plans', data);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to create plan');
     }
   },
 

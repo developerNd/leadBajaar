@@ -47,6 +47,7 @@ type NavItemDef = {
   roles: UserRole[]
   types?: UserType[]
   plans?: string[]
+  feature?: string
 }
 
 type NavSection = {
@@ -57,12 +58,12 @@ type NavSection = {
 // ── Pinned sidebar items (always visible, no scroll) ─────────
 // Only the 4 most-used core items live here
 const pinnedNav: NavItemDef[] = [
-  { name: 'Dashboard', desc: 'Overview & key metrics', href: '/dashboard', icon: Gauge, color: '#6366F1', roles: ['Super Admin', 'Admin', 'Manager', 'Agent'] },
-  { name: 'Leads', desc: 'Track and convert leads', href: '/leads', icon: UserCheck, color: '#10B981', roles: ['Super Admin', 'Admin', 'Manager', 'Agent'] },
-  { name: 'Live Chat', desc: 'Real-time customer messaging', href: '/live-chat', icon: MessageCircle, color: '#3B82F6', roles: ['Super Admin', 'Admin', 'Manager', 'Agent'] },
-  { name: 'Chatbot', desc: 'Automate conversations with AI', href: '/chatbot', icon: Bot, color: '#8B5CF6', roles: ['Super Admin', 'Admin', 'Manager'], types: ['agency', 'super_admin', 'individual'], plans: ['pro', 'enterprise'] },
-  { name: 'Meetings', desc: 'Schedule & track appointments', href: '/meetings', icon: CalendarCheck2, color: '#F59E0B', roles: ['Super Admin', 'Admin', 'Manager', 'Agent'] },
-  { name: 'Integrations', desc: 'Connect your favourite tools', href: '/integrations', icon: Plug2, color: '#EC4899', roles: ['Super Admin', 'Admin'], types: ['agency', 'super_admin', 'individual'], plans: ['pro', 'enterprise'] },
+  { name: 'Dashboard', desc: 'Overview & key metrics', href: '/dashboard', icon: Gauge, color: '#6366F1', roles: ['Super Admin', 'Admin', 'Manager', 'Agent'], feature: 'dashboard' },
+  { name: 'Leads', desc: 'Track and convert leads', href: '/leads', icon: UserCheck, color: '#10B981', roles: ['Super Admin', 'Admin', 'Manager', 'Agent'], feature: 'leads' },
+  { name: 'Live Chat', desc: 'Real-time customer messaging', href: '/live-chat', icon: MessageCircle, color: '#3B82F6', roles: ['Super Admin', 'Admin', 'Manager', 'Agent'], feature: 'live_chat' },
+  { name: 'Chatbot', desc: 'Automate conversations with AI', href: '/chatbot', icon: Bot, color: '#8B5CF6', roles: ['Super Admin', 'Admin', 'Manager'], types: ['agency', 'super_admin', 'individual'], feature: 'chatbot' },
+  { name: 'Meetings', desc: 'Schedule & track appointments', href: '/meetings', icon: CalendarCheck2, color: '#F59E0B', roles: ['Super Admin', 'Admin', 'Manager', 'Agent'], feature: 'meetings' },
+  { name: 'Integrations', desc: 'Connect your favourite tools', href: '/integrations', icon: Plug2, color: '#EC4899', roles: ['Super Admin', 'Admin'], types: ['agency', 'super_admin', 'individual'], feature: 'integrations' },
 ]
 
 // ── Flyout-only items (not shown in narrow sidebar) ──────────
@@ -70,30 +71,31 @@ const flyoutNav: NavSection[] = [
   {
     label: 'Clients & Growth',
     items: [
-      { name: 'Clients', desc: 'Manage your client portfolio', href: '/agency', icon: Briefcase, color: '#6366F1', roles: ['Super Admin', 'Admin'], types: ['agency', 'super_admin'] },
-      { name: 'Analytics', desc: 'Deep-dive into performance', href: '/analytics', icon: TrendingUp, color: '#14B8A6', roles: ['Super Admin', 'Admin', 'Manager'], types: ['agency', 'super_admin', 'individual'], plans: ['pro', 'enterprise'] },
+      { name: 'Clients', desc: 'Manage your client portfolio', href: '/agency', icon: Briefcase, color: '#6366F1', roles: ['Super Admin', 'Admin'], types: ['agency', 'super_admin'], feature: 'agency_management' },
+      { name: 'Analytics', desc: 'Deep-dive into performance', href: '/analytics', icon: TrendingUp, color: '#14B8A6', roles: ['Super Admin', 'Admin', 'Manager'], types: ['agency', 'super_admin', 'individual'], feature: 'analytics' },
     ],
   },
   {
     label: 'Automation',
     items: [
-      { name: 'Automations', desc: 'Build powerful workflows', href: '/automations', icon: Zap, color: '#6366F1', roles: ['Super Admin', 'Admin'], types: ['agency', 'super_admin', 'individual'], plans: ['pro', 'enterprise'] },
+      { name: 'Automations', desc: 'Build powerful workflows', href: '/automations', icon: Zap, color: '#6366F1', roles: ['Super Admin', 'Admin'], types: ['agency', 'super_admin', 'individual'], feature: 'automations' },
+      { name: 'WhatsApp Bot', desc: 'Connect and scan WhatsApp', href: '/whatsapp-bot', icon: Bot, color: '#25D366', roles: ['Super Admin', 'Admin'], types: ['agency', 'super_admin', 'individual'], feature: 'whatsapp_bot' },
     ],
   },
   {
     label: 'Platform Control',
     items: [
-      { name: 'Admin', desc: 'System-level controls', href: '/admin', icon: Shield, color: '#EF4444', roles: ['Super Admin'], types: ['super_admin'] },
-      { name: 'Emails', desc: 'Monitor transactional emails', href: '/admin/emails', icon: Mail, color: '#6366F1', roles: ['Super Admin'], types: ['super_admin'] },
-      { name: 'Error Logs', desc: 'View platform error logs', href: '/admin/errors', icon: Activity, color: '#F43F5E', roles: ['Super Admin'], types: ['super_admin'] },
-      { name: 'Finance', desc: 'P&L, expenses & payroll', href: '/admin/finance/dashboard', icon: DollarSign, color: '#10B981', roles: ['Super Admin'], types: ['super_admin'] },
-      { name: 'Dev Hub', desc: 'API keys & developer tools', href: '/developer', icon: Code2, color: '#10B981', roles: ['Super Admin', 'Admin'] },
+      { name: 'Admin', desc: 'System-level controls', href: '/admin', icon: Shield, color: '#EF4444', roles: ['Super Admin'], types: ['super_admin'], feature: 'system_admin' },
+      { name: 'Emails', desc: 'Monitor transactional emails', href: '/admin/emails', icon: Mail, color: '#6366F1', roles: ['Super Admin'], types: ['super_admin'], feature: 'email_logs' },
+      { name: 'Error Logs', desc: 'View platform error logs', href: '/admin/errors', icon: Activity, color: '#F43F5E', roles: ['Super Admin'], types: ['super_admin'], feature: 'error_logs' },
+      { name: 'Finance', desc: 'P&L, expenses & payroll', href: '/admin/finance/dashboard', icon: DollarSign, color: '#10B981', roles: ['Super Admin'], types: ['super_admin'], feature: 'finance_module' },
+      { name: 'Dev Hub', desc: 'API keys & developer tools', href: '/developer', icon: Code2, color: '#10B981', roles: ['Super Admin', 'Admin'], feature: 'developer_tools' },
     ],
   },
   {
     label: 'Account',
     items: [
-      { name: 'Settings', desc: 'Preferences and configuration', href: '/settings', icon: Settings2, color: '#94A3B8', roles: ['Super Admin', 'Admin', 'Manager', 'Agent'] },
+      { name: 'Settings', desc: 'Preferences and configuration', href: '/settings', icon: Settings2, color: '#94A3B8', roles: ['Super Admin', 'Admin', 'Manager', 'Agent'], feature: 'account_settings' },
     ],
   },
 ]
@@ -107,7 +109,7 @@ interface SidebarProps {
 export function Sidebar({ mobileOpen, setMobileOpen }: SidebarProps) {
   const router = useRouter()
   const pathname = usePathname()
-  const { user, hasRole, hasType, hasPlan } = useUser()
+  const { user, hasRole, hasType, hasPlan, hasFeature } = useUser()
 
   const [moreOpen, setMoreOpen] = useState(false)
   const [isAdminImpersonating, setIsAdminImpersonating] = useState(false)
@@ -170,10 +172,20 @@ export function Sidebar({ mobileOpen, setMobileOpen }: SidebarProps) {
   }
 
   const canSee = (item: NavItemDef) => {
+    // 1. Role Check (Hardcoded safety)
     const roleMatch = hasRole(item.roles)
+    
+    // 2. Type Check (e.g. agency vs individual)
     const typeMatch = !item.types || hasType(item.types)
+    
+    // 3. Dynamic Feature Check (Managed by Admin in DB)
+    // If no feature key is provided, it's a basic feature everyone sees (subject to role)
+    const featureMatch = !item.feature || hasFeature(item.feature)
+    
+    // 4. Legacy Plan Check (Optional fallback)
     const planMatch = !item.plans || hasPlan(item.plans) || hasType(['agency', 'super_admin'])
-    return roleMatch && typeMatch && planMatch
+    
+    return roleMatch && typeMatch && featureMatch && planMatch
   }
 
   const visiblePinned = pinnedNav.filter(canSee)

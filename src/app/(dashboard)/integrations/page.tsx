@@ -77,6 +77,7 @@ import { cn } from "@/lib/utils";
 import { api, integrationApi, IntegrationConfig } from "@/lib/api";
 import { useErrorHandler } from "@/utils/useErrorHandler";
 import { useRouter } from "next/navigation";
+import { useUser } from "@/contexts/UserContext";
 import { FacebookOAuthButton } from "@/components/facebook-oauth/FacebookOAuthButton";
 import { FacebookServicesManager } from "@/components/facebook-oauth/FacebookServicesManager";
 import { FacebookDashboard } from "@/components/facebook-oauth/FacebookDashboard";
@@ -146,6 +147,7 @@ interface Integration {
   description: string;
   features: string[];
   allowMultiple: boolean;
+  plans?: string[];
 }
 
 interface WhatsAppConfig {
@@ -199,6 +201,7 @@ const integrations: Integration[] = [
       "Message Analytics",
     ],
     allowMultiple: false,
+    plans: ["pro", "enterprise"],
   },
   {
     id: "leadform",
@@ -303,6 +306,7 @@ const dummyLogs = [
 import { RoleGuard } from "@/components/RoleGuard";
 
 export default function IntegrationsPage() {
+  const { hasPlan, hasType, hasFeature } = useUser();
   const [activeIntegrations, setActiveIntegrations] = useState<string[]>([]);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [webhookToDelete, setWebhookToDelete] = useState<string | null>(null);
@@ -1374,8 +1378,20 @@ export default function IntegrationsPage() {
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                   {integrations
                     .filter(
-                      (integration) =>
-                        category === "all" || integration.category === category,
+                      (integration) => {
+                        const categoryMatch = category === "all" || integration.category === category;
+                        
+                        // Use hasFeature if the integration defines required features
+                        let featureMatch = true;
+                        if (integration.id === 'whatsapp') {
+                          featureMatch = hasFeature('whatsapp_bot');
+                        } else if (integration.plans) {
+                          // Fallback for other items still using 'plans'
+                          featureMatch = hasPlan(integration.plans) || hasType(['agency', 'super_admin']);
+                        }
+                        
+                        return categoryMatch && featureMatch;
+                      }
                     )
                     .map((integration) => (
                       <IntegrationCard
