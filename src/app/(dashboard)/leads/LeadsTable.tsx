@@ -307,6 +307,21 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
                             <span className="text-[10px] opacity-40">₹</span>
                             <span>{lead.paid_amount || 0}</span>
                           </div>
+                        ) : column.id === 'notes' ? (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="truncate max-w-[200px] inline-block cursor-help italic opacity-70">
+                                  {value || '-'}
+                                </span>
+                              </TooltipTrigger>
+                              {value && (
+                                <TooltipContent className="max-w-[300px] p-3 text-xs leading-relaxed">
+                                  <p className="whitespace-pre-wrap font-normal">{value}</p>
+                                </TooltipContent>
+                              )}
+                            </Tooltip>
+                          </TooltipProvider>
                         ) : (
                           <span className="truncate max-w-[150px] inline-block">{value || '-'}</span>
                         )}

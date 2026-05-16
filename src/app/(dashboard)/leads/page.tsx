@@ -175,6 +175,7 @@ export default function LeadsPage() {
     // 'status',
     'city',
     'profession',
+    'notes',
     // 'deal_value',
     // 'paid_amount',
     'created_at',
@@ -592,7 +593,8 @@ export default function LeadsPage() {
         status: newLead.status,
         source: newLead.source,
         city: newLead.city || '',
-        profession: newLead.profession || ''
+        profession: newLead.profession || '',
+        notes: newLead.notes || ''
       });
 
       // Refresh leads list
@@ -1121,6 +1123,8 @@ export default function LeadsPage() {
         source: updatedLead.source,
         city: updatedLead.city || '',
         profession: updatedLead.profession || '',
+        notes: updatedLead.notes || '',
+        new_note: (updatedLead as any).new_note || '',
       })
 
       // Update local state with response from server
