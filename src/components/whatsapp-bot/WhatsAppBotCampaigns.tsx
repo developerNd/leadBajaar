@@ -397,13 +397,36 @@ export function WhatsAppBotCampaigns({ userId }: WhatsAppBotCampaignsProps) {
                     )}
                   </div>
                 </div>
-                <div className="p-3 bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-800 rounded-xl">
+                <div className="p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl space-y-2">
                   <div className="flex items-center gap-2 mb-1">
-                    <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-                    <p className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">AI Safe Mode Enabled</p>
+                    <Rocket className="h-3.5 w-3.5 text-indigo-500 animate-pulse" />
+                    <p className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">Anti-Ban Safety Advisor</p>
                   </div>
-                  <p className="text-[9px] text-emerald-700 dark:text-emerald-500 font-medium">
-                    Pacing is automatically adjusted to protect your account. For 500+ contacts, extra cooling buffers are applied invisibly.
+                  
+                  {message && /https?:\/\//i.test(message) && mediaUrl ? (
+                    <div className="flex items-start gap-1.5 p-2 bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/30 rounded-lg">
+                      <AlertCircle className="h-3.5 w-3.5 text-rose-500 shrink-0 mt-0.5" />
+                      <p className="text-[9px] text-rose-700 dark:text-rose-400 font-bold leading-normal">
+                        ⚠️ DANGER: Media + Link combination detected. Outbox safety workers will automatically block cold campaigns using this combination to protect your sender number. Please remove either the link or the media attachment.
+                      </p>
+                    </div>
+                  ) : message && !(/\{([^\}]+?)\}/.test(message) || /\[([^\]]+?)\]/.test(message)) ? (
+                    <div className="flex items-start gap-1.5 p-2 bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 rounded-lg">
+                      <AlertCircle className="h-3.5 w-3.5 text-amber-500 shrink-0 mt-0.5" />
+                      <p className="text-[9px] text-amber-700 dark:text-amber-400 font-medium leading-normal">
+                        💡 RECOMMENDATION: Write message variations using Spintax format, e.g. <code className="bg-amber-100 dark:bg-amber-900/40 px-1 rounded">{"{Hi|Hello|Hey}"}</code>. This prevents Meta's fingerprinting algorithms from blocking your identical outbound layouts.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="flex items-start gap-1.5 p-2 bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-800/30 rounded-lg">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                      <p className="text-[9px] text-emerald-700 dark:text-emerald-400 font-medium leading-normal">
+                        🛡️ AI PROTECTIONS ACTIVE: Safe human typing delays, random delay jitter, sleep cycles, and daily contact limits are active.
+                      </p>
+                    </div>
+                  )}
+                  <p className="text-[8px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider text-right">
+                    Pacing Engine v2.0 Live
                   </p>
                 </div>
               </div>
@@ -908,6 +931,36 @@ export function WhatsAppBotCampaigns({ userId }: WhatsAppBotCampaignsProps) {
                   </p>
                 </div>
               )}
+              {/* Deliverability & Anti-Ban Safety Assistant Card */}
+              <div className="p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-2">
+                <div className="flex items-center gap-2">
+                  <Rocket className="h-3.5 w-3.5 text-indigo-500 animate-pulse" />
+                  <p className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">Anti-Ban Safety Advisor</p>
+                </div>
+                
+                {previewMessage && /https?:\/\//i.test(previewMessage) && previewMediaUrl ? (
+                  <div className="flex items-start gap-1.5 p-2 bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/30 rounded-lg">
+                    <AlertCircle className="h-3.5 w-3.5 text-rose-500 shrink-0 mt-0.5" />
+                    <p className="text-[9px] text-rose-700 dark:text-rose-400 font-bold leading-normal">
+                      ⚠️ DANGER: Media + Link combination detected. Outbox safety workers will automatically block cold campaigns using this combination to protect your sender number. Please remove either the link or the media attachment.
+                    </p>
+                  </div>
+                ) : previewMessage && !(/\{([^\}]+?)\}/.test(previewMessage) || /\[([^\]]+?)\]/.test(previewMessage)) ? (
+                  <div className="flex items-start gap-1.5 p-2 bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 rounded-lg">
+                    <AlertCircle className="h-3.5 w-3.5 text-amber-500 shrink-0 mt-0.5" />
+                    <p className="text-[9px] text-amber-700 dark:text-amber-400 font-medium leading-normal">
+                      💡 RECOMMENDATION: Write message variations using Spintax format, e.g. <code className="bg-amber-100 dark:bg-amber-900/40 px-1 rounded">{"{Hi|Hello|Hey}"}</code>. This prevents Meta's fingerprinting algorithms from blocking your identical outbound layouts.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="flex items-start gap-1.5 p-2 bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-800/30 rounded-lg">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                    <p className="text-[9px] text-emerald-700 dark:text-emerald-400 font-medium leading-normal">
+                      🛡️ AI PROTECTIONS ACTIVE: Safe human typing delays, random delay jitter, sleep cycles, and daily contact limits are active.
+                    </p>
+                  </div>
+                )}
+              </div>
 
               {/* Action Buttons */}
               <div className="flex items-center justify-end gap-3 pt-2">
