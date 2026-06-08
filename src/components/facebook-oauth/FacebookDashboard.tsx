@@ -1321,47 +1321,29 @@ export function FacebookDashboard() {
 
       <Tabs defaultValue="pages" className="flex flex-col md:flex-row gap-6 w-full">
         <div className="w-full md:w-48 lg:w-52 shrink-0">
-          <TabsList className="flex flex-col h-auto w-full bg-transparent p-0 space-y-2 pb-4">
-            <TabsTrigger value="pages" className="w-full relative flex items-center justify-start space-x-3 px-4 py-3.5 rounded-xl border border-transparent data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-700 dark:data-[state=active]:text-blue-400 bg-transparent hover:bg-white/60 dark:hover:bg-slate-800/50 transition-all duration-300 font-bold text-sm data-[state=active]:shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] data-[state=active]:ring-1 data-[state=active]:ring-slate-200 dark:data-[state=active]:ring-slate-800 group overflow-hidden">
-              <div className="absolute inset-y-0 left-0 w-1 bg-blue-600 rounded-r-md scale-y-0 opacity-0 group-data-[state=active]:scale-y-100 group-data-[state=active]:opacity-100 transition-all duration-300 origin-center" />
-              <div className="flex items-center justify-center p-1.5 rounded-lg group-data-[state=active]:bg-blue-100 dark:group-data-[state=active]:bg-blue-900/30 transition-colors">
-                <Globe className="h-4 w-4" />
-              </div>
+          <TabsList className="flex flex-col h-auto w-full bg-transparent p-0 space-y-1 pb-4">
+            <TabsTrigger value="pages" className="w-full justify-start gap-2 border-b-0 data-[state=active]:border-b-0 data-[state=active]:bg-[var(--crm-surface-2)] rounded-md px-3 py-2">
+              <Globe className="h-4 w-4" />
               <span>Pages & Leads</span>
             </TabsTrigger>
-            <TabsTrigger value="ads" className="w-full relative flex items-center justify-start space-x-3 px-4 py-3.5 rounded-xl border border-transparent data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-indigo-700 dark:data-[state=active]:text-indigo-400 bg-transparent hover:bg-white/60 dark:hover:bg-slate-800/50 transition-all duration-300 font-bold text-sm data-[state=active]:shadow-[0_2px_10px_-3px_rgba(99,102,241,0.1)] data-[state=active]:ring-1 data-[state=active]:ring-slate-200 dark:data-[state=active]:ring-slate-800 group overflow-hidden">
-              <div className="absolute inset-y-0 left-0 w-1 bg-indigo-600 rounded-r-md scale-y-0 opacity-0 group-data-[state=active]:scale-y-100 group-data-[state=active]:opacity-100 transition-all duration-300 origin-center" />
-              <div className="flex items-center justify-center p-1.5 rounded-lg group-data-[state=active]:bg-indigo-100 dark:group-data-[state=active]:bg-indigo-900/30 transition-colors">
-                <TrendingUp className="h-4 w-4" />
-              </div>
+            <TabsTrigger value="ads" className="w-full justify-start gap-2 border-b-0 data-[state=active]:border-b-0 data-[state=active]:bg-[var(--crm-surface-2)] rounded-md px-3 py-2">
+              <TrendingUp className="h-4 w-4" />
               <span>Ads Manager</span>
             </TabsTrigger>
-            <TabsTrigger value="creatives" className="w-full relative flex items-center justify-start space-x-3 px-4 py-3.5 rounded-xl border border-transparent data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-purple-700 dark:data-[state=active]:text-purple-400 bg-transparent hover:bg-white/60 dark:hover:bg-slate-800/50 transition-all duration-300 font-bold text-sm data-[state=active]:shadow-[0_2px_10px_-3px_rgba(168,85,247,0.1)] data-[state=active]:ring-1 data-[state=active]:ring-slate-200 dark:data-[state=active]:ring-slate-800 group overflow-hidden">
-              <div className="absolute inset-y-0 left-0 w-1 bg-purple-600 rounded-r-md scale-y-0 opacity-0 group-data-[state=active]:scale-y-100 group-data-[state=active]:opacity-100 transition-all duration-300 origin-center" />
-              <div className="flex items-center justify-center p-1.5 rounded-lg group-data-[state=active]:bg-purple-100 dark:group-data-[state=active]:bg-purple-900/30 transition-colors">
-                <FileText className="h-4 w-4" />
-              </div>
+            <TabsTrigger value="creatives" className="w-full justify-start gap-2 border-b-0 data-[state=active]:border-b-0 data-[state=active]:bg-[var(--crm-surface-2)] rounded-md px-3 py-2">
+              <FileText className="h-4 w-4" />
               <span>Ad Creatives</span>
             </TabsTrigger>
-            <TabsTrigger value="templates" className="w-full relative flex items-center justify-start space-x-3 px-4 py-3.5 rounded-xl border border-transparent data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-emerald-700 dark:data-[state=active]:text-emerald-400 bg-transparent hover:bg-white/60 dark:hover:bg-slate-800/50 transition-all duration-300 font-bold text-sm data-[state=active]:shadow-[0_2px_10px_-3px_rgba(16,185,129,0.1)] data-[state=active]:ring-1 data-[state=active]:ring-slate-200 dark:data-[state=active]:ring-slate-800 group overflow-hidden">
-              <div className="absolute inset-y-0 left-0 w-1 bg-emerald-600 rounded-r-md scale-y-0 opacity-0 group-data-[state=active]:scale-y-100 group-data-[state=active]:opacity-100 transition-all duration-300 origin-center" />
-              <div className="flex items-center justify-center p-1.5 rounded-lg group-data-[state=active]:bg-emerald-100 dark:group-data-[state=active]:bg-emerald-900/30 transition-colors">
-                <BarChart3 className="h-4 w-4" />
-              </div>
+            <TabsTrigger value="templates" className="w-full justify-start gap-2 border-b-0 data-[state=active]:border-b-0 data-[state=active]:bg-[var(--crm-surface-2)] rounded-md px-3 py-2">
+              <BarChart3 className="h-4 w-4" />
               <span>Ad Templates</span>
             </TabsTrigger>
-            <TabsTrigger value="pixels" className="w-full relative flex items-center justify-start space-x-3 px-4 py-3.5 rounded-xl border border-transparent data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-amber-700 dark:data-[state=active]:text-amber-400 bg-transparent hover:bg-white/60 dark:hover:bg-slate-800/50 transition-all duration-300 font-bold text-sm data-[state=active]:shadow-[0_2px_10px_-3px_rgba(245,158,11,0.1)] data-[state=active]:ring-1 data-[state=active]:ring-slate-200 dark:data-[state=active]:ring-slate-800 group overflow-hidden">
-              <div className="absolute inset-y-0 left-0 w-1 bg-amber-600 rounded-r-md scale-y-0 opacity-0 group-data-[state=active]:scale-y-100 group-data-[state=active]:opacity-100 transition-all duration-300 origin-center" />
-              <div className="flex items-center justify-center p-1.5 rounded-lg group-data-[state=active]:bg-amber-100 dark:group-data-[state=active]:bg-amber-900/30 transition-colors">
-                <Zap className="h-4 w-4" />
-              </div>
+            <TabsTrigger value="pixels" className="w-full justify-start gap-2 border-b-0 data-[state=active]:border-b-0 data-[state=active]:bg-[var(--crm-surface-2)] rounded-md px-3 py-2">
+              <Zap className="h-4 w-4" />
               <span>Pixels / CAPI</span>
             </TabsTrigger>
-            <TabsTrigger value="roi" className="w-full relative flex items-center justify-start space-x-3 px-4 py-3.5 rounded-xl border border-transparent data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-rose-700 dark:data-[state=active]:text-rose-400 bg-transparent hover:bg-white/60 dark:hover:bg-slate-800/50 transition-all duration-300 font-bold text-sm data-[state=active]:shadow-[0_2px_10px_-3px_rgba(225,29,72,0.1)] data-[state=active]:ring-1 data-[state=active]:ring-slate-200 dark:data-[state=active]:ring-slate-800 group overflow-hidden">
-              <div className="absolute inset-y-0 left-0 w-1 bg-rose-600 rounded-r-md scale-y-0 opacity-0 group-data-[state=active]:scale-y-100 group-data-[state=active]:opacity-100 transition-all duration-300 origin-center" />
-              <div className="flex items-center justify-center p-1.5 rounded-lg group-data-[state=active]:bg-rose-100 dark:group-data-[state=active]:bg-rose-900/30 transition-colors">
-                <TrendingUp className="h-4 w-4" />
-              </div>
+            <TabsTrigger value="roi" className="w-full justify-start gap-2 border-b-0 data-[state=active]:border-b-0 data-[state=active]:bg-[var(--crm-surface-2)] rounded-md px-3 py-2">
+              <TrendingUp className="h-4 w-4" />
               <span>ROI Analytics</span>
             </TabsTrigger>
           </TabsList>

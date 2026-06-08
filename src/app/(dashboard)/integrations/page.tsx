@@ -923,10 +923,7 @@ export default function IntegrationsPage() {
 
   return (
     <RoleGuard allowedRoles={['Super Admin', 'Admin']} allowedPlans={['pro', 'enterprise']}>
-      <div className="w-full h-full overflow-y-auto p-4 md:p-6 lg:p-10">
-
-
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+      <div className="w-full h-full overflow-y-auto p-6 pt-2">        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <div className="w-full overflow-x-auto no-scrollbar mb-4">
             <TabsList className="inline-flex w-auto min-w-full">
               <TabsTrigger value="all">All</TabsTrigger>
@@ -970,109 +967,13 @@ export default function IntegrationsPage() {
                     {integrations
                       .filter((i) => i.category === "marketing")
                       .map((integration) => (
-                        <Card key={integration.id} className="flex flex-col">
-                          <CardHeader className="pb-3">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center space-x-2">
-                                {React.createElement(integration.icon, {
-                                  className: "h-5 w-5",
-                                  style: { color: integration.color },
-                                })}
-                                <CardTitle className="text-lg">{integration.name}</CardTitle>
-                              </div>
-                            </div>
-                          </CardHeader>
-                          <CardContent className="flex-1">
-                            <p className="text-sm text-muted-foreground mb-4">{integration.description}</p>
-                          </CardContent>
-                          <CardFooter className="pt-0 flex flex-col gap-2">
-                            {connectedIntegrations.some(
-                              (ci) => ci.type === integration.id && ci.is_active,
-                            ) && (
-                                <div className="flex gap-2 w-full">
-                                  {integration.id === "whatsapp" && (
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      className="flex-1 text-primary border-primary/20 hover:bg-primary/5"
-                                      onClick={() => router.push("/integrations/whatsapp")}
-                                    >
-                                      Manage WhatsApp
-                                    </Button>
-                                  )}
-                                  {integration.id === "facebook_conversion_api" && (
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      className="flex-1 text-indigo-600 border-indigo-200 hover:bg-indigo-50"
-                                      onClick={() => router.push("/integrations/meta-capi")}
-                                    >
-                                      Manage CAPI Hub
-                                    </Button>
-                                  )}
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="flex-1 text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600"
-                                    onClick={() => {
-                                      const connected = connectedIntegrations.find(ci => ci.type === integration.id && ci.is_active);
-                                      if (connected) {
-                                        setWebhookToDelete(connected.id.toString());
-                                        setShowDeleteDialog(true);
-                                      }
-                                    }}
-                                  >
-                                    Deactivate
-                                  </Button>
-                                </div>
-                              )}
-                            <Button
-                              variant={
-                                connectedIntegrations.some(
-                                  (ci) => ci.type === integration.id && ci.is_active,
-                                )
-                                  ? "secondary"
-                                  : "default"
-                              }
-                              className="w-full"
-                              onClick={() => {
-                                const connectedIntegration = connectedIntegrations.find(
-                                  (ci) => ci.type === integration.id,
-                                );
-
-                                if (connectedIntegration) {
-                                  if (integration.id === "whatsapp") {
-                                    setWhatsappConfig({
-                                      phoneNumberId: connectedIntegration.config.phone_number_id || "",
-                                      wabaId: connectedIntegration.config.waba_id || "",
-                                      accessToken: connectedIntegration.config.access_token || "",
-                                      enableTemplates: connectedIntegration.config.enable_templates || false,
-                                    });
-                                  } else if (integration.id === "leadform") {
-                                    setFacebookConfig({
-                                      leadFormName: connectedIntegration.config.project_name || "",
-                                      pageId: connectedIntegration.config.page_id || "",
-                                      formId: connectedIntegration.config.form_id || "",
-                                      accessToken: connectedIntegration.config.access_token || "",
-                                      pixelId: connectedIntegration.config.pixel_id || "",
-                                      testEventCode: connectedIntegration.config.test_event_code || "",
-                                    });
-                                  } else if (integration.id === "facebook_conversion_api") {
-                                    setFacebookConversionApiConfig({
-                                      pixelId: connectedIntegration.config.pixel_id || "",
-                                      accessToken: connectedIntegration.config.access_token || "",
-                                      pageName: connectedIntegration.config.page_name || "",
-                                      testEventCode: connectedIntegration.config.test_event_code || "",
-                                    });
-                                  }
-                                }
-                                setSelectedIntegrationId(integration.id);
-                              }}
-                            >
-                              {connectedIntegrations.some(ci => ci.type === integration.id && ci.is_active) ? "Configure Settings" : "Connect Integration"}
-                            </Button>
-                          </CardFooter>
-                        </Card>
+                        <IntegrationCard
+                          key={integration.id}
+                          integration={integration}
+                          connectedIntegrations={connectedIntegrations}
+                          onAction={handleIntegrationAction}
+                          onDeactivate={handleDeactivateRequest}
+                        />
                       ))}
                   </div>
 
@@ -1104,90 +1005,75 @@ export default function IntegrationsPage() {
 
                   <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {/* Connect New Webhook Card */}
-                    <Card className="border-dashed border-2 flex flex-col items-center justify-center p-6 text-center hover:bg-muted/50 transition-colors cursor-pointer group" onClick={() => {
+                    <Card className="border-dashed border-2 flex items-center justify-center p-4 hover:bg-muted/50 transition-colors cursor-pointer group gap-3" onClick={() => {
                       setSelectedWebhookId(null);
                       setShowNewWebhookDialog(true);
                     }}>
-                      <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                        <Plus className="h-6 w-6 text-primary" />
+                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0">
+                        <Plus className="h-4 w-4 text-primary" />
                       </div>
-                      <h3 className="font-semibold text-lg">Add New Webhook</h3>
-                      <p className="text-sm text-muted-foreground mt-2">Connect another external source or automation tool.</p>
-                      <Button variant="outline" size="sm" className="mt-4">Connect Now</Button>
+                      <div className="flex-1">
+                        <h3 className="font-bold text-sm">Add New Webhook</h3>
+                        <p className="text-[11px] text-muted-foreground">Connect another source</p>
+                      </div>
                     </Card>
 
                     {webhooks.map((webhook) => (
-                      <Card key={webhook.id}>
-                        <CardHeader className="pb-3">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-2">
+                      <Card key={webhook.id} className="flex flex-col p-4 gap-3">
+                        <div className="flex justify-between items-start">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="p-2 rounded-xl bg-blue-500/10 shrink-0">
                               <Webhook className="h-5 w-5 text-blue-500" />
-                              <CardTitle>{webhook.name}</CardTitle>
                             </div>
-                            <Switch
-                              checked={webhook.isActive}
-                              onCheckedChange={() => toggleWebhook(webhook.id)}
-                            />
+                            <div className="min-w-0">
+                              <h3 className="text-sm font-bold leading-none truncate">{webhook.name}</h3>
+                              <p className="text-[11px] text-[var(--crm-text-secondary)] mt-1 truncate">
+                                {webhook.url || "No outgoing URL set"}
+                              </p>
+                            </div>
                           </div>
-                          <CardDescription className="mt-2 text-xs text-muted-foreground">
-                            {webhook.url || "No outgoing URL set"}
-                          </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-4">
-                            <div className="p-3 bg-muted/40 rounded-lg border border-transparent hover:border-border transition-all space-y-2">
-                              <p className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider">Receiver Endpoint</p>
-                              <div className="flex items-center gap-2">
-                                <code className="text-[10px] truncate flex-1 font-mono text-primary bg-primary/5 p-1 rounded">
-                                  {`.../webhooks/incoming/${(webhook as any).uuid}`}
-                                </code>
-                                <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => {
-                                  navigator.clipboard.writeText(`https://api.leadbajaar.com/api/webhooks/incoming/${(webhook as any).uuid}`);
-                                  toast.success("URL Copied!");
-                                }}>
-                                  <ClipboardCopy className="h-3 w-3" />
-                                </Button>
-                              </div>
-                            </div>
+                          <Switch
+                            checked={webhook.isActive}
+                            onCheckedChange={() => toggleWebhook(webhook.id)}
+                            className="scale-75 origin-right shrink-0"
+                          />
+                        </div>
 
-                            <div className="flex flex-wrap gap-1.5 pt-1">
-                              {webhook.events.slice(0, 3).map((event) => (
-                                <Badge key={event} variant="secondary" className="text-[10px] px-1.5 py-0">
-                                  {event}
-                                </Badge>
-                              ))}
-                              {webhook.events.length > 3 && (
-                                <Badge variant="outline" className="text-[10px] px-1.5 py-0">+{webhook.events.length - 3} more</Badge>
-                              )}
-                            </div>
-                          </div>
-                        </CardContent>
-                        <CardFooter className="flex justify-between pt-0">
+                        <div className="flex items-center gap-2 mt-2 pt-3 border-t border-[var(--crm-border)]">
                           <Button
                             variant="ghost"
-                            size="sm"
-                            className="text-red-500 hover:text-red-600 hover:bg-red-50 h-8"
+                            size="icon"
+                            className="h-7 w-7 text-red-500 hover:bg-red-500/10 hover:text-red-600 rounded-lg"
                             onClick={() => {
                               setWebhookToDelete(webhook.id);
                               setShowDeleteDialog(true);
                             }}
+                            title="Delete"
                           >
-                            <Trash2 className="h-3.5 w-3.5 mr-1.5" />
-                            Delete
+                            <Trash2 className="h-3.5 w-3.5" />
                           </Button>
+                          
+                          <div className="flex-1 flex justify-center">
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => {
+                              navigator.clipboard.writeText(`https://api.leadbajaar.com/api/webhooks/incoming/${(webhook as any).uuid}`);
+                              toast.success("URL Copied!");
+                            }} title="Copy URL">
+                              <ClipboardCopy className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                          
                           <Button
                             variant="outline"
                             size="sm"
-                            className="h-8 hover:bg-primary/5 hover:text-primary hover:border-primary/30"
+                            className="h-7 text-[11px] px-3 rounded-lg font-semibold"
                             onClick={() => {
                               setSelectedWebhookId(webhook.id);
                               setShowNewWebhookDialog(true);
                             }}
                           >
-                            <Settings className="h-3.5 w-3.5 mr-1.5" />
-                            Configure
+                            <Settings className="h-3 w-3 mr-1.5" /> Configure
                           </Button>
-                        </CardFooter>
+                        </div>
                       </Card>
                     ))}
                   </div>

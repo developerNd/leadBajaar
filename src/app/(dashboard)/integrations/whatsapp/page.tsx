@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Pencil, Plus, Trash2, MessageSquare, RefreshCcw, ChevronLeft, ChevronRight, AlertCircle, X, Loader2, CheckCircle2 } from 'lucide-react'
 import { useToast } from "@/hooks/use-toast"
 import { integrationApi, companyApi } from '@/lib/api'
+import { useRouter } from 'next/navigation'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
@@ -71,6 +72,7 @@ interface NewTemplate {
 
 export default function WhatsAppManagementPage() {
   const { toast } = useToast()
+  const router = useRouter()
   const [accounts, setAccounts] = useState<WhatsAppAccount[]>([])
   const [templates, setTemplates] = useState<MessageTemplate[]>([])
   const [selectedAccount, setSelectedAccount] = useState<WhatsAppAccount | null>(null)
@@ -717,7 +719,12 @@ export default function WhatsAppManagementPage() {
     <RoleGuard allowedRoles={['Super Admin', 'Admin']}>
       <div className="p-6 space-y-6 h-full overflow-y-auto">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">WhatsApp Management</h1>
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={() => router.back()}>
+            <ChevronLeft className="h-5 w-5" />
+          </Button>
+          <h1 className="text-2xl font-bold">WhatsApp Management</h1>
+        </div>
         <Button onClick={() => {
           resetTemplateForm();
           setShowNewTemplate(true);
@@ -728,9 +735,9 @@ export default function WhatsAppManagementPage() {
       </div>
 
       <Tabs defaultValue="accounts">
-        <TabsList className="bg-slate-100/50 dark:bg-slate-800/50 p-1 rounded-2xl w-full sm:w-auto h-auto grid grid-cols-2">
-          <TabsTrigger value="accounts" className="rounded-xl data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:shadow-sm py-3 text-sm font-bold transition-all">Accounts & Status</TabsTrigger>
-          <TabsTrigger value="templates" className="rounded-xl data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:shadow-sm py-3 text-sm font-bold transition-all">Message Templates</TabsTrigger>
+        <TabsList className="mb-4">
+          <TabsTrigger value="accounts">Accounts & Status</TabsTrigger>
+          <TabsTrigger value="templates">Message Templates</TabsTrigger>
         </TabsList>
 
         <TabsContent value="accounts">
