@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { LucideIcon, Trash2, Settings, Plus, Play } from "lucide-react";
+import { LucideIcon, Trash2, Settings, Plus, Play, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 interface Integration {
@@ -37,6 +37,7 @@ interface IntegrationCardProps {
   connectedIntegrations: ConnectedIntegration[];
   onAction: (integration: Integration) => void;
   onDeactivate: (integrationId: string) => void;
+  isConnecting?: boolean;
 }
 
 export function IntegrationCard({
@@ -44,6 +45,7 @@ export function IntegrationCard({
   connectedIntegrations,
   onAction,
   onDeactivate,
+  isConnecting = false,
 }: IntegrationCardProps) {
   const router = useRouter();
   const isConnected = connectedIntegrations.some(
@@ -135,8 +137,14 @@ export function IntegrationCard({
               size="sm"
               className="h-7 text-[11px] px-3 rounded-lg font-semibold"
               onClick={() => onAction(integration)}
+              disabled={isConnecting}
             >
-              <Plus className="h-3 w-3 mr-1.5" /> Connect
+              {isConnecting ? (
+                <Loader2 className="h-3 w-3 mr-1.5 animate-spin" />
+              ) : (
+                <Plus className="h-3 w-3 mr-1.5" />
+              )}
+              {isConnecting ? "Connecting..." : "Connect"}
             </Button>
           </>
         )}

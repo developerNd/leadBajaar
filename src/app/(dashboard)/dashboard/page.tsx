@@ -404,7 +404,7 @@ export default function DashboardPage() {
         {/* Minimize/Maximize Toggle - Highlighted Style */}
         <button
           onClick={() => setIsBannerMinimized(!isBannerMinimized)}
-          className="absolute top-4 right-4 z-20 p-2 rounded-full bg-white/80 backdrop-blur-sm border border-indigo-100 text-indigo-600 shadow-sm hover:shadow-md hover:scale-110 hover:bg-indigo-50 transition-all duration-200"
+          className="absolute top-4 right-4 z-20 p-2 rounded-full bg-[var(--crm-surface-2)] border border-[var(--crm-border)] text-[var(--crm-primary)] shadow-sm hover:shadow-md hover:scale-110 hover:bg-[var(--crm-surface-3)] transition-all duration-200"
           title={isBannerMinimized ? "Expand Dashboard Tool" : "Compact View"}
         >
           {isBannerMinimized ? (
@@ -416,7 +416,7 @@ export default function DashboardPage() {
 
         {/* --- Background SaaS Decorations --- */}
         {!isBannerMinimized && (
-          <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50/50 rounded-bl-full pointer-events-none" />
+          <div className="absolute top-0 right-0 w-64 h-64 bg-[var(--crm-primary)]/10 rounded-bl-full pointer-events-none" />
         )}
 
         {/* ── Left Content (Full or Minimized) ── */}
@@ -464,12 +464,12 @@ export default function DashboardPage() {
             >
               {isBannerMinimized ? (
                 <>
-                  LeadBajaar for <span className="text-blue-600">Mobile</span>
+                  LeadBajaar for <span className="text-[var(--crm-primary)]">Mobile</span>
                 </>
               ) : (
                 <>
                   Your entire CRM,{" "}
-                  <span className="text-blue-600 block sm:inline">
+                  <span className="text-[var(--crm-primary)] block sm:inline">
                     everywhere you go
                   </span>
                 </>
@@ -493,7 +493,7 @@ export default function DashboardPage() {
             <button
               onClick={() => setShowTesterModal(true)}
               className={cn(
-                "inline-flex items-center gap-3 bg-slate-900 text-white rounded-xl font-semibold transition-all shadow-md shadow-slate-200 hover:bg-slate-800 hover:-translate-y-0.5 active:scale-95 whitespace-nowrap",
+                "inline-flex items-center gap-3 bg-[var(--crm-primary)] text-white rounded-xl font-semibold transition-all shadow-md shadow-[var(--crm-primary)]/20 hover:bg-[var(--crm-primary)]/90 hover:-translate-y-0.5 active:scale-95 whitespace-nowrap",
                 isBannerMinimized
                   ? "px-4 py-2 text-xs sm:px-5 sm:py-2.5 sm:text-sm"
                   : "px-5 py-2.5 sm:px-6 sm:py-3.5 text-sm sm:text-base",
@@ -512,7 +512,7 @@ export default function DashboardPage() {
               href="/downloads/Leadbajaar.apk"
               download="Leadbajaar.apk"
               className={cn(
-                "inline-flex items-center gap-3 bg-white text-slate-700 rounded-xl font-semibold transition-all border border-slate-200 shadow-sm hover:bg-slate-50 hover:-translate-y-0.5 active:scale-95 whitespace-nowrap",
+                "inline-flex items-center gap-3 bg-[var(--crm-surface-2)] text-[var(--crm-text-primary)] rounded-xl font-semibold transition-all border border-[var(--crm-border)] shadow-sm hover:bg-[var(--crm-surface-3)] hover:-translate-y-0.5 active:scale-95 whitespace-nowrap",
                 isBannerMinimized
                   ? "px-4 py-2 text-xs sm:px-5 sm:py-2.5 sm:text-sm"
                   : "px-5 py-2.5 sm:px-6 sm:py-3.5 text-sm sm:text-base",
@@ -530,7 +530,7 @@ export default function DashboardPage() {
             <button
               onClick={() => setShowQRModal(true)}
               className={cn(
-                "inline-flex items-center gap-3 bg-white text-slate-700 rounded-xl font-semibold transition-all border border-slate-200 shadow-sm hover:bg-slate-50 hover:-translate-y-0.5 active:scale-95 whitespace-nowrap",
+                "inline-flex items-center gap-3 bg-[var(--crm-surface-2)] text-[var(--crm-text-primary)] rounded-xl font-semibold transition-all border border-[var(--crm-border)] shadow-sm hover:bg-[var(--crm-surface-3)] hover:-translate-y-0.5 active:scale-95 whitespace-nowrap",
                 isBannerMinimized
                   ? "px-4 py-2 text-xs sm:px-5 sm:py-2.5 sm:text-sm"
                   : "px-5 py-2.5 sm:px-6 sm:py-3.5 text-sm sm:text-base",

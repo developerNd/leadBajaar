@@ -258,6 +258,21 @@ const integrations: Integration[] = [
     ],
     allowMultiple: false,
   },
+  {
+    id: "lb_forms",
+    name: "LB Forms",
+    icon: ClipboardCopy,
+    category: "marketing",
+    color: "#8B5CF6",
+    description: "Create custom forms and capture leads directly into CRM.",
+    features: [
+      "Drag-and-drop Builder",
+      "Auto Lead Creation",
+      "Custom Redirection",
+      "Embeddable Forms"
+    ],
+    allowMultiple: false,
+  },
 ];
 
 const dummyLogs = [
@@ -313,7 +328,9 @@ export default function IntegrationsPage() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const [showTestEmailDialog, setShowTestEmailDialog] = useState(false);
-  const [testEmailAddress, setTestEmailAddress] = useState("");
+  const [testEmailAddress, setTestEmailAddress] = useState('');
+  const [connectingIntegrationId, setConnectingIntegrationId] = useState<string | null>(null);
+
   const [webhooks, setWebhooks] = useState<WebhookConfig[]>([
     {
       id: "1",
@@ -503,6 +520,7 @@ export default function IntegrationsPage() {
       toast.success("Integration deactivated successfully");
       setShowDeleteDialog(false);
       fetchConnectedIntegrations();
+      window.dispatchEvent(new Event('integrationsUpdated'));
     } catch (error: any) {
       handleError(error, { title: "Deletion Failed" });
     } finally {
@@ -736,7 +754,7 @@ export default function IntegrationsPage() {
   //   }
   // };
 
-  const handleIntegrationAction = (integration: Integration) => {
+  const handleIntegrationAction = async (integration: Integration) => {
     if (integration.id === "webhook") {
       setActiveTab("webhooks");
       return;
@@ -746,14 +764,40 @@ export default function IntegrationsPage() {
       (ci) => ci.type === integration.id,
     );
 
+    if (integration.id === "lb_forms") {
+      if (connectedIntegration) {
+        router.push("/lb-forms");
+        return;
+      }
+
+      try {
+        setConnectingIntegrationId("lb_forms");
+        setIsConnecting(true);
+        await integrationApi.saveIntegration({
+          type: "lb_forms",
+          config: { enabled: true },
+          isActive: true,
+          environment: "production",
+        });
+        toast.success("LB Forms enabled successfully!");
+        fetchConnectedIntegrations();
+        window.dispatchEvent(new Event('integrationsUpdated'));
+      } catch (error: any) {
+        handleError(error, { title: "Failed to enable LB Forms" });
+      } finally {
+        setIsConnecting(false);
+        setConnectingIntegrationId(null);
+      }
+      return;
+    }
+
     if (connectedIntegration) {
       if (integration.id === "whatsapp") {
-        setWhatsappConfig({
-          phoneNumberId: connectedIntegration.config.phone_number_id || "",
-          wabaId: connectedIntegration.config.waba_id || "",
-          accessToken: connectedIntegration.config.access_token || "",
-          enableTemplates: connectedIntegration.config.enable_templates || false,
-        });
+        router.push("/integrations/whatsapp");
+        return;
+      } else if (integration.id === "facebook_conversion_api") {
+        router.push("/integrations/meta-capi");
+        return;
       } else if (integration.id === "leadform") {
         setFacebookConfig({
           leadFormName: connectedIntegration.config.project_name || "",
@@ -761,13 +805,6 @@ export default function IntegrationsPage() {
           formId: connectedIntegration.config.form_id || "",
           accessToken: connectedIntegration.config.access_token || "",
           pixelId: connectedIntegration.config.pixel_id || "",
-          testEventCode: connectedIntegration.config.test_event_code || "",
-        });
-      } else if (integration.id === "facebook_conversion_api") {
-        setFacebookConversionApiConfig({
-          pixelId: connectedIntegration.config.pixel_id || "",
-          accessToken: connectedIntegration.config.access_token || "",
-          pageName: connectedIntegration.config.page_name || "",
           testEventCode: connectedIntegration.config.test_event_code || "",
         });
       } else if (integration.id === "email") {
@@ -973,6 +1010,7 @@ export default function IntegrationsPage() {
                           connectedIntegrations={connectedIntegrations}
                           onAction={handleIntegrationAction}
                           onDeactivate={handleDeactivateRequest}
+                          isConnecting={isConnecting && (selectedIntegrationId === integration.id || connectingIntegrationId === integration.id)}
                         />
                       ))}
                   </div>
@@ -1286,6 +1324,7 @@ export default function IntegrationsPage() {
                         connectedIntegrations={connectedIntegrations}
                         onAction={handleIntegrationAction}
                         onDeactivate={handleDeactivateRequest}
+                        isConnecting={isConnecting && (selectedIntegrationId === integration.id || connectingIntegrationId === integration.id)}
                       />
                     ))}
                 </div>

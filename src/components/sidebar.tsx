@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { cn } from '@/lib/utils'
 import { LogOut } from 'lucide-react'
-import { logout } from '@/lib/api'
+import { logout, integrationApi } from '@/lib/api'
 import { clearSession, setSession } from '@/lib/auth'
 import { useUser, UserRole, UserType } from '@/contexts/UserContext'
 
@@ -66,6 +66,7 @@ const sidebarSections: NavSection[] = [
   {
     label: 'Integrations',
     items: [
+      { name: 'LB Forms', href: '/lb-forms', iconClass: 'ti ti-file-description', roles: ['Super Admin', 'Admin', 'Manager'], types: ['agency', 'super_admin', 'individual'], feature: 'integrations' },
       { name: 'Integrations', href: '/integrations', iconClass: 'ti ti-puzzle', roles: ['Super Admin', 'Admin'], types: ['agency', 'super_admin', 'individual'], feature: 'integrations' },
       { name: 'WhatsApp Bot', href: '/whatsapp-bot', iconClass: 'ti ti-brand-whatsapp', roles: ['Super Admin', 'Admin'], types: ['agency', 'super_admin', 'individual'], feature: 'whatsapp_bot' },
     ],
@@ -90,9 +91,24 @@ export function Sidebar({ mobileOpen, setMobileOpen, isCollapsed = false, setIsC
   const pathname = usePathname()
   const { user, hasRole, hasType, hasPlan, hasFeature } = useUser()
   const [isAdminImpersonating, setIsAdminImpersonating] = useState(false)
+  const [lbFormsEnabled, setLbFormsEnabled] = useState(false)
 
   useEffect(() => {
     setIsAdminImpersonating(!!localStorage.getItem('admin_token'))
+    
+    const checkIntegrations = async () => {
+      try {
+        const integrations = await integrationApi.getConnectedIntegrations()
+        const hasLbForms = integrations.some((i: any) => i.type === 'lb_forms' && i.is_active)
+        setLbFormsEnabled(hasLbForms)
+      } catch (e) {
+        // ignore
+      }
+    }
+    
+    checkIntegrations()
+    window.addEventListener('integrationsUpdated', checkIntegrations)
+    return () => window.removeEventListener('integrationsUpdated', checkIntegrations)
   }, [])
 
   useEffect(() => {
@@ -120,6 +136,8 @@ export function Sidebar({ mobileOpen, setMobileOpen, isCollapsed = false, setIsC
   }
 
   const canSee = (item: NavItemDef) => {
+    if (item.name === 'LB Forms' && !lbFormsEnabled) return false
+    
     const roleMatch = hasRole(item.roles)
     const typeMatch = !item.types || hasType(item.types)
     const featureMatch = !item.feature || hasFeature(item.feature)
