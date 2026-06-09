@@ -170,6 +170,26 @@
   --crm-btn-primary-text: #ffffff;
   
   --crm-nav-active-icon: #111827;
+
+  /* ── BOOKING FLOW REDESIGN TOKENS ── */
+  --lb-navy:   #1e2d6b;
+  --lb-red:    #e84545;
+  --lb-bg:     #f0f2f8;
+  
+  --lb-s1: #ffffff;
+  --lb-s2: #f5f6fa;
+  --lb-s3: #eceef5;
+  
+  --lb-border:       rgba(30, 45, 107, 0.10);
+  --lb-border-hover: rgba(30, 45, 107, 0.18);
+  
+  --lb-t1: #111827;
+  --lb-t2: #4b5563;
+  --lb-t3: #9ca3af;
+  
+  --lb-green:      #16a34a;
+  --lb-green-soft: #dcfce7;
+  --lb-green-border: rgba(22, 163, 74, 0.2);
 }
 
 .dark {

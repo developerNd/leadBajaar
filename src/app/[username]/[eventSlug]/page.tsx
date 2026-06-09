@@ -109,6 +109,8 @@ export default function BookingPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const isEmbed = searchParams.get('embed') === 'true'
+  const username = params.username as string
+  const eventSlug = params.eventSlug as string
   const [step, setStep] = useState(1)
   const [answers, setAnswers] = useState<Record<string, any>>({})
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -133,7 +135,7 @@ export default function BookingPage() {
     const fetchEventType = async () => {
       try {
         const response = await fetch(
-          `${API_BASE_URL}/event-types/${params.eventTypeId}`,
+          `${API_BASE_URL}/event-types/${eventSlug}`,
           {
             headers: {
               'Content-Type': 'application/json',
@@ -186,10 +188,10 @@ export default function BookingPage() {
       }
     };
 
-    if (params.eventTypeId) {
+    if (username && eventSlug) {
       fetchEventType();
     }
-  }, [params.eventTypeId]);
+  }, [username, eventSlug]);
 
   useEffect(() => {
     // Fetch available time slots when date is selected
@@ -226,7 +228,7 @@ export default function BookingPage() {
       });
       
       const response = await fetch(
-        `${API_BASE_URL}/event-types/${params.eventTypeId}/availability?${queryParams.toString()}`,
+        `${API_BASE_URL}/event-types/${eventType?.id}/availability?${queryParams.toString()}`,
         {
           headers: {
             'Content-Type': 'application/json',
@@ -438,7 +440,7 @@ export default function BookingPage() {
     
     try {
       const bookingData = {
-        eventTypeId: params.eventTypeId,
+        eventTypeId: eventType?.id,
         date: format(selectedDate!, 'yyyy-MM-dd'),
         time: format(new Date(selectedTime!), 'HH:mm:ss'),
         duration: eventType?.duration,
@@ -498,7 +500,7 @@ export default function BookingPage() {
         message: error instanceof Error ? error.message : 'Failed to create booking'
       });
     } finally {
-      setIsSubmitting(false);
+      setIsSubmitting(false)
     }
   }
 
@@ -588,7 +590,7 @@ export default function BookingPage() {
             </div>
           </div>
         </CardContent>
-      </Card>
+        </Card>
       </div>
     </div>
   );
@@ -643,8 +645,6 @@ export default function BookingPage() {
                   </div>
                 </div>
               )}
-
-              {/* Powered by Badge moved to bottom of container */}
             </div>
 
             {/* Right Section - Calendar & Questions */}

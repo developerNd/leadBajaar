@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import {
   Clock, Video, MapPin, Phone, Users,
   Link as LinkIcon, Plus, Calendar, Copy, ExternalLink,
-  ChevronRight, MoreHorizontal, Globe2, Trash2, Edit2,
+  ChevronRight, MoreHorizontal, Globe2, Trash2, Edit2, Share2,
   CalendarCheck, ArrowRight, Zap, X, AlertCircle, Loader2, ArrowLeft
 } from 'lucide-react'
 import Link from 'next/link'
@@ -33,6 +33,7 @@ import { eventTypeService } from '@/services/event-types'
 import { EventType } from '@/types/events'
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from '@/lib/utils'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 const locationIcons = {
   video: { icon: Video, label: 'Video Call', color: 'text-indigo-600', bg: 'bg-indigo-50 dark:bg-indigo-900/20' },
@@ -74,14 +75,26 @@ export default function EventTypesPage() {
     loadEventTypes()
   }, [])
 
+  const getBookingUrl = (eventType: EventType) => {
+    // If owner name exists, format it nicely, otherwise use developernd as default
+    // @ts-ignore - owner might not be strongly typed here
+    const username = eventType.owner?.name?.toLowerCase().replace(/\s+/g, '-') || 'developernd';
+    const identifier = eventType.slug || eventType.id;
+    return `${window.location.origin}/${username}/${identifier}`;
+  };
+
   const copyBookingLink = (eventType: EventType) => {
-    const bookingLink = `${window.location.origin}/book/${eventType.id}`
+    const bookingLink = getBookingUrl(eventType);
     navigator.clipboard.writeText(bookingLink)
     toast.success("Booking link copied to clipboard")
   }
 
   const openPreview = (eventType: EventType) => {
-    window.open(`/book/${eventType.id}`, '_blank')
+    // We can just use the absolute URL for window.open
+    const url = getBookingUrl(eventType);
+    // Convert to relative path for window.open so we don't have issues with base URL 
+    const relativePath = url.replace(window.location.origin, '');
+    window.open(relativePath, '_blank')
   }
 
   const deleteEventType = async () => {
@@ -240,11 +253,11 @@ export default function EventTypesPage() {
 
                     <div className="mt-4 pt-3 border-t border-[var(--crm-border)] flex items-center justify-between relative z-10">
                       <button
-                        onClick={() => copyBookingLink(eventType)}
+                        onClick={() => { setSelectedEventType(eventType); setShowShareDialog(true); }}
                         className="text-xs font-semibold text-[var(--crm-primary)] flex items-center gap-1.5 hover:underline"
                       >
-                        <Copy className="h-3.5 w-3.5" />
-                        Copy text link
+                        <Share2 className="h-3.5 w-3.5" />
+                        Share / Embed
                       </button>
 
                       <Link href={`/meetings/event-types/${eventType.id}`}>
@@ -279,58 +292,105 @@ export default function EventTypesPage() {
       </div>
 
       <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
-        <DialogContent className="max-w-md bg-[var(--crm-surface-1)] border-[var(--crm-border)] p-8 rounded-3xl shadow-2xl">
-          <DialogHeader className="text-center">
-            <div className="h-16 w-16 rounded-2xl bg-[var(--crm-surface-3)] flex items-center justify-center mx-auto mb-4 border border-[var(--crm-border)] shadow-sm">
-              <Globe2 className="h-8 w-8 text-[var(--crm-primary)]" />
+        <DialogContent className="sm:max-w-xl w-full bg-[var(--crm-surface-1)] border-[var(--crm-border)] p-6 sm:p-8 rounded-[24px] shadow-2xl">
+          <DialogHeader className="text-left space-y-3">
+            <div className="h-12 w-12 rounded-2xl bg-[var(--crm-surface-2)] flex items-center justify-center border border-[var(--crm-border)] shadow-sm">
+              <Share2 className="h-5 w-5 text-[var(--crm-primary)]" />
             </div>
-            <DialogTitle className="text-2xl font-bold text-[var(--crm-text-primary)]">Share Booking Link</DialogTitle>
-            <DialogDescription className="text-[var(--crm-text-secondary)] mt-2">
-              Send this link to clients or colleagues to let them see your availability and book a slot instantly.
-            </DialogDescription>
+            <div>
+              <DialogTitle className="text-xl sm:text-2xl font-bold text-[var(--crm-text-primary)]">Share Booking Link</DialogTitle>
+              <DialogDescription className="text-sm text-[var(--crm-text-secondary)] mt-1.5">
+                Send this link to clients or colleagues to let them see your availability and book a slot instantly.
+              </DialogDescription>
+            </div>
           </DialogHeader>
 
           {selectedEventType && (
-            <div className="mt-8 space-y-6">
-              <div className="relative group">
-                <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
-                  <LinkIcon className="h-4 w-4 text-[var(--crm-text-tertiary)] group-focus-within:text-[var(--crm-primary)] transition-colors" />
+            <Tabs defaultValue="link" className="mt-8">
+              <TabsList className="grid w-full grid-cols-2 mb-6">
+                <TabsTrigger value="link">Share Link</TabsTrigger>
+                <TabsTrigger value="embed">Embed Code</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="link" className="space-y-6">
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                    <LinkIcon className="h-4 w-4 text-[var(--crm-text-tertiary)] group-focus-within:text-[var(--crm-primary)] transition-colors" />
+                  </div>
+                  <div className="w-full text-sm font-medium bg-[var(--crm-surface-2)] border border-[var(--crm-border)] rounded-2xl p-4 pl-11 pr-24 text-[var(--crm-text-primary)] break-all">
+                    {getBookingUrl(selectedEventType)}
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      const bookingLink = getBookingUrl(selectedEventType);
+                      navigator.clipboard.writeText(bookingLink)
+                      toast.success("Link copied to clipboard.")
+                    }}
+                    className="absolute right-2 top-2 h-10 px-4 bg-[var(--crm-surface-1)] shadow-sm border border-[var(--crm-border)] rounded-xl hover:bg-[var(--crm-surface-3)] text-[var(--crm-text-primary)]"
+                  >
+                    <Copy className="h-4 w-4 mr-2" />
+                    Copy
+                  </Button>
                 </div>
-                <div className="w-full text-sm font-medium bg-[var(--crm-surface-2)] border border-[var(--crm-border)] rounded-2xl p-4 pl-11 pr-24 text-[var(--crm-text-primary)] break-all">
-                  {`${window.location.origin}/book/${selectedEventType.id}`}
-                </div>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => {
-                    const bookingLink = `${window.location.origin}/book/${selectedEventType.id}`
-                    navigator.clipboard.writeText(bookingLink)
-                    toast.success("Link copied to clipboard.")
-                  }}
-                  className="absolute right-2 top-2 h-10 px-4 bg-[var(--crm-surface-1)] shadow-sm border border-[var(--crm-border)] rounded-xl hover:bg-[var(--crm-surface-3)] text-[var(--crm-text-primary)]"
-                >
-                  <Copy className="h-4 w-4 mr-2" />
-                  Copy
-                </Button>
-              </div>
 
-              <div className="flex gap-3">
-                <Button
-                  className="flex-1 bg-[var(--crm-primary)] hover:opacity-90 text-white rounded-2xl h-12 font-bold shadow-sm"
-                  onClick={() => openPreview(selectedEventType)}
-                >
-                  <ExternalLink className="mr-2 h-4 w-4" />
-                  Preview Booking Page
-                </Button>
-                <Button
-                  variant="outline"
-                  className="h-12 w-12 rounded-2xl p-0 border-[var(--crm-border)] bg-[var(--crm-surface-2)]"
-                  onClick={() => setShowShareDialog(false)}
-                >
-                  <X className="h-5 w-5 text-[var(--crm-text-secondary)]" />
-                </Button>
-              </div>
-            </div>
+                <div className="flex gap-3">
+                  <Button
+                    className="flex-1 bg-[var(--crm-primary)] hover:opacity-90 text-white rounded-2xl h-12 font-bold shadow-sm"
+                    onClick={() => openPreview(selectedEventType)}
+                  >
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    Preview Booking Page
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="h-12 w-12 rounded-2xl p-0 border-[var(--crm-border)] bg-[var(--crm-surface-2)]"
+                    onClick={() => setShowShareDialog(false)}
+                  >
+                    <X className="h-5 w-5 text-[var(--crm-text-secondary)]" />
+                  </Button>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="embed" className="space-y-6 mt-0">
+                <div className="relative group rounded-2xl overflow-hidden border border-[var(--crm-border)]">
+                  <div className="w-full bg-[var(--crm-surface-2)] p-5 text-[var(--crm-text-primary)] font-mono text-[11px] overflow-x-auto whitespace-pre-wrap leading-relaxed break-words">
+                    {`<div style="width: 100%; display: flex; justify-content: center;">
+  <iframe 
+    src="${getBookingUrl(selectedEventType)}?embed=true"
+    width="100%"
+    height="600"
+    style="max-width: 820px; 
+           min-height: 600px; 
+           border: none; 
+           background: transparent;"
+    loading="lazy"
+    title="LeadBajaar Booking Calendar"
+  ></iframe>
+</div>`}
+                  </div>
+                  <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        const embedCode = `<div style="width: 100%; display: flex; justify-content: center;">\n  <iframe \n    src="${getBookingUrl(selectedEventType)}?embed=true" \n    width="100%" \n    height="600" \n    style="max-width: 820px; min-height: 600px; border: none; background: transparent;" \n    loading="lazy"\n    title="LeadBajaar Booking Calendar"\n  ></iframe>\n</div>`
+                        navigator.clipboard.writeText(embedCode)
+                        toast.success("Embed code copied to clipboard.")
+                      }}
+                      className="h-8 px-3 bg-white shadow-sm border border-[var(--crm-border)] rounded-lg hover:bg-[var(--crm-surface-3)] text-[var(--crm-text-primary)]"
+                    >
+                      <Copy className="h-3.5 w-3.5 mr-1.5" />
+                      Copy Code
+                    </Button>
+                  </div>
+                </div>
+                <div className="text-sm text-[var(--crm-text-secondary)] text-center pb-2">
+                  Copy and paste this HTML snippet into your website to embed the calendar directly onto your page.
+                </div>
+              </TabsContent>
+            </Tabs>
           )}
         </DialogContent>
       </Dialog>
