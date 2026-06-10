@@ -134,6 +134,14 @@ export default function WhatsAppManagementPage() {
     whatsapp_meeting_template_id: ''
   })
   const [isSavingSettings, setIsSavingSettings] = useState(false)
+  const [showSetupModal, setShowSetupModal] = useState(false)
+  const [setupConfig, setSetupConfig] = useState({
+    phoneNumberId: "",
+    wabaId: "",
+    accessToken: "",
+    enableTemplates: true,
+  })
+  const [isConfiguring, setIsConfiguring] = useState(false)
 
   // Reset template form to initial state
   const resetTemplateForm = () => {
@@ -206,6 +214,12 @@ export default function WhatsAppManagementPage() {
         setTemplates(response.accounts[0].templates || [])
         setSelectedAccount(response.accounts[0])
         
+        // If there's an account but no phone_number, it means it's a shell integration.
+        const unconfigured = response.accounts.find((a: any) => !a.phone_number);
+        if (unconfigured) {
+          // We no longer show the modal automatically. The inline view will handle it.
+        }
+
         // Check if any account needs token update
         for (const account of response.accounts) {
           try {
@@ -235,6 +249,41 @@ export default function WhatsAppManagementPage() {
       setIsLoading(false)
     }
   }
+
+  const handleSaveSetup = async () => {
+    if (!setupConfig.phoneNumberId || !setupConfig.wabaId || !setupConfig.accessToken) {
+      toast({
+        title: "Validation Error",
+        description: "All fields (Phone Number ID, WhatsApp Business Account ID, and System User Access Token) are required.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsConfiguring(true);
+      const unconfigured = accounts.find((a: any) => !a.phone_number);
+      if (!unconfigured) return;
+      await integrationApi.updateIntegration(unconfigured.id.toString(), {
+        type: "whatsapp",
+        config: {
+          phoneNumberId: setupConfig.phoneNumberId,
+          wabaId: setupConfig.wabaId,
+          accessToken: setupConfig.accessToken,
+          enableTemplates: setupConfig.enableTemplates
+        },
+        isActive: true,
+        environment: "production"
+      });
+      toast({ title: "Setup completed successfully!" });
+      setShowSetupModal(false);
+      fetchAccounts();
+    } catch (err: any) {
+      toast({ title: "Setup failed", description: err.message, variant: "destructive" });
+    } finally {
+      setIsConfiguring(false);
+    }
+  };
 
   const fetchWelcomeSettings = async () => {
     try {
@@ -728,12 +777,57 @@ export default function WhatsAppManagementPage() {
         <Button onClick={() => {
           resetTemplateForm();
           setShowNewTemplate(true);
-        }}>
+        }} disabled={accounts.length === 0 || accounts.some(a => !a.phone_number)}>
           <Plus className="h-4 w-4 mr-2" />
           New Template
         </Button>
       </div>
 
+      {(accounts.length === 0 || accounts.some(a => !a.phone_number)) ? (
+        <Card className="max-w-2xl mx-auto mt-8">
+          <CardHeader>
+            <CardTitle>Complete WhatsApp Setup</CardTitle>
+            <CardDescription>
+              Enter your Meta API credentials to connect WhatsApp.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Phone Number ID</Label>
+                <Input
+                  placeholder="123456789012345"
+                  value={setupConfig.phoneNumberId}
+                  onChange={(e) => setSetupConfig({ ...setupConfig, phoneNumberId: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>WhatsApp Business Account ID</Label>
+                <Input
+                  placeholder="123456789012345"
+                  value={setupConfig.wabaId}
+                  onChange={(e) => setSetupConfig({ ...setupConfig, wabaId: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>System User Access Token</Label>
+                <Input
+                  type="password"
+                  placeholder="EAA..."
+                  value={setupConfig.accessToken}
+                  onChange={(e) => setSetupConfig({ ...setupConfig, accessToken: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end">
+               <Button onClick={handleSaveSetup} disabled={isConfiguring || !setupConfig.phoneNumberId || !setupConfig.wabaId || !setupConfig.accessToken}>
+                 {isConfiguring ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                 Save Configuration
+               </Button>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
       <Tabs defaultValue="accounts">
         <TabsList className="mb-4">
           <TabsTrigger value="accounts">Accounts & Status</TabsTrigger>
@@ -918,6 +1012,7 @@ export default function WhatsAppManagementPage() {
           </Card>
         </TabsContent>
       </Tabs>
+      )}
 
              {/* Enhanced Template Creation Modal with Preview */}
       <Dialog open={showNewTemplate} onOpenChange={setShowNewTemplate}>

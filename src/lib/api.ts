@@ -4,8 +4,8 @@ import { parseError } from '@/utils/errorParser';
 import { logger } from '@/utils/logger';
 
 // const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
-// export const API_BASE_URL = 'https://api.leadbajaar.com/api'
-export const API_BASE_URL = 'http://localhost:8000/api'
+export const API_BASE_URL = 'https://api.leadbajaar.com/api'
+// export const API_BASE_URL = 'http://localhost:8000/api'
 // export const WHATSAPP_BASE_URL = 'http://localhost:3000/api'
 export const WHATSAPP_BASE_URL = 'https://wp.leadbajaar.com/api'
 
@@ -77,7 +77,7 @@ api.interceptors.response.use(
     // Only log to console/logger if it's a server error or unexpected crash
     // 422 (Validation), 401 (Auth), and 402 (Payment) are handled by the UI
     if (!parsedError.status || parsedError.status >= 500) {
-      logger.error("API Error", error);
+      logger.error("API Error", error, { hideConsole: true });
     }
 
     // Global session handling (401)

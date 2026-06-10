@@ -18,6 +18,7 @@ type NavItemDef = {
   types?: UserType[]
   plans?: string[]
   feature?: string
+  exact?: boolean
 }
 
 type NavSection = {
@@ -56,7 +57,7 @@ const sidebarSections: NavSection[] = [
   {
     label: 'Platform Control',
     items: [
-      { name: 'Admin', href: '/admin', iconClass: 'ti ti-shield', roles: ['Super Admin'], types: ['super_admin'], feature: 'system_admin' },
+      { name: 'Admin', href: '/admin', iconClass: 'ti ti-shield', roles: ['Super Admin'], types: ['super_admin'], feature: 'system_admin', exact: true },
       { name: 'Emails', href: '/admin/emails', iconClass: 'ti ti-mail', roles: ['Super Admin'], types: ['super_admin'], feature: 'email_logs' },
       { name: 'Error Logs', href: '/admin/errors', iconClass: 'ti ti-activity', roles: ['Super Admin'], types: ['super_admin'], feature: 'error_logs' },
       { name: 'Finance', href: '/admin/finance/dashboard', iconClass: 'ti ti-currency-dollar', roles: ['Super Admin'], types: ['super_admin'], feature: 'finance_module' },
@@ -67,7 +68,13 @@ const sidebarSections: NavSection[] = [
     label: 'Integrations',
     items: [
       { name: 'LB Forms', href: '/lb-forms', iconClass: 'ti ti-file-description', roles: ['Super Admin', 'Admin', 'Manager'], types: ['agency', 'super_admin', 'individual'], feature: 'integrations' },
-      { name: 'Integrations', href: '/integrations', iconClass: 'ti ti-puzzle', roles: ['Super Admin', 'Admin'], types: ['agency', 'super_admin', 'individual'], feature: 'integrations' },
+      { name: 'WhatsApp Cloud API', href: '/integrations/whatsapp', iconClass: 'ti ti-brand-whatsapp', roles: ['Super Admin', 'Admin', 'Manager'], types: ['agency', 'super_admin', 'individual'], feature: 'integrations' },
+      { name: 'Facebook Lead Forms', href: '/integrations/facebook-lead-forms', iconClass: 'ti ti-brand-facebook', roles: ['Super Admin', 'Admin', 'Manager'], types: ['agency', 'super_admin', 'individual'], feature: 'integrations' },
+      { name: 'Meta Conversion API', href: '/integrations/meta-capi', iconClass: 'ti ti-brand-meta', roles: ['Super Admin', 'Admin', 'Manager'], types: ['agency', 'super_admin', 'individual'], feature: 'integrations' },
+      { name: 'Webhooks', href: '/integrations/webhooks', iconClass: 'ti ti-webhook', roles: ['Super Admin', 'Admin', 'Manager'], types: ['agency', 'super_admin', 'individual'], feature: 'integrations' },
+      { name: 'Email Marketing', href: '/integrations/email-marketing', iconClass: 'ti ti-mail', roles: ['Super Admin', 'Admin', 'Manager'], types: ['agency', 'super_admin', 'individual'], feature: 'integrations' },
+      { name: 'Facebook Auth', href: '/integrations/facebook-auth', iconClass: 'ti ti-brand-facebook', roles: ['Super Admin', 'Admin', 'Manager'], types: ['agency', 'super_admin', 'individual'], feature: 'integrations' },
+      { name: 'Integrations', href: '/integrations', iconClass: 'ti ti-puzzle', roles: ['Super Admin', 'Admin'], types: ['agency', 'super_admin', 'individual'], feature: 'integrations', exact: true },
       { name: 'WhatsApp Bot', href: '/whatsapp-bot', iconClass: 'ti ti-brand-whatsapp', roles: ['Super Admin', 'Admin'], types: ['agency', 'super_admin', 'individual'], feature: 'whatsapp_bot' },
     ],
   },
@@ -92,6 +99,12 @@ export function Sidebar({ mobileOpen, setMobileOpen, isCollapsed = false, setIsC
   const { user, hasRole, hasType, hasPlan, hasFeature } = useUser()
   const [isAdminImpersonating, setIsAdminImpersonating] = useState(false)
   const [lbFormsEnabled, setLbFormsEnabled] = useState(false)
+  const [whatsappEnabled, setWhatsappEnabled] = useState(false)
+  const [leadFormsEnabled, setLeadFormsEnabled] = useState(false)
+  const [metaCapiEnabled, setMetaCapiEnabled] = useState(false)
+  const [webhooksEnabled, setWebhooksEnabled] = useState(false)
+  const [emailEnabled, setEmailEnabled] = useState(false)
+  const [fbAuthEnabled, setFbAuthEnabled] = useState(false)
 
   useEffect(() => {
     setIsAdminImpersonating(!!localStorage.getItem('admin_token'))
@@ -99,8 +112,15 @@ export function Sidebar({ mobileOpen, setMobileOpen, isCollapsed = false, setIsC
     const checkIntegrations = async () => {
       try {
         const integrations = await integrationApi.getConnectedIntegrations()
-        const hasLbForms = integrations.some((i: any) => i.type === 'lb_forms' && i.is_active)
-        setLbFormsEnabled(hasLbForms)
+        
+        setLbFormsEnabled(integrations.some((i: any) => i.type === 'lb_forms' && i.is_active))
+        setWhatsappEnabled(integrations.some((i: any) => i.type === 'whatsapp' && i.is_active))
+        setLeadFormsEnabled(integrations.some((i: any) => i.type === 'leadform' && i.is_active))
+        setMetaCapiEnabled(integrations.some((i: any) => i.type === 'facebook_conversion_api' && i.is_active))
+        setWebhooksEnabled(integrations.some((i: any) => i.type === 'webhook' && i.is_active))
+        setEmailEnabled(integrations.some((i: any) => i.type === 'email' && i.is_active))
+        // Note: facebook_auth might have a different type in DB, checking for 'facebook_auth'
+        setFbAuthEnabled(integrations.some((i: any) => i.type === 'facebook_auth' && i.is_active))
       } catch (e) {
         // ignore
       }
@@ -137,6 +157,12 @@ export function Sidebar({ mobileOpen, setMobileOpen, isCollapsed = false, setIsC
 
   const canSee = (item: NavItemDef) => {
     if (item.name === 'LB Forms' && !lbFormsEnabled) return false
+    if (item.name === 'WhatsApp Cloud API' && !whatsappEnabled) return false
+    if (item.name === 'Facebook Lead Forms' && !leadFormsEnabled) return false
+    if (item.name === 'Meta Conversion API' && !metaCapiEnabled) return false
+    if (item.name === 'Webhooks' && !webhooksEnabled) return false
+    if (item.name === 'Email Marketing' && !emailEnabled) return false
+    if (item.name === 'Facebook Auth' && !fbAuthEnabled) return false
     
     const roleMatch = hasRole(item.roles)
     const typeMatch = !item.types || hasType(item.types)
@@ -206,7 +232,7 @@ export function Sidebar({ mobileOpen, setMobileOpen, isCollapsed = false, setIsC
 
           <div className="px-2 space-y-0.5">
             {visibleMain.map(item => {
-              const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
+              const isActive = item.exact ? pathname === item.href : (pathname === item.href || pathname.startsWith(`${item.href}/`))
               return (
                 <Link
                   key={item.href}
@@ -231,7 +257,7 @@ export function Sidebar({ mobileOpen, setMobileOpen, isCollapsed = false, setIsC
             <div key={section.label} className="mt-4 px-2 space-y-0.5 border-t border-[var(--crm-border)] pt-2">
               {!isCollapsed && <div className="section-label px-1.5 pb-1 truncate">{section.label}</div>}
               {section.items.map(item => {
-                const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
+                const isActive = item.exact ? pathname === item.href : (pathname === item.href || pathname.startsWith(`${item.href}/`))
                 return (
                   <Link
                     key={item.href}

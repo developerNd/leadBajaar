@@ -78,9 +78,7 @@ import { api, integrationApi, IntegrationConfig } from "@/lib/api";
 import { useErrorHandler } from "@/utils/useErrorHandler";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/contexts/UserContext";
-import { FacebookOAuthButton } from "@/components/facebook-oauth/FacebookOAuthButton";
-import { FacebookServicesManager } from "@/components/facebook-oauth/FacebookServicesManager";
-import { FacebookDashboard } from "@/components/facebook-oauth/FacebookDashboard";
+
 import { FacebookConversionApiManager } from "@/components/meta-capi/FacebookConversionApiManager";
 import { LeadConversionTracker } from "@/components/meta-capi/LeadConversionTracker";
 import { ConversionApiTester } from "@/components/meta-capi/ConversionApiTester";
@@ -244,6 +242,16 @@ const integrations: Integration[] = [
     allowMultiple: true,
   },
   {
+    id: "facebook_auth",
+    name: "Facebook Auth",
+    icon: Facebook,
+    category: "marketing",
+    color: "#1877F2",
+    description: "Connect Facebook accounts to manage pages and services.",
+    features: ["OAuth Connection", "Page Management", "Service Sync"],
+    allowMultiple: false,
+  },
+  {
     id: "email",
     name: "Email Marketing",
     icon: Mail,
@@ -330,6 +338,7 @@ export default function IntegrationsPage() {
   const [showTestEmailDialog, setShowTestEmailDialog] = useState(false);
   const [testEmailAddress, setTestEmailAddress] = useState('');
   const [connectingIntegrationId, setConnectingIntegrationId] = useState<string | null>(null);
+  const [integrationToConfirm, setIntegrationToConfirm] = useState<Integration | null>(null);
 
   const [webhooks, setWebhooks] = useState<WebhookConfig[]>([
     {
@@ -755,41 +764,10 @@ export default function IntegrationsPage() {
   // };
 
   const handleIntegrationAction = async (integration: Integration) => {
-    if (integration.id === "webhook") {
-      setActiveTab("webhooks");
-      return;
-    }
 
     const connectedIntegration = connectedIntegrations.find(
-      (ci) => ci.type === integration.id,
+      (ci) => ci.type === integration.id && ci.is_active,
     );
-
-    if (integration.id === "lb_forms") {
-      if (connectedIntegration) {
-        router.push("/lb-forms");
-        return;
-      }
-
-      try {
-        setConnectingIntegrationId("lb_forms");
-        setIsConnecting(true);
-        await integrationApi.saveIntegration({
-          type: "lb_forms",
-          config: { enabled: true },
-          isActive: true,
-          environment: "production",
-        });
-        toast.success("LB Forms enabled successfully!");
-        fetchConnectedIntegrations();
-        window.dispatchEvent(new Event('integrationsUpdated'));
-      } catch (error: any) {
-        handleError(error, { title: "Failed to enable LB Forms" });
-      } finally {
-        setIsConnecting(false);
-        setConnectingIntegrationId(null);
-      }
-      return;
-    }
 
     if (connectedIntegration) {
       if (integration.id === "whatsapp") {
@@ -799,25 +777,68 @@ export default function IntegrationsPage() {
         router.push("/integrations/meta-capi");
         return;
       } else if (integration.id === "leadform") {
-        setFacebookConfig({
-          leadFormName: connectedIntegration.config.project_name || "",
-          pageId: connectedIntegration.config.page_id || "",
-          formId: connectedIntegration.config.form_id || "",
-          accessToken: connectedIntegration.config.access_token || "",
-          pixelId: connectedIntegration.config.pixel_id || "",
-          testEventCode: connectedIntegration.config.test_event_code || "",
-        });
+        router.push("/integrations/facebook-lead-forms");
+        return;
       } else if (integration.id === "email") {
-        setEmailConfig({
-          id: connectedIntegration.id,
-          provider: connectedIntegration.config.provider || "ses",
-          from_name: connectedIntegration.config.from_name || "",
-          from_email: connectedIntegration.config.from_email || "",
-          credentials: connectedIntegration.config.credentials || {},
-        });
+        router.push("/integrations/email-marketing");
+        return;
+      } else if (integration.id === "webhook") {
+        router.push("/integrations/webhooks");
+        return;
+      } else if (integration.id === "facebook_auth") {
+        router.push("/integrations/facebook-auth");
+        return;
+      } else if (integration.id === "lb_forms") {
+        router.push("/lb-forms");
+        return;
       }
     }
-    setSelectedIntegrationId(integration.id);
+    
+    // Not connected: Ask for confirmation
+    setIntegrationToConfirm(integration);
+  };
+
+  const handleConfirmConnect = async () => {
+    if (!integrationToConfirm) return;
+    
+    setIsConnecting(true);
+    setConnectingIntegrationId(integrationToConfirm.id);
+    
+    try {
+      await integrationApi.saveIntegration({
+        type: integrationToConfirm.id,
+        config: {},
+        isActive: true,
+        environment: "production",
+      });
+      
+      toast.success(`${integrationToConfirm.name} enabled successfully!`);
+      fetchConnectedIntegrations();
+      window.dispatchEvent(new Event('integrationsUpdated'));
+      
+      // Route to page
+      const routeMap: Record<string, string> = {
+        whatsapp: "/integrations/whatsapp",
+        facebook_conversion_api: "/integrations/meta-capi",
+        leadform: "/integrations/facebook-lead-forms",
+        email: "/integrations/email-marketing",
+        webhook: "/integrations/webhooks",
+        facebook_auth: "/integrations/facebook-auth",
+        lb_forms: "/lb-forms"
+      };
+      
+      const route = routeMap[integrationToConfirm.id];
+      if (route) {
+        router.push(route);
+      }
+      
+    } catch (error: any) {
+      handleError(error, { title: `Failed to connect ${integrationToConfirm.name}` });
+    } finally {
+      setIsConnecting(false);
+      setConnectingIntegrationId(null);
+      setIntegrationToConfirm(null);
+    }
   };
 
   const handleDeactivateRequest = (integrationId: string) => {
@@ -964,7 +985,6 @@ export default function IntegrationsPage() {
           <div className="w-full overflow-x-auto no-scrollbar mb-4">
             <TabsList className="inline-flex w-auto min-w-full">
               <TabsTrigger value="all">All</TabsTrigger>
-              <TabsTrigger value="facebook">Facebook OAuth</TabsTrigger>
               <TabsTrigger value="marketing">Marketing</TabsTrigger>
               <TabsTrigger value="messaging">Messaging</TabsTrigger>
               <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
@@ -973,32 +993,13 @@ export default function IntegrationsPage() {
           </div>
           {[
             "all",
-            "facebook",
             "marketing",
             "messaging",
             "webhooks",
             "settings",
           ].map((category) => (
             <TabsContent key={category} value={category}>
-              {category === "facebook" ? (
-                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <div className="w-full space-y-8">
-                    <FacebookOAuthButton
-                      onConnect={() => {
-                        // Force a re-fetch of the dashboard data
-                        const dashTitle = document.querySelector(
-                          "h2.text-3xl.font-extrabold",
-                        );
-                        if (dashTitle) {
-                          // Small hack to trigger refresh or just reload the part
-                          window.location.reload();
-                        }
-                      }}
-                    />
-                    <FacebookDashboard />
-                  </div>
-                </div>
-              ) : category === "marketing" ? (
+              {category === "marketing" ? (
                 <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                   <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {integrations
@@ -1427,6 +1428,26 @@ export default function IntegrationsPage() {
           description="Are you sure you want to deactivate this integration? This action can be undone later by re-connecting from the integrations gallery."
           confirmText="Confirm Deactivation"
         />
+
+      <Dialog open={!!integrationToConfirm} onOpenChange={(open) => !open && setIntegrationToConfirm(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Connect Integration</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to connect {integrationToConfirm?.name}?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4">
+            <Button variant="ghost" onClick={() => setIntegrationToConfirm(null)} disabled={isConnecting}>
+              Cancel
+            </Button>
+            <Button onClick={handleConfirmConnect} disabled={isConnecting} className="bg-indigo-600 hover:bg-indigo-700">
+              {isConnecting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+              Yes, Connect
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       </div>
     </RoleGuard>
   );
