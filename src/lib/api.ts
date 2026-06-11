@@ -4,8 +4,8 @@ import { parseError } from '@/utils/errorParser';
 import { logger } from '@/utils/logger';
 
 // const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
-export const API_BASE_URL = 'https://api.leadbajaar.com/api'
-// export const API_BASE_URL = 'http://localhost:8000/api'
+// export const API_BASE_URL = 'https://api.leadbajaar.com/api'
+export const API_BASE_URL = 'http://localhost:8000/api'
 // export const WHATSAPP_BASE_URL = 'http://localhost:3000/api'
 export const WHATSAPP_BASE_URL = 'https://wp.leadbajaar.com/api'
 
@@ -1302,6 +1302,25 @@ export const integrationApi = {
       return response.data;
     } catch (error: any) {
       throw new Error(formatMetaErrorMessage(error, 'Failed to update Meta form status'));
+    }
+  },
+
+  // Fix 14: Track form endpoints
+  trackMetaForm: async (pageId: string, formId: string, formName?: string, pageName?: string) => {
+    try {
+      const response = await api.post(`/meta/pages/${pageId}/forms/track`, { form_id: formId, form_name: formName, page_name: pageName });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(formatMetaErrorMessage(error, 'Failed to track form'));
+    }
+  },
+
+  getMetaTrackedForms: async (pageId: string) => {
+    try {
+      const response = await api.get(`/meta/pages/${pageId}/forms/tracked`);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(formatMetaErrorMessage(error, 'Failed to load tracked forms'));
     }
   },
 

@@ -137,6 +137,8 @@ export function FacebookDashboard() {
   const [pages, setPages] = useState<FacebookPage[]>([])
   const [selectedPage, setSelectedPage] = useState<FacebookPage | null>(null)
   const [forms, setForms] = useState<LeadForm[]>([])
+  // Fix 14: State for tracked forms
+  const [trackedForms, setTrackedForms] = useState<any[]>([])
   const [adAccounts, setAdAccounts] = useState<any[]>([])
   const [selectedAdAccount, setSelectedAdAccount] = useState<any | null>(null)
   const [campaigns, setCampaigns] = useState<any[]>([])
@@ -599,6 +601,7 @@ export function FacebookDashboard() {
       setIsSubscribed(false)
       setIsLoadingForms(true)
       setForms([])
+      setTrackedForms([])
       setFormsError(null)
 
       const response = await integrationApi.getMetaPageForms(page.id)
@@ -610,11 +613,40 @@ export function FacebookDashboard() {
           description: response.error || "Could not load forms for this page.",
         })
       }
+
+      // Fix 14: Load tracked forms for the selected page
+      try {
+        const trackedResponse = await integrationApi.getMetaTrackedForms(page.id)
+        if (trackedResponse.status === 'success') {
+          setTrackedForms(trackedResponse.forms || [])
+        }
+      } catch (err) {
+        console.error("Could not load tracked forms", err)
+      }
+
     } catch (error: any) {
       const errorMessage = error.response?.data?.error || error.message || "Failed to load lead forms for this page"
       setFormsError(errorMessage)
     } finally {
       setIsLoadingForms(false)
+    }
+  }
+
+  // Fix 14: Toggle form tracking
+  const handleTrackFormToggle = async (form: LeadForm, checked: boolean) => {
+    if (!selectedPage) return;
+    try {
+      if (checked) {
+        await integrationApi.trackMetaForm(selectedPage.id, form.id, form.name, selectedPage.name);
+        setTrackedForms(prev => [...prev, { form_id: form.id }]);
+        toast.success("Form Tracked", { description: "We will now save leads from this form." });
+      } else {
+        // Optimistically remove from tracked list for UI (even though we don't have an untrack API yet, we just stop checking it)
+        setTrackedForms(prev => prev.filter(tf => tf.form_id !== form.id));
+        toast.info("Form Untracked", { description: "You unchecked this form. Future leads may still sync if it was previously tracked." });
+      }
+    } catch (err: any) {
+      toast.error("Failed to track form", { description: err.message });
     }
   }
 
@@ -1516,15 +1548,23 @@ export function FacebookDashboard() {
                         {forms.map((form) => (
                           <div key={form.id} className="group flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800">
                             <div className="flex items-center space-x-4">
-                              <div className="h-10 w-10 bg-white dark:bg-slate-700 rounded-lg shadow-sm flex items-center justify-center text-blue-500">
+                              <div className="h-10 w-10 bg-white dark:bg-slate-700 rounded-lg shadow-sm flex items-center justify-center text-blue-500 shrink-0">
                                 <FileText className="h-5 w-5" />
                               </div>
-                              <div>
-                                <p className="font-bold">{form.name}</p>
-                                <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono">ID: {form.id}</p>
+                              <div className="flex-1">
+                                <div className="flex items-center space-x-2">
+                                  {/* Fix 14: Form tracking checkbox */}
+                                  <Checkbox 
+                                    id={`track-form-${form.id}`}
+                                    checked={trackedForms.some(tf => tf.form_id === form.id)}
+                                    onCheckedChange={(checked) => handleTrackFormToggle(form, !!checked)}
+                                  />
+                                  <label htmlFor={`track-form-${form.id}`} className="font-bold cursor-pointer">{form.name}</label>
+                                </div>
+                                <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono mt-1 ml-6">ID: {form.id}</p>
                               </div>
                             </div>
-                            <div className="flex items-center space-x-2">
+                            <div className="flex items-center space-x-2 shrink-0">
                               <Badge variant={form.status === 'ACTIVE' ? 'default' : 'secondary'} className={form.status === 'ACTIVE' ? 'bg-green-500' : ''}>
                                 {form.status}
                               </Badge>

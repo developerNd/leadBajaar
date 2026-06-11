@@ -400,6 +400,14 @@ export default function IntegrationsPage() {
   const [isListeningForWebhook, setIsListeningForWebhook] = useState(false);
   const [availablePayloadFields, setAvailablePayloadFields] = useState<{ key: string; value: any }[]>([]);
 
+  // Fix 10: Meta connection status for reconnect banner
+  const [metaConnectionStatus, setMetaConnectionStatus] = useState<{
+    connected: boolean;
+    needs_reconnect?: boolean;
+    status?: string;
+  } | null>(null);
+  const [isReconnecting, setIsReconnecting] = useState(false);
+
   const [emailConfig, setEmailConfig] = useState<any>({
     provider: 'ses',
     from_name: '',
@@ -442,6 +450,8 @@ export default function IntegrationsPage() {
 
     fetchEmailConfig();
     fetchConnectedIntegrations();
+    // Fix 10: Check Meta connection status for reconnect banner
+    fetchMetaStatus();
   }, []);
 
   const fetchConnectedIntegrations = async () => {
@@ -980,9 +990,50 @@ export default function IntegrationsPage() {
     }
   };
 
+  const fetchMetaStatus = async () => {
+    try {
+      const res = await (integrationApi as any).get('/meta/status');
+      setMetaConnectionStatus(res.data ?? res);
+    } catch (e) {
+      // Silently fail — don't block page load if status check fails
+    }
+  };
+
+  const handleReconnectMeta = async () => {
+    setIsReconnecting(true);
+    try {
+      const res = await (integrationApi as any).get('/meta/connect');
+      const authUrl = res?.data?.auth_url ?? res?.auth_url;
+      if (authUrl) window.location.href = authUrl;
+    } catch (e) {
+      toast.error('Could not start Facebook reconnection. Please try again.');
+    } finally {
+      setIsReconnecting(false);
+    }
+  };
+
   return (
     <RoleGuard allowedRoles={['Super Admin', 'Admin']} allowedPlans={['pro', 'enterprise']}>
       <div className="w-full h-full overflow-y-auto p-6 pt-2">
+        {/* Fix 10: Meta reconnect banner — appears when token is expired or connection lost */}
+        {metaConnectionStatus && metaConnectionStatus.connected === false &&
+          metaConnectionStatus.status !== 'deletion_pending' && (
+          <div className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-orange-400/40 bg-orange-500/10 px-4 py-3 text-sm">
+            <div className="flex items-center gap-2 text-orange-300">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <span>
+                <strong>Your Facebook connection has expired.</strong> Reconnect to continue receiving leads and ad data.
+              </span>
+            </div>
+            <button
+              onClick={handleReconnectMeta}
+              disabled={isReconnecting}
+              className="shrink-0 rounded-md bg-orange-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-orange-600 disabled:opacity-50 transition-colors"
+            >
+              {isReconnecting ? 'Connecting...' : 'Reconnect'}
+            </button>
+          </div>
+        )}
         {/* Google Workspace Account Card */}
         <div className="mb-6">
           <GoogleAccountCard />

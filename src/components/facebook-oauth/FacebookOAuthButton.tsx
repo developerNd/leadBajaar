@@ -129,21 +129,43 @@ export function FacebookOAuthButton({ onConnect, className }: FacebookOAuthButto
         throw new Error('Popup blocked. Please allow popups for this site.')
       }
 
-      // Listen for popup completion
-      const checkClosed = setInterval(() => {
-        if (popup.closed) {
-          clearInterval(checkClosed)
+      // Listen for the postMessage signal from the popup page
+      const handleMessage = (event: MessageEvent) => {
+        // Only accept messages from our own origin
+        if (event.origin !== window.location.origin) return;
+
+        if (event.data?.type === 'META_OAUTH_SUCCESS') {
+          window.removeEventListener('message', handleMessage)
+          clearInterval(fallbackCheck)
           setIsConnecting(false)
-
-          // Reload connected services
           loadConnectedServices()
-
           toast({
             title: "Facebook Connected",
             description: "Your Facebook services have been connected successfully!",
           })
-
           onConnect?.(connectedServices)
+        } else if (event.data?.type === 'META_OAUTH_ERROR') {
+          window.removeEventListener('message', handleMessage)
+          clearInterval(fallbackCheck)
+          setIsConnecting(false)
+          toast({
+            title: "Connection Failed",
+            description: event.data.message || "Meta OAuth failed. Please try again.",
+            variant: "destructive",
+          })
+        }
+      }
+
+      window.addEventListener('message', handleMessage)
+
+      // Fallback: if popup is closed without sending a message (user closed it manually)
+      const fallbackCheck = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(fallbackCheck)
+          window.removeEventListener('message', handleMessage)
+          setIsConnecting(false)
+          // Silently reload in case auth succeeded but postMessage wasn't sent
+          loadConnectedServices()
         }
       }, 1000)
 
