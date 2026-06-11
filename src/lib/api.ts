@@ -2056,3 +2056,36 @@ export const financeApi = {
   getGstReport: (month: number, year: number) =>
     api.get(`/super-admin/finance/reports/gst/${month}/${year}`).then(r => r.data),
 };
+
+// Google Integration API
+export const googleIntegrationApi = {
+  getStatus: async () => {
+    try {
+      const response = await api.get('/google/status');
+      return response.data;
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Failed to fetch Google status';
+      throw new Error(message);
+    }
+  },
+
+  disconnect: async () => {
+    try {
+      const response = await api.delete('/google/disconnect');
+      return response.data;
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Failed to disconnect Google account';
+      throw new Error(message);
+    }
+  },
+
+  getConnectUrl: async (scope?: string) => {
+    try {
+      const response = await api.get('/google/connect', { params: { scope } });
+      return response.data.url;
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Failed to get connection URL';
+      throw new Error(message);
+    }
+  }
+};

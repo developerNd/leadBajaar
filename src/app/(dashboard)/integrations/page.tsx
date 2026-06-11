@@ -88,6 +88,7 @@ import { TestEmailDialog } from "@/components/integrations/TestEmailDialog";
 import { UnifiedIntegrationDialog } from "@/components/integrations/UnifiedIntegrationDialog";
 import { IntegrationCard } from "@/components/integrations/IntegrationCard";
 import { DeleteConfirmationModal } from "@/components/shared/DeleteConfirmationModal";
+import { GoogleAccountCard } from "@/components/integrations/GoogleAccountCard";
 
 interface WebhookConfig {
   id: string;
@@ -981,7 +982,12 @@ export default function IntegrationsPage() {
 
   return (
     <RoleGuard allowedRoles={['Super Admin', 'Admin']} allowedPlans={['pro', 'enterprise']}>
-      <div className="w-full h-full overflow-y-auto p-6 pt-2">        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+      <div className="w-full h-full overflow-y-auto p-6 pt-2">
+        {/* Google Workspace Account Card */}
+        <div className="mb-6">
+          <GoogleAccountCard />
+        </div>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <div className="w-full overflow-x-auto no-scrollbar mb-4">
             <TabsList className="inline-flex w-auto min-w-full">
               <TabsTrigger value="all">All</TabsTrigger>
