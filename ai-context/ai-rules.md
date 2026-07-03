@@ -38,3 +38,9 @@ Feature names, slugs, and groupings must come from the actual repo, in this prio
 - Frontmatter + tight markdown body. Tables and bullets over paragraphs — this is written for AI agents to parse quickly, not for human leisure reading.
 - Cross-link with relative markdown links between docs in this folder.
 - Keep each doc file scoped to one feature/page/component-group/api-group/flow — don't merge unrelated things into one file to save effort.
+
+## 6. Context packs (`context-packs/`)
+
+- Context packs are a derived layer — built from `manifest.json`, `feature-map.md`, `dependency-map.md`, and feature frontmatter, not from a fresh source read. Regenerate a pack by re-deriving from those, not by re-reading `src/`.
+- Every pack's `## Manual Notes` section is append-only — never delete or overwrite existing text there when regenerating. It's the one place human/agent judgment calls survive a regeneration.
+- See [context-packs/index.md](context-packs/index.md) for the full pack-specific incremental-update rules (adding/removing/moving a feature between packs) and the reasoning behind the current 7-system grouping.

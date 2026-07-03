@@ -1,10 +1,13 @@
-Repository: LeadBajaar Frontend
-Purpose: Customer-facing CRM frontend
-Depends on:
-- leadbajaar-backend
-- evolution service
-
-Exports:
-- REST API calls
-- Authentication UI
-- Dashboard UI
+name: leadbajaar-frontend
+type: nextjs-frontend
+depends_on:
+  - leadbajaar-backend
+  - evolution-service
+exports:
+  - dashboard-ui
+  - crm-ui
+  - booking-ui
+consumes:
+  - rest-api
+  - websocket
+  - webhooks

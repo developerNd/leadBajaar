@@ -5,7 +5,9 @@ generatedAt: 2026-07-04
 
 # ai-context/ — LeadBajaar Frontend AI Context
 
-Start here. This folder is generated documentation for AI coding agents working in `f:/LeadBajar/leadbajaar1.0`, a Next.js 15 (App Router, TypeScript) multi-tenant CRM/lead-management frontend. It was produced by reading the actual routes, components, contexts, and API layer — not hand-maintained, and not a copy of marketing feature lists.
+This folder is generated documentation for AI coding agents working in `f:/LeadBajar/leadbajaar1.0`, a Next.js 15 (App Router, TypeScript) multi-tenant CRM/lead-management frontend. It was produced by reading the actual routes, components, contexts, and API layer — not hand-maintained, and not a copy of marketing feature lists.
+
+**Actual start here**: [bootstrap.md](bootstrap.md) — the step-by-step workflow for what to read, in what order, before touching any code. This file (`index.md`) is the folder map; `bootstrap.md` is the entry-point procedure. Read `bootstrap.md` first.
 
 ## How this folder is organized
 
@@ -18,18 +20,21 @@ Start here. This folder is generated documentation for AI coding agents working 
 | [`flows/`](flows/) | End-to-end, cross-feature user/system flows |
 | [`state/`](state/) | React Context providers (`UserContext`, `ErrorContext`, `WhatsAppContext`) |
 | [`hooks/`](hooks/) | Custom hooks in `src/hooks/` |
-| [`context-packs/`](context-packs/) | Reserved for future curated bundles of docs for specific tasks — empty for now |
+| [`context-packs/`](context-packs/) | One file per system (7 total) — a "load this before you touch that system" bundle grouping related features with a system-level architecture diagram |
 
 Every file in `features/`, `pages/`, `components/`, `api/`, `flows/`, and `state/` starts with YAML frontmatter (`type`, `slug`/`route`/`group`, `status`, etc.). That's deliberate — an agent (or a script) can rebuild [`manifest.json`](manifest.json) by scanning frontmatter instead of re-reading the whole app.
 
 ## Where to go first, by task
 
+- **"I'm starting a task in this repo and don't know what to read"** → [bootstrap.md](bootstrap.md) — do this one first, always.
 - **"What does feature X do / can user Y see it?"** → [feature-map.md](feature-map.md) for the human overview, or the specific `features/<slug>.md`.
 - **"What renders at route /foo?"** → `pages/<route-slug>.md`.
 - **"What does this component do?"** → `components/<group>.md` (grouped by `src/components/<dir>`).
 - **"What API calls exist for X, and what backend endpoint do they hit?"** → `api/<group>.md`.
 - **"How does X actually work end-to-end?"** → `flows/<flow>.md`.
 - **Machine-readable lookup / scripting** → [manifest.json](manifest.json).
+- **"What calls what?" (page→API, component→service, feature→feature, context→feature, external services)** → [dependency-map.md](dependency-map.md).
+- **"I need to modify a whole subsystem, not just one feature — what do I need to know first?"** → [context-packs/index.md](context-packs/index.md), then the specific `context-packs/<system>.md`.
 - **Known bugs/gotchas found while writing these docs** → bottom of [feature-map.md](feature-map.md) and `manifest.json`'s `knownIssues`.
 - **Keeping this folder in sync as the app changes** → [ai-rules.md](ai-rules.md).
 

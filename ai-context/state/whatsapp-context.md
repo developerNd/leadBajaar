@@ -2,7 +2,7 @@
 type: state
 group: whatsapp-context
 directory: src/contexts
-usedByFeatures: [live_chat]
+usedByFeatures: [whatsapp_bot]
 ---
 # State: WhatsAppContext
 
@@ -25,7 +25,7 @@ Actions:
 - `deleteFlow(flowId)` — `DELETE {WHATSAPP_BASE_URL}/chatbot/flows/{flowId}`, gated by `confirm()`
 
 ## Who consumes it
-Not consumed by any file read in this cluster (`/live-chat`, `/evolution/inbox` use `evolutionApi`/direct `api.ts` calls instead, not `WhatsAppContext`). Based on naming (sessions, ghost/historical sessions, chatbot flows, "shred session"), this context backs the **WhatsApp chatbot flow-builder / session-management screens** (likely `/evolution/chatbot` or a legacy non-Evolution WhatsApp bot dashboard) — that surface is a different cluster's territory; documented here only because the file was in this cluster's assigned read list.
+Not consumed by any file in the Leads/Live Chat cluster (`/live-chat`, `/evolution/inbox` use `evolutionApi`/direct `api.ts` calls instead, not `WhatsAppContext`). **Confirmed by the Chatbot/WhatsApp Bot cluster**: this context backs the `/whatsapp-bot` feature (session management, live chat, contact groups, and broadcast campaigns) — see [features/whatsapp_bot.md](../features/whatsapp_bot.md). It is unrelated to the `/chatbot` and `/evolution/chatbot` React-Flow builders, which talk to the Laravel API instead.
 
 ## Gotchas
 - Uses a plain `axios` import directly, bypassing `src/lib/api.ts`'s `api` instance — no bearer-token interceptor, no global 401 handling, no shared base URL. Any change to auth conventions in `api.ts` will **not** propagate here.
