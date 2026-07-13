@@ -58,7 +58,7 @@
     },
     {
       "slug": "dashboard",
-      "name": "Dashboard (Company Overview)",
+      "name": "Dashboard (Honest Home)",
       "status": "active",
       "roles": [
         "Super Admin",
@@ -74,7 +74,10 @@
       "doc": "features/dashboard.md",
       "documentation": "complete",
       "tests": "partial",
-      "knownIssues": []
+      "knownIssues": [
+        "No backend endpoint exposes automation enrollment health (paused/failed counts) — Today Strip's third slot is an honest placeholder, not a fabricated number.",
+        "\"Meetings today\" is computed by fetching up to 50 upcoming bookings and filtering client-side by date — no backend date-range filter exists for this yet."
+      ]
     },
     {
       "slug": "account_settings",

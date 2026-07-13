@@ -19,10 +19,10 @@ relatedDocs:
 Central gallery (`/integrations`) for connecting third-party marketing/messaging services to a company's LeadBajaar workspace. Each `Integration` catalog entry (`whatsapp`, `evolution`, `leadform`, `facebook_conversion_api`, `webhook`, `facebook_auth`, `email`, `lb_forms`) is backed by a row in the generic `integrations` table (`type`, `config` JSON, `is_active`, `webhook_url`, `webhook_secret`). The hub page renders a card grid (`IntegrationCard`) filtered by tab (`all` / `marketing` / `messaging` / `webhooks` / `settings`), lets the user connect/deactivate/configure each integration, and deep-links to a dedicated sub-page once connected. Sub-capabilities documented separately:
 - **WhatsApp Cloud API connect** — `/integrations/whatsapp` (Meta-hosted WABA, phone-number-based)
 - **WhatsApp (Evolution) connect** — `/integrations/evolution` (QR-code personal-number bridge)
-- **Facebook Lead Forms** — `/integrations/facebook-lead-forms` (manual page/form ID + webhook lead capture)
+- **Facebook Lead Forms** — `/integrations/facebook-lead-forms` (manual page/form ID + webhook lead capture; also hosts the **"HubSpot Routing Only"** mode — lightweight `leadform` rows with just a name + Page ID that act as the page-id → tenant registry the backend uses to route enriched HubSpot webhook leads to the right workspace)
 - **Facebook Auth (OAuth)** — `/integrations/facebook-auth` (full Meta Business Manager asset sync: pages, ad accounts, campaigns, pixels)
 - **Meta Conversions API (CAPI)** — `/integrations/meta-capi` (server-side event tracking dashboard)
-- **Webhooks** — `/integrations/webhooks` (generic incoming receiver + outgoing dispatcher)
+- **Webhooks** — `/integrations/webhooks` (generic incoming receiver + outgoing dispatcher; includes the **HubSpot integration**: a "Data Enrichment (HubSpot)" toggle so inbound HubSpot contact webhooks — which only carry an `objectId` — get enriched server-side via the HubSpot CRM API before field mapping, with enriched values mapped from `enrichment.properties.*` paths)
 - **Email Marketing** — `/integrations/email-marketing` (SES / SMTP / Mailgun sender config)
 - **LB Forms** is cataloged here as an integration card but is documented as its own feature — see [lb_forms.md](./lb_forms.md).
 - **Google Workspace** card (`GoogleAccountCard`, rendered at the top of the hub) is a **different cluster's** feature (Calendar/Gmail/Contacts OAuth) — cross-referenced only, not documented here.

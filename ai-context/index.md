@@ -15,12 +15,13 @@ This folder is generated documentation for AI coding agents working in `f:/LeadB
 |---|---|
 | [`features/`](features/) | One file per product feature (e.g. `leads.md`, `chatbot.md`) — what it does, who can access it, which pages/components/API/flows implement it |
 | [`pages/`](pages/) | One file per route (or per closely related route group) — purpose, components used, API calls, notable behavior |
-| [`components/`](components/) | One file per `src/components/<group>` directory — purpose of each component file |
+| [`components/`](components/) | One file per `src/components/<group>` directory — purpose of each component file (includes [`components/state.md`](components/state.md), the reusable loading/empty/error state system) |
 | [`api/`](api/) | One file per logical group of API functions (mostly `src/lib/api.ts` export groups, plus dedicated service files) — endpoint tables |
 | [`flows/`](flows/) | End-to-end, cross-feature user/system flows |
 | [`state/`](state/) | React Context providers (`UserContext`, `ErrorContext`, `WhatsAppContext`) |
 | [`hooks/`](hooks/) | Custom hooks in `src/hooks/` |
 | [`context-packs/`](context-packs/) | One file per system (7 total) — a "load this before you touch that system" bundle grouping related features with a system-level architecture diagram |
+| [`design/`](design/) | Design-system reference — CSS custom properties (`globals.css`) and Tailwind theme extensions (`tailwind.config.ts`), what each token means and whether it's actually consumed by any component yet |
 
 Every file in `features/`, `pages/`, `components/`, `api/`, `flows/`, and `state/` starts with YAML frontmatter (`type`, `slug`/`route`/`group`, `status`, etc.). That's deliberate — an agent (or a script) can rebuild [`manifest.json`](manifest.json) by scanning frontmatter instead of re-reading the whole app.
 
@@ -35,6 +36,7 @@ Every file in `features/`, `pages/`, `components/`, `api/`, `flows/`, and `state
 - **Machine-readable lookup / scripting** → [manifest.json](manifest.json).
 - **"What calls what?" (page→API, component→service, feature→feature, context→feature, external services)** → [dependency-map.md](dependency-map.md).
 - **"I need to modify a whole subsystem, not just one feature — what do I need to know first?"** → [context-packs/index.md](context-packs/index.md), then the specific `context-packs/<system>.md`.
+- **"What color/spacing/shadow token should I use, and does it already exist?"** → [design/tokens.md](design/tokens.md).
 - **Known bugs/gotchas found while writing these docs** → bottom of [feature-map.md](feature-map.md) and `manifest.json`'s `knownIssues`.
 - **Keeping this folder in sync as the app changes** → [ai-rules.md](ai-rules.md).
 
