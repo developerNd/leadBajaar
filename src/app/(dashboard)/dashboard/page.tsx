@@ -185,8 +185,6 @@ export default function DashboardPage() {
   return (
     <div className="flex flex-col gap-3 px-0 pb-3 pt-2 overflow-x-hidden">
 
-      {/* ── Account Info Banner ───────────────────────────── */}
-      {user && <AccountInfoBanner user={user} />}
       {/* ── Stale / refresh-failed banner ────────────────── */}
       {isStale && data && (
         <div
@@ -231,15 +229,15 @@ export default function DashboardPage() {
         >
               <StatGrid isLoading={false} stats={data.stats} />
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-                <PipelineCard pipeline={data.pipeline} />
-                <ActivityCard activity={data.recent_activity} />
-              </div>
-
-              {/* ── Bottom row: Promo (left) + Account (right) — side-by-side on desktop ── */}
+              {/* ── Promo (left) + Account (right) — side-by-side on desktop ── */}
               <div className="grid grid-cols-1 lg:grid-cols-[55fr_45fr] gap-3">
                 <PlayStorePromo onScanQR={() => setShowQRModal(true)} />
                 {user && <AccountCard user={user} />}
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                <PipelineCard pipeline={data.pipeline} />
+                <ActivityCard activity={data.recent_activity} />
               </div>
         </div>
       )}
@@ -338,6 +336,37 @@ function AccountCard({ user }: { user: any }) {
         .toUpperCase()
     : "?";
 
+  // ── Plan / validity logic (was in AccountInfoBanner) ──
+  const plan = user?.company?.plan;
+  const expiresAt = user?.company?.expires_at;
+
+  let daysLeft: number | null = null;
+  let validityLabel = "";
+  let urgency: "ok" | "warn" | "critical" = "ok";
+
+  if (expiresAt) {
+    try {
+      daysLeft = differenceInDays(parseISO(expiresAt), new Date());
+      if (daysLeft <= 0) {
+        validityLabel = "Expired";
+        urgency = "critical";
+      } else if (daysLeft <= 7) {
+        validityLabel = `${daysLeft}d left`;
+        urgency = "critical";
+      } else if (daysLeft <= 30) {
+        validityLabel = `${daysLeft}d left`;
+        urgency = "warn";
+      } else {
+        validityLabel = `Till ${format(parseISO(expiresAt), "dd MMM yyyy")}`;
+        urgency = "ok";
+      }
+    } catch {
+      validityLabel = "";
+    }
+  }
+
+  const isExpired = daysLeft !== null && daysLeft <= 0;
+
   const rows = [
     { key: "email",   icon: Mail,      text: user.email },
     { key: "phone",   icon: Phone,     text: user.phone || "Not provided" },
@@ -350,9 +379,45 @@ function AccountCard({ user }: { user: any }) {
   ];
 
   return (
-    <div className="rounded-[var(--r-lg)] border border-[var(--crm-border)] bg-[var(--crm-surface-1)] shadow-card">
-      <div className="px-4 py-2.5 border-b border-[var(--crm-border)]">
-        <h2 className="text-[13px] font-semibold text-[var(--crm-text-primary)]">Account</h2>
+    <div className={cn(
+      "rounded-[var(--r-lg)] border bg-[var(--crm-surface-1)] shadow-card transition-colors",
+      urgency === "critical"
+        ? "border-[var(--crm-red-border)]"
+        : "border-[var(--crm-border)]"
+    )}>
+      {/* Header: title + plan pill + validity + renew */}
+      <div className={cn(
+        "px-4 py-2.5 border-b flex flex-wrap items-center gap-2",
+        urgency === "critical"
+          ? "border-[var(--crm-red-border)] bg-[var(--crm-red-soft)]"
+          : "border-[var(--crm-border)]"
+      )}>
+        <h2 className="text-[13px] font-semibold text-[var(--crm-text-primary)] mr-auto">Account</h2>
+        {plan && (
+          <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border border-primary/20 bg-primary/10 text-primary capitalize">
+            <Zap className="h-2.5 w-2.5" />{plan} Plan
+          </span>
+        )}
+        {validityLabel && (
+          <span className={cn(
+            "text-[12px] font-semibold px-2 py-0.5 rounded-full",
+            urgency === "critical" && "bg-[var(--crm-red)] text-white",
+            urgency === "warn"     && "bg-[var(--crm-amber-soft)] text-[var(--crm-amber)]",
+            urgency === "ok"       && "bg-[var(--crm-green-soft)] text-[var(--crm-green)]"
+          )}>
+            {urgency === "critical" ? "⚠ " : urgency === "warn" ? "▷ " : "✓ "}{validityLabel}
+          </span>
+        )}
+        {urgency === "critical" && (
+          <Button
+            size="sm"
+            onClick={() => { window.location.href = "/settings?tab=billing"; }}
+            className={cn("h-6 px-2 rounded-[var(--r-md)] text-[11px] font-bold shadow-sm", CORAL_CTA)}
+          >
+            <CreditCard className="h-3 w-3 mr-1" />
+            {isExpired ? "Renew" : "Renew Now"}
+          </Button>
+        )}
       </div>
       <div className="p-3.5 space-y-3">
         {/* Avatar + name row */}
@@ -386,7 +451,7 @@ function AccountCard({ user }: { user: any }) {
   );
 }
 
-// ── Account Info Banner (top of dashboard) ─────────────────
+// ── Mobile App Promo card ───────────────────────────────────
 function PlayStorePromo({ onScanQR }: { onScanQR: () => void }) {
   return (
     <DismissibleCard
@@ -424,97 +489,5 @@ function PlayStorePromo({ onScanQR }: { onScanQR: () => void }) {
         </div>
       </div>
     </DismissibleCard>
-  );
-}
-
-function AccountInfoBanner({ user }: { user: any }) {
-  const initials = user?.name
-    ? user.name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
-    : "?";
-
-  const plan = user?.company?.plan;
-  const expiresAt = user?.company?.expires_at;
-  const companyName = user?.company?.name || user?.company_name;
-
-  let daysLeft: number | null = null;
-  let validityLabel = "";
-  let urgency: "ok" | "warn" | "critical" = "ok";
-
-  if (expiresAt) {
-    try {
-      daysLeft = differenceInDays(parseISO(expiresAt), new Date());
-      if (daysLeft <= 0) {
-        validityLabel = "Expired";
-        urgency = "critical";
-      } else if (daysLeft <= 7) {
-        validityLabel = `${daysLeft}d left`;
-        urgency = "critical";
-      } else if (daysLeft <= 30) {
-        validityLabel = `${daysLeft}d left`;
-        urgency = "warn";
-      } else {
-        validityLabel = `Valid till ${format(parseISO(expiresAt), "dd MMM yyyy")}`;
-        urgency = "ok";
-      }
-    } catch {
-      validityLabel = "";
-    }
-  }
-
-  const isExpired = daysLeft !== null && daysLeft <= 0;
-
-  return (
-    <div className={cn(
-      "flex flex-wrap items-center gap-3 rounded-[var(--r-lg)] border shadow-card px-4 py-2 transition-colors",
-      urgency === "critical"
-        ? "border-[var(--crm-red-border)] bg-[var(--crm-red-soft)]"
-        : "border-[var(--crm-border)] bg-[var(--crm-surface-1)]"
-    )}>
-      {/* Avatar */}
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[var(--crm-accent)] to-[#3a4d99] text-white text-[12px] font-bold select-none shadow-[0_4px_10px_-2px_rgba(30,45,107,0.35)]">
-        {initials}
-      </div>
-
-      {/* Name + role */}
-      <div className="min-w-0 flex-1">
-        <p className="text-[13px] font-semibold text-[var(--crm-text-primary)] truncate leading-tight">
-          {user.name}
-        </p>
-        <p className="text-[11px] text-[var(--crm-text-secondary)] truncate leading-tight">
-          {user.role}{companyName ? ` · ${companyName}` : ""}
-        </p>
-      </div>
-
-      {/* Plan + validity pills */}
-      <div className="hidden sm:flex items-center gap-2 shrink-0">
-        {plan && (
-          <span className="flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full border border-primary/20 bg-primary/10 text-primary capitalize">
-            <Zap className="h-3 w-3" />{plan} Plan
-          </span>
-        )}
-        {validityLabel && (
-          <span className={cn(
-            "text-[11px] font-semibold px-2.5 py-1 rounded-full",
-            urgency === "critical" && "bg-[var(--crm-red)] text-white",
-            urgency === "warn"     && "bg-[var(--crm-amber-soft)] text-[var(--crm-amber)]",
-            urgency === "ok"       && "bg-[var(--crm-green-soft)] text-[var(--crm-green)]"
-          )}>
-            {urgency === "critical" ? "⚠ " : urgency === "warn" ? "◷ " : "✓ "}{validityLabel}
-          </span>
-        )}
-      </div>
-
-      {/* Renew CTA — expired or expiring within 7 days */}
-      {urgency === "critical" && (
-        <Button
-          size="sm"
-          onClick={() => { window.location.href = "/settings?tab=billing"; }}
-          className={cn("h-8 px-3 rounded-[var(--r-md)] shrink-0 text-[12px] font-bold shadow-sm", CORAL_CTA)}
-        >
-          <CreditCard className="h-3.5 w-3.5 mr-1.5" />
-          {isExpired ? "Renew Plan" : "Renew Now"}
-        </Button>
-      )}
-    </div>
   );
 }
