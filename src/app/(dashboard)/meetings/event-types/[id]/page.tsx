@@ -15,16 +15,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent } from "@/components/ui/card"
-import { 
-  ArrowLeft, 
-  Save, 
-  Plus, 
-  Trash2, 
-  GripVertical, 
-  AlertCircle, 
-  XCircle 
+import {
+  ArrowLeft,
+  Save,
+  Plus,
+  Trash2,
+  GripVertical,
+  AlertCircle,
+  XCircle,
+  Info,
+  MapPin,
+  CalendarClock,
+  Clock,
+  ClipboardList,
+  Users,
+  Eye,
 } from 'lucide-react'
 import {
   DndContext,
@@ -54,16 +60,24 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog"
 
-import { BasicInfoTab } from './components/BasicInfoTab'
-import { QuestionsTab } from './components/QuestionsTab'
-import { SchedulingTab } from './components/SchedulingTab'
-import { TeamTab } from './components/TeamTab'
 import { eventTypeService } from '@/services/event-types'
 import { useUser } from '@/contexts/UserContext'
 import { teamApi } from '@/lib/api'
 import { WIZARD_DRAFT_STORAGE_KEY } from '@/lib/eventTypeWizard'
+import { cn } from '@/lib/utils'
 
 import { EventType, Question, QuestionSection, SchedulingSettings, TimeSlot, TeamMember } from '@/types/events'
+
+type SectionId = 'basic' | 'location' | 'availability' | 'limits' | 'questions' | 'team'
+
+const SECTIONS: { id: SectionId; label: string; icon: any }[] = [
+  { id: 'basic', label: 'Basic', icon: Info },
+  { id: 'location', label: 'Location', icon: MapPin },
+  { id: 'availability', label: 'Availability', icon: CalendarClock },
+  { id: 'limits', label: 'Limits', icon: Clock },
+  { id: 'questions', label: 'Questions', icon: ClipboardList },
+  { id: 'team', label: 'Team', icon: Users },
+]
 
 export default function EventTypeForm() {
   const params = useParams()
@@ -76,10 +90,12 @@ export default function EventTypeForm() {
 
   const [loading, setLoading] = useState(!isNew)
   const [isSaving, setIsSaving] = useState(false)
+  const [isTogglingActive, setIsTogglingActive] = useState(false)
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
   const [showErrorDialog, setShowErrorDialog] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   const [availableMembers, setAvailableMembers] = useState<TeamMember[]>([])
+  const [activeSection, setActiveSection] = useState<SectionId>('basic')
 
   const [eventType, setEventType] = useState<EventType>(() => {
     const base: EventType = {
@@ -266,6 +282,34 @@ export default function EventTypeForm() {
     setEventType({ ...eventType, teamMembers: isSelected ? members.filter(m => m.id !== member.id) : [...members, member] })
   }
 
+  // Fires immediately — EventTypeController::update() does a partial Eloquent
+  // update with `active` fillable and no validation blocking it, so this
+  // doesn't need to wait for "Save changes."
+  const handleToggleActive = async () => {
+    if (isNew) {
+      setEventType(prev => ({ ...prev, active: !prev.active }))
+      return
+    }
+    const nextActive = !eventType.active
+    setEventType(prev => ({ ...prev, active: nextActive }))
+    try {
+      setIsTogglingActive(true)
+      await eventTypeService.update(params.id as string, { active: nextActive })
+    } catch (error) {
+      setEventType(prev => ({ ...prev, active: !nextActive }))
+      toast({ title: "Error", description: "Failed to update status", variant: "destructive" })
+    } finally {
+      setIsTogglingActive(false)
+    }
+  }
+
+  const openPreview = () => {
+    const username = user?.name?.toLowerCase().replace(/\s+/g, '-')
+    if (!username || typeof window === 'undefined') return
+    const identifier = eventType.slug || eventType.id
+    window.open(`${window.location.origin}/${username}/${identifier}`, '_blank')
+  }
+
   const handleSave = async () => {
     // Basic frontend validation
     const errors: Record<string, string> = {}
@@ -315,9 +359,10 @@ export default function EventTypeForm() {
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <div className="shrink-0 flex flex-col border-b border-[var(--crm-border)] bg-[var(--crm-surface-1)] shadow-sm z-50">
-        <div className="px-4 sm:px-6 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3 sm:gap-4">
+      {/* Header */}
+      <div className="shrink-0 border-b border-[var(--crm-border)] bg-[var(--crm-surface-1)] shadow-sm z-50">
+        <div className="px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 sm:gap-4 min-w-0">
             <Button variant="outline" size="icon" onClick={() => router.back()} className="h-8 w-8 rounded-full shrink-0 border-[var(--crm-border)] bg-[var(--crm-surface-2)] hover:bg-[var(--crm-surface-3)]">
               <ArrowLeft className="h-3.5 w-3.5 text-[var(--crm-text-secondary)]" />
             </Button>
@@ -325,33 +370,67 @@ export default function EventTypeForm() {
               <div className="hidden sm:flex items-center gap-1.5 text-[9px] font-bold text-[var(--crm-text-secondary)] uppercase tracking-widest mb-0.5">
                 <span>Meetings</span> <span className="h-0.5 w-0.5 rounded-full bg-[var(--crm-border)]" /> <span>Event Config</span>
               </div>
-              <h1 className="text-base sm:text-lg font-bold text-[var(--crm-text-primary)] leading-none truncate">
-                {loading ? <Skeleton className="h-4 w-32" /> : (isNew ? 'Create Event Type' : eventType.title || 'Edit Event')}
-              </h1>
+              <div className="flex items-center gap-2 min-w-0">
+                {!loading && !isNew && (
+                  <span className={cn('h-2 w-2 rounded-full shrink-0', eventType.active !== false ? 'bg-emerald-500' : 'bg-slate-400')} />
+                )}
+                <h1 className="text-base sm:text-lg font-bold text-[var(--crm-text-primary)] leading-none truncate">
+                  {loading ? <Skeleton className="h-4 w-32" /> : (isNew ? 'Create Event Type' : eventType.title || 'Edit Event')}
+                </h1>
+              </div>
             </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            {!isNew && !loading && (
+              <button
+                type="button"
+                onClick={handleToggleActive}
+                disabled={isTogglingActive}
+                className="flex items-center gap-1.5 h-8 px-2.5 rounded-lg border border-[var(--crm-border)] bg-[var(--crm-surface-2)] text-xs font-semibold text-[var(--crm-text-secondary)] disabled:opacity-60"
+              >
+                {eventType.active !== false ? 'On' : 'Off'}
+                <span className={cn('relative inline-flex h-4 w-7 items-center rounded-full transition-colors', eventType.active !== false ? 'bg-[var(--crm-accent)]' : 'bg-[var(--crm-surface-4)]')}>
+                  <span className={cn('inline-block h-3 w-3 transform rounded-full bg-white transition-transform', eventType.active !== false ? 'translate-x-3.5' : 'translate-x-0.5')} />
+                </span>
+              </button>
+            )}
+            <Button variant="outline" size="sm" onClick={openPreview} disabled={isNew} className="h-8 gap-1.5 border-[var(--crm-border)] bg-[var(--crm-surface-2)] text-xs">
+              <Eye className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Preview</span>
+            </Button>
+            <Button onClick={handleSave} disabled={isSaving} className="h-8 bg-[var(--crm-accent)] hover:opacity-90 text-white rounded-lg font-bold text-xs px-4 gap-2 transition-all active:scale-95 shadow-sm">
+              {isSaving ? <div className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" /> : <Save className="h-3.5 w-3.5" />}
+              <span className="hidden sm:inline">{isSaving ? 'Saving...' : 'Save changes'}</span>
+            </Button>
           </div>
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col overflow-hidden bg-transparent">
-        <Tabs defaultValue="basic" className="flex-1 flex flex-col w-full min-h-0">
-          <div className="shrink-0 z-40 bg-[var(--crm-surface-1)]/80 backdrop-blur-md border-b border-[var(--crm-border)] px-4 sm:px-6 py-2.5 sm:py-2">
-            <div className="max-w-4xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0">
-              <TabsList className="bg-[var(--crm-surface-2)] space-x-1 p-1 h-11 rounded-lg flex justify-start overflow-x-auto no-scrollbar w-full sm:w-auto">
-                <TabsTrigger value="basic" className="whitespace-nowrap data-[state=active]:bg-[var(--crm-surface-1)] data-[state=active]:border-b-2 data-[state=active]:border-[var(--crm-accent)] data-[state=active]:text-[var(--crm-accent)] data-[state=active]:shadow-sm bg-transparent text-[var(--crm-text-secondary)] hover:text-[var(--crm-text-primary)] hover:bg-[var(--crm-surface-1)] rounded-md px-4 text-xs font-semibold h-9 transition-all border-b-2 border-transparent">Basic</TabsTrigger>
-                <TabsTrigger value="questions" className="whitespace-nowrap data-[state=active]:bg-[var(--crm-surface-1)] data-[state=active]:border-b-2 data-[state=active]:border-[var(--crm-accent)] data-[state=active]:text-[var(--crm-accent)] data-[state=active]:shadow-sm bg-transparent text-[var(--crm-text-secondary)] hover:text-[var(--crm-text-primary)] hover:bg-[var(--crm-surface-1)] rounded-md px-4 text-xs font-semibold h-9 transition-all border-b-2 border-transparent">Questions</TabsTrigger>
-                <TabsTrigger value="scheduling" className="whitespace-nowrap data-[state=active]:bg-[var(--crm-surface-1)] data-[state=active]:border-b-2 data-[state=active]:border-[var(--crm-accent)] data-[state=active]:text-[var(--crm-accent)] data-[state=active]:shadow-sm bg-transparent text-[var(--crm-text-secondary)] hover:text-[var(--crm-text-primary)] hover:bg-[var(--crm-surface-1)] rounded-md px-4 text-xs font-semibold h-9 transition-all border-b-2 border-transparent">Scheduling</TabsTrigger>
-                <TabsTrigger value="team" className="whitespace-nowrap data-[state=active]:bg-[var(--crm-surface-1)] data-[state=active]:border-b-2 data-[state=active]:border-[var(--crm-accent)] data-[state=active]:text-[var(--crm-accent)] data-[state=active]:shadow-sm bg-transparent text-[var(--crm-text-secondary)] hover:text-[var(--crm-text-primary)] hover:bg-[var(--crm-surface-1)] rounded-md px-4 text-xs font-semibold h-9 transition-all border-b-2 border-transparent">Team</TabsTrigger>
-              </TabsList>
-              <Button onClick={handleSave} disabled={isSaving} className="w-full sm:w-auto h-10 sm:h-8 bg-[var(--crm-accent)] hover:opacity-90 text-white rounded-lg font-bold text-xs sm:text-[11px] px-4 gap-2 transition-all active:scale-95 shadow-sm">
-                {isSaving ? <div className="h-3.5 w-3.5 sm:h-3 sm:w-3 animate-spin rounded-full border-2 border-white border-t-transparent" /> : <Save className="h-4 w-4 sm:h-3.5 sm:w-3.5" />}
-                <span>{isSaving ? 'Saving...' : 'Save Changes'}</span>
-              </Button>
-            </div>
-          </div>
+      {/* Left nav + content */}
+      <div className="flex-1 flex overflow-hidden bg-[var(--crm-bg)]">
+        <div className="w-48 sm:w-56 shrink-0 border-r border-[var(--crm-border)] bg-[var(--crm-surface-1)] p-3 space-y-1 overflow-y-auto">
+          {SECTIONS.map(section => {
+            const Icon = section.icon
+            const isActive = activeSection === section.id
+            return (
+              <button
+                key={section.id}
+                type="button"
+                onClick={() => setActiveSection(section.id)}
+                className={cn(
+                  'w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-semibold text-left transition-colors',
+                  isActive ? 'bg-[var(--crm-accent-soft)] text-[var(--crm-accent)]' : 'text-[var(--crm-text-secondary)] hover:bg-[var(--crm-surface-2)] hover:text-[var(--crm-text-primary)]'
+                )}
+              >
+                <Icon className="h-4 w-4 shrink-0" />
+                {section.label}
+              </button>
+            )
+          })}
+        </div>
 
-          <div className="flex-1 overflow-y-auto no-scrollbar">
-            <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 space-y-8">
+        <div className="flex-1 overflow-y-auto no-scrollbar">
+          <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6">
             {loading ? (
               <div className="space-y-6">
                 <div className="space-y-2">
@@ -364,24 +443,19 @@ export default function EventTypeForm() {
                 </div>
               </div>
             ) : (
-              <>
-                <TabsContent value="basic" className="m-0">
-                  <BasicInfoTab eventType={eventType} setEventType={setEventType} errors={formErrors} />
-                </TabsContent>
-                <TabsContent value="questions" className="m-0">
-                   <QuestionsTab eventType={eventType} setEventType={setEventType} addQuestion={addQuestion} updateQuestion={(index: number, field: string, value: any) => updateQuestion(index, field as keyof Question, value)} removeQuestion={removeQuestion} handleQuestionDragEnd={handleQuestionDragEnd} sensors={sensors} />
-                </TabsContent>
-                <TabsContent value="scheduling" className="m-0">
-                   <SchedulingTab eventType={eventType} updateScheduling={(field: string, value: any) => updateScheduling(field as keyof SchedulingSettings, value)} updateEventField={(field: string, value: any) => setEventType({ ...eventType, [field]: value })} />
-                </TabsContent>
-                <TabsContent value="team" className="m-0">
-                   <TeamTab eventType={eventType} toggleTeamMember={toggleTeamMember} availableMembers={availableMembers} />
-                </TabsContent>
-              </>
+              <Card className="border-[var(--crm-border)] shadow-sm rounded-xl overflow-hidden bg-[var(--crm-surface-1)]">
+                <CardContent className="p-6">
+                  <p className="text-sm font-semibold text-[var(--crm-text-primary)] mb-1">
+                    {SECTIONS.find(s => s.id === activeSection)?.label}
+                  </p>
+                  <p className="text-sm text-[var(--crm-text-secondary)]">
+                    Section content lands here in the next phase.
+                  </p>
+                </CardContent>
+              </Card>
             )}
-            </div>
           </div>
-        </Tabs>
+        </div>
       </div>
 
       {/* Error Modal */}

@@ -23,8 +23,6 @@ import { EventType } from '@/types/events'
 import { useUser } from '@/contexts/UserContext'
 import { cn } from '@/lib/utils'
 import { DeleteConfirmationModal } from '@/components/shared/DeleteConfirmationModal'
-import { EventTypePanel } from './EventTypePanel'
-import { EventTypePreview } from './EventTypePreview'
 
 const locationIcons: Record<string, { icon: any; label: string }> = {
   video: { icon: Video, label: 'Video Call' },
@@ -41,8 +39,6 @@ export const EventTypesTab = () => {
   const [togglingId, setTogglingId] = useState<string | number | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<EventType | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
-  const [selectedId, setSelectedId] = useState<string | number | null>(null)
-  const [previewOpen, setPreviewOpen] = useState(false)
 
   const load = async () => {
     try {
@@ -108,26 +104,6 @@ export const EventTypesTab = () => {
     }
   }
 
-  const closePanel = () => {
-    setSelectedId(null)
-    setPreviewOpen(false) // Panel and preview close together.
-  }
-
-  const handlePanelSaved = (updated: EventType) => {
-    setEventTypes(prev => prev.map(et => et.id === updated.id ? { ...et, ...updated } : et))
-  }
-
-  const handlePanelDeleted = (id: string | number) => {
-    setEventTypes(prev => prev.filter(et => et.id !== id))
-    closePanel()
-  }
-
-  const handlePanelCloned = (created: EventType) => {
-    setEventTypes(prev => [created, ...prev])
-    setPreviewOpen(false)
-    setSelectedId(created.id)
-  }
-
   const startCreate = (mode: 'guided' | 'one_on_one' | 'group') => {
     if (!user?.name) { toast.error('User profile name is required to create an event.'); return }
     if (mode === 'guided') router.push('/meetings/event-types/wizard')
@@ -135,17 +111,11 @@ export const EventTypesTab = () => {
   }
 
   const filtered = eventTypes.filter(et => et.title.toLowerCase().includes(search.toLowerCase()))
-  const selectedEventType = eventTypes.find(et => et.id === selectedId) || null
 
   return (
     <div className="flex-1 flex min-h-0 overflow-hidden">
-      {/* Left region: list, or the live preview in its place */}
-      <div className="flex-1 min-w-0 flex flex-col min-h-0 border-r border-[var(--crm-border)]">
-        {previewOpen && selectedEventType ? (
-          <EventTypePreview eventType={selectedEventType} bookingUrl={getBookingUrl(selectedEventType)} />
-        ) : (
-          <>
-            <div className="flex items-center gap-2 p-3 sm:p-4 border-b border-[var(--crm-border)] shrink-0">
+      <div className="flex-1 min-w-0 flex flex-col min-h-0">
+        <div className="flex items-center gap-2 p-3 sm:p-4 border-b border-[var(--crm-border)] shrink-0">
               <div className="relative flex-1">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-[var(--crm-text-tertiary)]" />
                 <Input
@@ -205,16 +175,13 @@ export const EventTypesTab = () => {
                     const LocIcon = locInfo.icon
                     const isActive = eventType.active !== false
                     const isToggling = togglingId === eventType.id
-                    const isSelected = selectedId === eventType.id
                     return (
                       <div
                         key={eventType.id}
-                        onClick={() => setSelectedId(eventType.id)}
+                        onClick={() => router.push(`/meetings/event-types/${eventType.id}`)}
                         className={cn(
                           'group flex items-center justify-between gap-3 rounded-xl border px-4 py-3 cursor-pointer transition-all duration-300',
-                          isSelected
-                            ? 'border-[var(--crm-accent)] ring-1 ring-[var(--crm-accent)] bg-[var(--crm-accent-soft)]'
-                            : 'border-[var(--crm-border)] bg-[var(--crm-surface-1)] shadow-sm hover:shadow-md hover:border-[var(--lb-navy)]/50',
+                          'border-[var(--crm-border)] bg-[var(--crm-surface-1)] shadow-sm hover:shadow-md hover:border-[var(--lb-navy)]/50',
                           !isActive && 'opacity-60'
                         )}
                       >
@@ -289,24 +256,7 @@ export const EventTypesTab = () => {
                 </div>
               )}
             </div>
-          </>
-        )}
       </div>
-
-      {/* Right region: slide-in panel */}
-      {selectedId && (
-        <div className="w-[380px] shrink-0 flex flex-col min-h-0 bg-[var(--crm-surface-1)]">
-          <EventTypePanel
-            eventTypeId={selectedId}
-            onClose={closePanel}
-            onSaved={handlePanelSaved}
-            onDeleted={handlePanelDeleted}
-            onCloned={handlePanelCloned}
-            previewOpen={previewOpen}
-            onTogglePreview={() => setPreviewOpen(v => !v)}
-          />
-        </div>
-      )}
 
       <DeleteConfirmationModal
         isOpen={!!deleteTarget}
