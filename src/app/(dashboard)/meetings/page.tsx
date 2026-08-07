@@ -22,7 +22,7 @@ import {
   FileText, Edit, Save, X, Users, User, UserCircle, CheckCircle2,
   CalendarCheck, CircleDot,
   ChevronRight, ChevronDown, Mail, Building2, AlignLeft, Loader2,
-  Trash2, CalendarRange, Search
+  Trash2, CalendarRange, Search, Download
 } from 'lucide-react'
 import { formatInTimeZone } from 'date-fns-tz'
 import { format } from 'date-fns'
@@ -1038,6 +1038,7 @@ export default function MeetingsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [historyMonthFilter, setHistoryMonthFilter] = useState('all')
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(searchQuery), 500)
@@ -1234,7 +1235,57 @@ export default function MeetingsPage() {
   const initials = (name?: string | null) => (name || '').split(' ').filter(Boolean).map(n => n[0].toUpperCase()).join('')
 
   const filteredUpcoming = meetings.upcoming.filter(m => statusFilter === 'all' || m.status === statusFilter)
-  const filteredHistory = meetings.history.filter(m => statusFilter === 'all' || m.status === statusFilter)
+
+  const historyMonthOptions = useMemo(() => {
+    const keys = new Set<string>()
+    meetings.history.forEach(m => {
+      if (m.start_time) keys.add(formatInTimeZone(new Date(m.start_time), 'UTC', 'yyyy-MM'))
+    })
+    return Array.from(keys).sort((a, b) => b.localeCompare(a))
+  }, [meetings.history])
+
+  const filteredHistory = meetings.history.filter(m => {
+    if (statusFilter !== 'all' && m.status !== statusFilter) return false
+    if (historyMonthFilter !== 'all') {
+      const key = m.start_time ? formatInTimeZone(new Date(m.start_time), 'UTC', 'yyyy-MM') : null
+      if (key !== historyMonthFilter) return false
+    }
+    return true
+  })
+
+  const historyGroups = useMemo(() => {
+    const sorted = [...filteredHistory].sort((a, b) =>
+      new Date(b.start_time || 0).getTime() - new Date(a.start_time || 0).getTime()
+    )
+    const groups: { key: string; label: string; meetings: Meeting[] }[] = []
+    sorted.forEach(m => {
+      const key = m.start_time ? formatInTimeZone(new Date(m.start_time), 'UTC', 'yyyy-MM') : 'unknown'
+      const label = m.start_time ? formatInTimeZone(new Date(m.start_time), 'UTC', 'MMMM yyyy') : 'Unknown date'
+      let group = groups.find(g => g.key === key)
+      if (!group) { group = { key, label, meetings: [] }; groups.push(group) }
+      group.meetings.push(m)
+    })
+    return groups
+  }, [filteredHistory])
+
+  const exportHistoryCsv = () => {
+    const headers = ['Meeting', 'Attendee', 'Attendee Email', 'Attendee Phone', 'Date', 'Time', 'Type', 'Status', 'Outcome']
+    const escape = (val: any) => `"${String(val ?? '').replace(/"/g, '""')}"`
+    const rows = filteredHistory.map(m => [
+      m.title, m.lead?.name, m.lead?.email, m.lead?.phone, m.date, m.time,
+      meetingTypeConfig[m.type]?.label ?? m.type, statusConfig[m.status]?.label ?? m.status, m.outcome || '',
+    ].map(escape).join(','))
+    const csvContent = [headers.map(escape).join(','), ...rows].join('\n')
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', `past-meetings-${format(new Date(), 'yyyy-MM-dd')}.csv`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }
 
   // Stats
   const totalUpcoming = pagination.upcoming.total || meetings.upcoming.length
@@ -1307,7 +1358,7 @@ export default function MeetingsPage() {
                 </TabsTrigger>
               </TabsList>
               {activeTab !== 'event-types' && (
-                <div className="py-2">
+                <div className="py-2 flex items-center gap-2">
                   <Select value={statusFilter} onValueChange={setStatusFilter}>
                     <SelectTrigger className="h-8 w-[110px] sm:w-[140px] border-[var(--crm-border)] bg-[var(--crm-surface-2)] text-xs sm:text-sm">
                       <SelectValue placeholder="Filter" />
@@ -1321,6 +1372,31 @@ export default function MeetingsPage() {
                       <SelectItem value="rescheduled">Rescheduled</SelectItem>
                     </SelectContent>
                   </Select>
+                  {activeTab === 'history' && (
+                    <>
+                      <Select value={historyMonthFilter} onValueChange={setHistoryMonthFilter}>
+                        <SelectTrigger className="h-8 w-[110px] sm:w-[150px] border-[var(--crm-border)] bg-[var(--crm-surface-2)] text-xs sm:text-sm">
+                          <SelectValue placeholder="Month" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Months</SelectItem>
+                          {historyMonthOptions.map(key => (
+                            <SelectItem key={key} value={key}>{format(new Date(`${key}-01T00:00:00`), 'MMMM yyyy')}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={exportHistoryCsv}
+                        disabled={filteredHistory.length === 0}
+                        className="h-8 gap-1.5 border-[var(--crm-border)] bg-[var(--crm-surface-2)] text-xs sm:text-sm"
+                      >
+                        <Download className="h-3.5 w-3.5" />
+                        <span className="hidden sm:inline">Export</span>
+                      </Button>
+                    </>
+                  )}
                 </div>
               )}
             </div>
@@ -1405,14 +1481,21 @@ export default function MeetingsPage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {filteredHistory.map(m => {
+                        {historyGroups.map(group => (
+                          <React.Fragment key={group.key}>
+                            <TableRow className="hover:bg-transparent border-none">
+                              <TableCell colSpan={7} className="pl-6 pt-4 pb-1.5 bg-transparent">
+                                <p className="text-xs font-bold uppercase tracking-wider text-[var(--crm-text-secondary)]">{group.label}</p>
+                              </TableCell>
+                            </TableRow>
+                            {group.meetings.map(m => {
                           const typeInfo = meetingTypeConfig[m.type] ?? meetingTypeConfig.video
                           const TypeIcon = typeInfo.icon
                           const statusInfo = statusConfig[m.status] ?? statusConfig.completed
                           return (
                             <TableRow key={m.id}
                               className="border-[var(--crm-border)] hover:bg-[var(--crm-surface-2)] transition-colors">
-                              <TableCell className="whitespace-nowrap font-semibold text-sm text-[var(--crm-text-primary)] pl-6">
+                              <TableCell className="max-w-[180px] truncate font-semibold text-sm text-[var(--crm-text-primary)] pl-6" title={m.title}>
                                 {m.title}
                               </TableCell>
                               <TableCell className="whitespace-nowrap">
@@ -1420,9 +1503,9 @@ export default function MeetingsPage() {
                                   <div className="h-8 w-8 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center text-white text-[10px] font-bold shrink-0 shadow-sm">
                                     {initials(m.lead.name)}
                                   </div>
-                                  <div>
+                                  <div className="min-w-0 max-w-[160px]">
                                     <div className="flex items-center gap-2">
-                                      <p className="text-xs font-semibold text-[var(--crm-text-primary)] whitespace-nowrap">{m.lead.name}</p>
+                                      <p className="text-xs font-semibold text-[var(--crm-text-primary)] truncate" title={m.lead.name}>{m.lead.name}</p>
                                       {m.lead.phone && (
                                         <div className="flex items-center gap-1 inline-flex shrink-0">
                                           <a
@@ -1446,7 +1529,7 @@ export default function MeetingsPage() {
                                         </div>
                                       )}
                                     </div>
-                                    {m.lead.company && <p className="text-[10px] text-[var(--crm-text-secondary)] mt-0.5 whitespace-nowrap">{m.lead.company}</p>}
+                                    {m.lead.company && <p className="text-[10px] text-[var(--crm-text-secondary)] mt-0.5 truncate" title={m.lead.company}>{m.lead.company}</p>}
                                   </div>
                                 </div>
                               </TableCell>
@@ -1476,6 +1559,8 @@ export default function MeetingsPage() {
                             </TableRow>
                           )
                         })}
+                          </React.Fragment>
+                        ))}
                       </TableBody>
                     </Table>
 

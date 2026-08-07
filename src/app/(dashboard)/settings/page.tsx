@@ -262,8 +262,8 @@ export default function SettingsPage() {
         window.location.reload()
       }
     } catch (error: any) {
-      console.error('Failed to update profile:', error)
       const message = error.response?.data?.message || 'Failed to update profile settings'
+      console.error('Failed to update profile:', message)
       toast.error(message)
     } finally {
       setIsSaving(false)

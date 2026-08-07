@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Card, CardContent } from "@/components/ui/card"
+import { Tabs } from "@/components/ui/tabs"
 import {
   ArrowLeft,
   Save,
@@ -31,6 +32,9 @@ import {
   ClipboardList,
   Users,
   Eye,
+  Video,
+  Phone,
+  ChevronDown,
 } from 'lucide-react'
 import {
   DndContext,
@@ -65,8 +69,12 @@ import { useUser } from '@/contexts/UserContext'
 import { teamApi } from '@/lib/api'
 import { WIZARD_DRAFT_STORAGE_KEY } from '@/lib/eventTypeWizard'
 import { cn } from '@/lib/utils'
+import { TimeSlotManager } from './components/TimeSlotManager'
+import { SpecificDateManager } from './components/SpecificDateManager'
+import { QuestionsTab } from './components/QuestionsTab'
+import { TeamTab } from './components/TeamTab'
 
-import { EventType, Question, QuestionSection, SchedulingSettings, TimeSlot, TeamMember } from '@/types/events'
+import { EventType, Question, QuestionSection, TimeSlot, TeamMember } from '@/types/events'
 
 type SectionId = 'basic' | 'location' | 'availability' | 'limits' | 'questions' | 'team'
 
@@ -78,6 +86,31 @@ const SECTIONS: { id: SectionId; label: string; icon: any }[] = [
   { id: 'questions', label: 'Questions', icon: ClipboardList },
   { id: 'team', label: 'Team', icon: Users },
 ]
+
+const labelStyle = "text-[11px] font-bold uppercase tracking-wider text-[var(--crm-text-secondary)] mb-1.5 block"
+const inputStyle = "h-10 text-sm bg-[var(--crm-surface-2)] border-[var(--crm-border)] focus:bg-[var(--crm-surface-1)] transition-all rounded-lg"
+
+const COLOR_OPTIONS = [
+  '#4f46e5', '#2563eb', '#0ea5e9', '#10b981', '#84cc16', '#eab308',
+  '#f97316', '#ef4444', '#d946ef', '#8b5cf6', '#64748b',
+]
+
+const LOCATION_PILLS: { value: string; label: string; icon: any }[] = [
+  { value: 'zoom', label: 'Zoom', icon: Video },
+  { value: 'phone', label: 'Phone call', icon: Phone },
+  { value: 'in-person', label: 'In-person', icon: MapPin },
+]
+
+const VIDEO_PROVIDERS = [
+  { value: 'google', label: 'Google Meet' },
+  { value: 'teams', label: 'Microsoft Teams' },
+  { value: 'webex', label: 'Webex' },
+  { value: 'gotomeeting', label: 'GoToMeeting' },
+  { value: 'custom', label: 'Custom' },
+  { value: 'ask_invitee', label: 'Ask invitee' },
+]
+
+const ALL_VIDEO_PROVIDERS = [{ value: 'zoom', label: 'Zoom' }, ...VIDEO_PROVIDERS]
 
 export default function EventTypeForm() {
   const params = useParams()
@@ -96,6 +129,7 @@ export default function EventTypeForm() {
   const [errorMessage, setErrorMessage] = useState('')
   const [availableMembers, setAvailableMembers] = useState<TeamMember[]>([])
   const [activeSection, setActiveSection] = useState<SectionId>('basic')
+  const [locationDropdownOpen, setLocationDropdownOpen] = useState(false)
 
   const [eventType, setEventType] = useState<EventType>(() => {
     const base: EventType = {
@@ -274,13 +308,14 @@ export default function EventTypeForm() {
       })
     }
   }
-  const updateScheduling = (field: keyof SchedulingSettings, value: any) => {
+  const updateScheduling = (field: string, value: any) => {
     setEventType({ ...eventType, scheduling: { ...eventType.scheduling, [field]: value } })
   }
   const toggleTeamMember = (member: TeamMember) => {
     const members = eventType.teamMembers || []; const isSelected = members.some(m => m.id === member.id)
     setEventType({ ...eventType, teamMembers: isSelected ? members.filter(m => m.id !== member.id) : [...members, member] })
   }
+  const updateField = (updates: Partial<EventType>) => setEventType(prev => ({ ...prev, ...updates }))
 
   // Fires immediately — EventTypeController::update() does a partial Eloquent
   // update with `active` fillable and no validation blocking it, so this
@@ -445,12 +480,319 @@ export default function EventTypeForm() {
             ) : (
               <Card className="border-[var(--crm-border)] shadow-sm rounded-xl overflow-hidden bg-[var(--crm-surface-1)]">
                 <CardContent className="p-6">
-                  <p className="text-sm font-semibold text-[var(--crm-text-primary)] mb-1">
-                    {SECTIONS.find(s => s.id === activeSection)?.label}
-                  </p>
-                  <p className="text-sm text-[var(--crm-text-secondary)]">
-                    Section content lands here in the next phase.
-                  </p>
+                  {activeSection === 'basic' && (
+                    <div className="space-y-5">
+                      <div>
+                        <Label htmlFor="title" className={cn(labelStyle, formErrors.title && "text-red-500")}>Event Title <span className="text-red-500">*</span></Label>
+                        <Input
+                          id="title"
+                          value={eventType.title}
+                          onChange={(e) => updateField({ title: e.target.value })}
+                          placeholder="e.g., Product Demo Call"
+                          className={cn(inputStyle, formErrors.title && "border-red-500")}
+                        />
+                        {formErrors.title && <p className="text-[10px] font-bold text-red-500 uppercase tracking-widest mt-1">{formErrors.title}</p>}
+                      </div>
+
+                      <div>
+                        <Label htmlFor="description" className={cn(labelStyle, formErrors.description && "text-red-500")}>Description <span className="text-red-500">*</span></Label>
+                        <Textarea
+                          id="description"
+                          value={eventType.description}
+                          onChange={(e) => updateField({ description: e.target.value })}
+                          placeholder="Add a description for your event"
+                          className={cn(inputStyle, "min-h-[90px] py-2 resize-none", formErrors.description && "border-red-500")}
+                        />
+                        {formErrors.description && <p className="text-[10px] font-bold text-red-500 uppercase tracking-widest mt-1">{Array.isArray(formErrors.description) ? formErrors.description[0] : formErrors.description}</p>}
+                      </div>
+
+                      <div className="grid sm:grid-cols-2 gap-4">
+                        <div>
+                          <Label className={cn(labelStyle, formErrors.duration && "text-red-500")}>Duration <span className="text-red-500">*</span></Label>
+                          <Select value={eventType.duration?.toString()} onValueChange={(v) => updateField({ duration: parseInt(v) })}>
+                            <SelectTrigger className={cn(inputStyle, formErrors.duration && "border-red-500")}><SelectValue placeholder="Select duration" /></SelectTrigger>
+                            <SelectContent className="rounded-xl">
+                              {[15, 30, 45, 60, 90, 120].map(d => <SelectItem key={d} value={d.toString()}>{d} minutes</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                          {formErrors.duration && <p className="text-[10px] font-bold text-red-500 uppercase tracking-widest mt-1">{formErrors.duration}</p>}
+                        </div>
+                        <div>
+                          <Label className={labelStyle}>Meeting Type</Label>
+                          <Select
+                            value={eventType.type || 'one_on_one'}
+                            onValueChange={(v) => updateField({ type: v as EventType['type'], max_invitees: v === 'one_on_one' ? null : (eventType.max_invitees || 2) })}
+                          >
+                            <SelectTrigger className={inputStyle}><SelectValue placeholder="Select meeting type" /></SelectTrigger>
+                            <SelectContent className="rounded-xl">
+                              <SelectItem value="one_on_one">One-on-One</SelectItem>
+                              <SelectItem value="group">Group Meeting (Webinar/Class)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      {eventType.type === 'group' && (
+                        <div>
+                          <Label htmlFor="max_invitees" className={cn(labelStyle, formErrors.max_invitees && "text-red-500")}>Maximum Invitees <span className="text-red-500">*</span></Label>
+                          <Input
+                            id="max_invitees"
+                            type="number"
+                            min="2"
+                            value={eventType.max_invitees || 2}
+                            onChange={(e) => updateField({ max_invitees: parseInt(e.target.value) || 2 })}
+                            className={cn(inputStyle, "w-32", formErrors.max_invitees && "border-red-500")}
+                          />
+                          <p className="text-xs text-[var(--crm-text-secondary)] mt-1.5">Maximum number of people that can book the exact same time slot.</p>
+                          {formErrors.max_invitees && <p className="text-[10px] font-bold text-red-500 uppercase tracking-widest mt-1">{formErrors.max_invitees}</p>}
+                        </div>
+                      )}
+
+                      <div>
+                        <Label htmlFor="redirect_url" className={labelStyle}>Redirect URL (Optional)</Label>
+                        <Input
+                          id="redirect_url"
+                          value={eventType.redirect_url || ''}
+                          onChange={(e) => updateField({ redirect_url: e.target.value })}
+                          placeholder="e.g., https://yourwebsite.com/thank-you"
+                          className={inputStyle}
+                        />
+                        <p className="text-xs text-[var(--crm-text-secondary)] mt-1.5">Redirect invitees to this URL after they successfully book a meeting.</p>
+                      </div>
+
+                      <div>
+                        <Label className={labelStyle}>Event Color</Label>
+                        <div className="flex flex-wrap gap-3">
+                          {COLOR_OPTIONS.map((color) => {
+                            const isSelected = (eventType.color || '#4f46e5') === color
+                            return (
+                              <button
+                                key={color}
+                                type="button"
+                                onClick={() => updateField({ color })}
+                                className={cn(
+                                  "w-8 h-8 rounded-full flex items-center justify-center transition-all",
+                                  isSelected ? "ring-2 ring-offset-2 ring-[var(--crm-accent)]" : "opacity-80 hover:opacity-100"
+                                )}
+                                style={{ backgroundColor: color }}
+                              >
+                                {isSelected && (
+                                  <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                )}
+                              </button>
+                            )
+                          })}
+                        </div>
+                        <p className="text-xs text-[var(--crm-text-secondary)] mt-1.5">Helps you visually identify this event type on your meetings dashboard.</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeSection === 'location' && (() => {
+                    const isZoom = eventType.location === 'video' && eventType.video_platform === 'zoom'
+                    const isOtherProvider = eventType.location === 'video' && eventType.video_platform && eventType.video_platform !== 'zoom' && VIDEO_PROVIDERS.some(p => p.value === eventType.video_platform)
+                    const currentProvider = ALL_VIDEO_PROVIDERS.find(p => p.value === eventType.video_platform)
+                    return (
+                      <div className="space-y-4">
+                        <div>
+                          <Label className={labelStyle}>Location</Label>
+                          <div className="grid grid-cols-4 gap-2">
+                            {LOCATION_PILLS.map(pill => {
+                              const Icon = pill.icon
+                              const selected = pill.value === 'zoom' ? isZoom : eventType.location === pill.value
+                              return (
+                                <button
+                                  type="button"
+                                  key={pill.value}
+                                  onClick={() => updateField(pill.value === 'zoom' ? { location: 'video', video_platform: 'zoom' } : { location: pill.value as EventType['location'] })}
+                                  className={cn(
+                                    'flex flex-col items-center gap-1.5 rounded-lg border px-2 py-3 text-xs font-medium transition-all',
+                                    selected ? 'border-[var(--crm-accent)] ring-1 ring-[var(--crm-accent)] bg-[var(--crm-accent-soft)]' : 'border-[var(--crm-border)] hover:border-[var(--lb-navy)]/40'
+                                  )}
+                                >
+                                  <Icon className="h-4 w-4" />
+                                  {pill.label}
+                                </button>
+                              )
+                            })}
+                            <div className="relative">
+                              <button
+                                type="button"
+                                onClick={() => setLocationDropdownOpen(v => !v)}
+                                className={cn(
+                                  'w-full h-full flex flex-col items-center gap-1.5 rounded-lg border px-2 py-3 text-xs font-medium transition-all',
+                                  isOtherProvider ? 'border-[var(--crm-accent)] ring-1 ring-[var(--crm-accent)] bg-[var(--crm-accent-soft)]' : 'border-[var(--crm-border)] hover:border-[var(--lb-navy)]/40'
+                                )}
+                              >
+                                <ChevronDown className="h-4 w-4" />
+                                All options
+                              </button>
+                              {locationDropdownOpen && (
+                                <div className="absolute right-0 top-full mt-1 z-20 w-44 rounded-lg border border-[var(--crm-border)] bg-[var(--crm-surface-1)] shadow-lg p-1">
+                                  {VIDEO_PROVIDERS.map(p => (
+                                    <button
+                                      type="button"
+                                      key={p.value}
+                                      onClick={() => { updateField({ location: 'video', video_platform: p.value }); setLocationDropdownOpen(false) }}
+                                      className="w-full text-left px-2.5 py-1.5 text-xs rounded-md hover:bg-[var(--crm-surface-2)] text-[var(--crm-text-primary)]"
+                                    >
+                                      {p.label}
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {eventType.location === 'video' && (
+                          <p className="text-xs text-[var(--crm-text-secondary)]">
+                            Provider: <span className="font-medium text-[var(--crm-text-primary)]">{currentProvider?.label || 'Not set — pick one above'}</span>
+                          </p>
+                        )}
+
+                        {eventType.location === 'in-person' && (
+                          <div>
+                            <Label className={labelStyle}>Location Details</Label>
+                            <Textarea
+                              value={eventType.location_details || ''}
+                              onChange={(e) => updateField({ location_details: e.target.value })}
+                              placeholder="Enter the meeting location details"
+                              className={cn(inputStyle, "min-h-[70px] py-2 resize-none")}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })()}
+
+                  {activeSection === 'availability' && (
+                    <div className="space-y-6">
+                      <div className="grid sm:grid-cols-2 gap-4">
+                        <div>
+                          <Label className={labelStyle}>Minimum Notice</Label>
+                          <div className="flex items-center gap-2">
+                            <Input type="number" min="0" value={eventType.scheduling.minimumNotice} onChange={(e) => updateScheduling('minimumNotice', parseInt(e.target.value) || 0)} className={cn(inputStyle, "w-20")} />
+                            <span className="text-xs text-[var(--crm-text-secondary)]">hours before start time</span>
+                          </div>
+                        </div>
+                        <div>
+                          <Label className={labelStyle}>Max Date Range</Label>
+                          <div className="flex items-center gap-2">
+                            <Input type="number" min="1" value={eventType.scheduling.dateRange} onChange={(e) => updateScheduling('dateRange', parseInt(e.target.value) || 1)} className={cn(inputStyle, "w-20")} />
+                            <span className="text-xs text-[var(--crm-text-secondary)]">days into the future</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label className={labelStyle}>Time Zone</Label>
+                        <Select value={eventType.scheduling.timezone} onValueChange={(v) => updateScheduling('timezone', v)}>
+                          <SelectTrigger className={inputStyle}><SelectValue placeholder="Select" /></SelectTrigger>
+                          <SelectContent className="rounded-xl max-h-[250px]">
+                            {Array.from(new Set([...(typeof Intl.supportedValuesOf === 'function' ? Intl.supportedValuesOf('timeZone') : []), eventType.scheduling.timezone || 'UTC'])).map((tz) => (
+                              <SelectItem key={tz} value={tz} className="text-xs">{tz}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="pt-4 border-t border-[var(--crm-border)]">
+                        <Label className={labelStyle}>Weekly Hours</Label>
+                        <p className="text-xs text-[var(--crm-text-secondary)] -mt-1 mb-2">Bookable every week on these days/hours.</p>
+                        <TimeSlotManager
+                          slots={eventType.scheduling.timeSlots || []}
+                          onSlotsChange={(slots: any) => updateScheduling('timeSlots', slots)}
+                        />
+                      </div>
+
+                      <div className="pt-4 border-t border-[var(--crm-border)]">
+                        <Label className={labelStyle}>Date-Specific Hours</Label>
+                        <p className="text-xs text-[var(--crm-text-secondary)] -mt-1 mb-2">Give specific dates their own hours — these replace the weekly hours above for that date only.</p>
+                        <SpecificDateManager
+                          slots={(eventType.scheduling as any).specificDates || []}
+                          onSlotsChange={(slots: any) => updateScheduling('specificDates', slots)}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {activeSection === 'limits' && (
+                    <div className="grid sm:grid-cols-2 gap-x-6 gap-y-4">
+                      <div>
+                        <Label className={labelStyle}>Buffer Before</Label>
+                        <Select value={String(eventType.scheduling.bufferBefore ?? 0)} onValueChange={(v) => updateScheduling('bufferBefore', parseInt(v))}>
+                          <SelectTrigger className={inputStyle}><SelectValue placeholder="Select buffer" /></SelectTrigger>
+                          <SelectContent className="rounded-xl">
+                            {[0, 5, 10, 15, 30, 45, 60].map(m => <SelectItem key={m} value={String(m)}>{m === 0 ? 'No buffer' : `${m} minutes`}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className={labelStyle}>Buffer After</Label>
+                        <Select value={String(eventType.scheduling.bufferAfter ?? 0)} onValueChange={(v) => updateScheduling('bufferAfter', parseInt(v))}>
+                          <SelectTrigger className={inputStyle}><SelectValue placeholder="Select buffer" /></SelectTrigger>
+                          <SelectContent className="rounded-xl">
+                            {[0, 5, 10, 15, 30, 45, 60].map(m => <SelectItem key={m} value={String(m)}>{m === 0 ? 'No buffer' : `${m} minutes`}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className={labelStyle}>Daily Limit</Label>
+                        <Input type="number" min="0" placeholder="No limit" value={eventType.scheduling.dailyLimit || ''} onChange={(e) => updateScheduling('dailyLimit', parseInt(e.target.value) || 0)} className={inputStyle} />
+                      </div>
+                      <div>
+                        <Label className={labelStyle}>Weekly Limit</Label>
+                        <Input type="number" min="0" placeholder="No limit" value={eventType.scheduling.weeklyLimit || ''} onChange={(e) => updateScheduling('weeklyLimit', parseInt(e.target.value) || 0)} className={inputStyle} />
+                      </div>
+                      <div>
+                        <Label className={labelStyle}>Per-Invitee Limit</Label>
+                        <Input
+                          type="number" min="1" placeholder="No limit"
+                          value={eventType.max_bookings_per_invitee || ''}
+                          onChange={(e) => updateField({ max_bookings_per_invitee: e.target.value ? parseInt(e.target.value) : null })}
+                          className={inputStyle}
+                        />
+                      </div>
+                      <div>
+                        <Label className={labelStyle}>Limit Timeframe</Label>
+                        <Select
+                          value={eventType.invitee_booking_limit_timeframe || 'ACTIVE'}
+                          onValueChange={(v) => updateField({ invitee_booking_limit_timeframe: v as EventType['invitee_booking_limit_timeframe'] })}
+                        >
+                          <SelectTrigger className={inputStyle}><SelectValue placeholder="Select" /></SelectTrigger>
+                          <SelectContent className="rounded-xl">
+                            <SelectItem value="ACTIVE">Active (at a time)</SelectItem>
+                            <SelectItem value="PER_DAY">Per day</SelectItem>
+                            <SelectItem value="PER_WEEK">Per week</SelectItem>
+                            <SelectItem value="PER_MONTH">Per month</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeSection === 'questions' && (
+                    <Tabs defaultValue="questions">
+                      <QuestionsTab
+                        eventType={eventType}
+                        setEventType={setEventType}
+                        addQuestion={addQuestion}
+                        updateQuestion={(index: number, field: string, value: any) => updateQuestion(index, field as keyof Question, value)}
+                        removeQuestion={removeQuestion}
+                        handleQuestionDragEnd={handleQuestionDragEnd}
+                        sensors={sensors}
+                      />
+                    </Tabs>
+                  )}
+
+                  {activeSection === 'team' && (
+                    <Tabs defaultValue="team">
+                      <TeamTab eventType={eventType} toggleTeamMember={toggleTeamMember} availableMembers={availableMembers} />
+                    </Tabs>
+                  )}
                 </CardContent>
               </Card>
             )}
