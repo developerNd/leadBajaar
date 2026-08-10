@@ -15,8 +15,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Card, CardContent } from "@/components/ui/card"
 import { Tabs } from "@/components/ui/tabs"
+import { SectionContent } from "@/components/ui/section-content"
+import { SectionWarning } from "@/components/ui/section-warning"
+
 import {
   ArrowLeft,
   Save,
@@ -87,7 +89,9 @@ const SECTIONS: { id: SectionId; label: string; icon: any }[] = [
   { id: 'team', label: 'Team', icon: Users },
 ]
 
-const labelStyle = "text-[11px] font-bold uppercase tracking-wider text-[var(--crm-text-secondary)] mb-1.5 block"
+// Note: uppercase removed intentionally — labels on this page use sentence case per design spec.
+// Other pages that use their own label styles are unaffected.
+const labelStyle = "text-[11px] font-semibold tracking-wide text-[var(--crm-text-secondary)] mb-1.5 block"
 const inputStyle = "h-10 text-sm bg-[var(--crm-surface-2)] border-[var(--crm-border)] focus:bg-[var(--crm-surface-1)] transition-all rounded-lg"
 
 const COLOR_OPTIONS = [
@@ -377,7 +381,7 @@ export default function EventTypeForm() {
         await eventTypeService.update(params.id as string, eventType)
       }
       toast({ title: "Success", description: "Event type saved successfully" })
-      router.push('/meetings/event-types')
+      router.push('/meetings?tab=event-types')
     } catch (error: any) {
       if (error.response?.status === 422) {
         const beErrors = error.response.data.errors || {}
@@ -392,6 +396,7 @@ export default function EventTypeForm() {
     }
   }
 
+
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Header */}
@@ -402,15 +407,15 @@ export default function EventTypeForm() {
               <ArrowLeft className="h-3.5 w-3.5 text-[var(--crm-text-secondary)]" />
             </Button>
             <div className="min-w-0">
-              <div className="hidden sm:flex items-center gap-1.5 text-[9px] font-bold text-[var(--crm-text-secondary)] uppercase tracking-widest mb-0.5">
-                <span>Meetings</span> <span className="h-0.5 w-0.5 rounded-full bg-[var(--crm-border)]" /> <span>Event Config</span>
+              <div className="hidden sm:flex items-center gap-1.5 text-[9px] font-semibold text-[var(--crm-text-secondary)] tracking-wide mb-0.5">
+                <span>Meetings</span> <span className="h-0.5 w-0.5 rounded-full bg-[var(--crm-border)]" /> <span>Booking Links</span>
               </div>
               <div className="flex items-center gap-2 min-w-0">
                 {!loading && !isNew && (
                   <span className={cn('h-2 w-2 rounded-full shrink-0', eventType.active !== false ? 'bg-emerald-500' : 'bg-slate-400')} />
                 )}
                 <h1 className="text-base sm:text-lg font-bold text-[var(--crm-text-primary)] leading-none truncate">
-                  {loading ? <Skeleton className="h-4 w-32" /> : (isNew ? 'Create Event Type' : eventType.title || 'Edit Event')}
+                  {loading ? <Skeleton className="h-4 w-32" /> : (isNew ? 'Create Booking Link' : eventType.title || 'Edit Booking Link')}
                 </h1>
               </div>
             </div>
@@ -441,9 +446,9 @@ export default function EventTypeForm() {
         </div>
       </div>
 
-      {/* Left nav + content */}
-      <div className="flex-1 flex overflow-hidden bg-[var(--crm-bg)]">
-        <div className="w-48 sm:w-56 shrink-0 border-r border-[var(--crm-border)] bg-[var(--crm-surface-1)] p-3 space-y-1 overflow-y-auto">
+      {/* Nav + content — fills remaining viewport height, scroll inside content column */}
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+        <div className="w-full md:w-56 shrink-0 border-b md:border-b-0 md:border-r border-[var(--crm-border)] bg-[var(--crm-surface-1)] p-2 md:p-3 flex md:flex-col gap-1 md:gap-1 overflow-x-auto custom-scrollbar md:overflow-y-auto z-10 pb-3 md:pb-3">
           {SECTIONS.map(section => {
             const Icon = section.icon
             const isActive = activeSection === section.id
@@ -453,7 +458,7 @@ export default function EventTypeForm() {
                 type="button"
                 onClick={() => setActiveSection(section.id)}
                 className={cn(
-                  'w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-semibold text-left transition-colors',
+                  'whitespace-nowrap shrink-0 w-auto md:w-full flex items-center gap-2 px-3 md:px-3 py-1.5 md:py-2 rounded-lg text-[13px] md:text-sm font-semibold text-left transition-colors',
                   isActive ? 'bg-[var(--crm-accent-soft)] text-[var(--crm-accent)]' : 'text-[var(--crm-text-secondary)] hover:bg-[var(--crm-surface-2)] hover:text-[var(--crm-text-primary)]'
                 )}
               >
@@ -465,7 +470,7 @@ export default function EventTypeForm() {
         </div>
 
         <div className="flex-1 overflow-y-auto no-scrollbar">
-          <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6">
+          <div className="px-4 sm:px-6 py-6">
             {loading ? (
               <div className="space-y-6">
                 <div className="space-y-2">
@@ -478,303 +483,350 @@ export default function EventTypeForm() {
                 </div>
               </div>
             ) : (
-              <Card className="border-[var(--crm-border)] shadow-sm rounded-xl overflow-hidden bg-[var(--crm-surface-1)]">
-                <CardContent className="p-6">
-                  {activeSection === 'basic' && (
-                    <div className="space-y-5">
+              <div className="space-y-0">
+
+                {/* ── Basic ───────────────────────────────────────────────── */}
+                {activeSection === 'basic' && (
+                  <SectionContent className="space-y-5">
+                    <div>
+                      <Label htmlFor="title" className={cn(labelStyle, formErrors.title && "text-red-500")}>Event title <span className="text-red-500">*</span></Label>
+                      <Input
+                        id="title"
+                        value={eventType.title}
+                        onChange={(e) => updateField({ title: e.target.value })}
+                        placeholder="e.g., Product Demo Call"
+                        className={cn(inputStyle, formErrors.title && "border-red-500")}
+                      />
+                      {formErrors.title && <p className="text-[10px] font-semibold text-red-500 mt-1">{formErrors.title}</p>}
+                    </div>
+
+                    <div>
+                      <Label htmlFor="description" className={cn(labelStyle, formErrors.description && "text-red-500")}>Description <span className="text-red-500">*</span></Label>
+                      <Textarea
+                        id="description"
+                        value={eventType.description}
+                        onChange={(e) => updateField({ description: e.target.value })}
+                        placeholder="Add a description for your event"
+                        className={cn(inputStyle, "min-h-[90px] py-2 resize-none", formErrors.description && "border-red-500")}
+                      />
+                      {formErrors.description && <p className="text-[10px] font-semibold text-red-500 mt-1">{Array.isArray(formErrors.description) ? formErrors.description[0] : formErrors.description}</p>}
+                    </div>
+
+                    <div className="grid sm:grid-cols-2 gap-4">
                       <div>
-                        <Label htmlFor="title" className={cn(labelStyle, formErrors.title && "text-red-500")}>Event Title <span className="text-red-500">*</span></Label>
+                        <Label className={cn(labelStyle, formErrors.duration && "text-red-500")}>Duration <span className="text-red-500">*</span></Label>
+                        <Select value={eventType.duration?.toString()} onValueChange={(v) => updateField({ duration: parseInt(v) })}>
+                          <SelectTrigger className={cn(inputStyle, formErrors.duration && "border-red-500")}><SelectValue placeholder="Select duration" /></SelectTrigger>
+                          <SelectContent className="rounded-xl">
+                            {[15, 30, 45, 60, 90, 120].map(d => <SelectItem key={d} value={d.toString()}>{d} minutes</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                        {formErrors.duration && <p className="text-[10px] font-semibold text-red-500 mt-1">{formErrors.duration}</p>}
+                      </div>
+                      <div>
+                        <Label className={labelStyle}>Meeting type</Label>
+                        <Select
+                          value={eventType.type || 'one_on_one'}
+                          onValueChange={(v) => updateField({ type: v as EventType['type'], max_invitees: v === 'one_on_one' ? null : (eventType.max_invitees || 2) })}
+                        >
+                          <SelectTrigger className={inputStyle}><SelectValue placeholder="Select meeting type" /></SelectTrigger>
+                          <SelectContent className="rounded-xl">
+                            <SelectItem value="one_on_one">One-on-One</SelectItem>
+                            <SelectItem value="group">Group meeting (webinar/class)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    {eventType.type === 'group' && (
+                      <div>
+                        <Label htmlFor="max_invitees" className={cn(labelStyle, formErrors.max_invitees && "text-red-500")}>Maximum invitees <span className="text-red-500">*</span></Label>
                         <Input
-                          id="title"
-                          value={eventType.title}
-                          onChange={(e) => updateField({ title: e.target.value })}
-                          placeholder="e.g., Product Demo Call"
-                          className={cn(inputStyle, formErrors.title && "border-red-500")}
+                          id="max_invitees"
+                          type="number"
+                          min="2"
+                          value={eventType.max_invitees || 2}
+                          onChange={(e) => updateField({ max_invitees: parseInt(e.target.value) || 2 })}
+                          className={cn(inputStyle, "w-32", formErrors.max_invitees && "border-red-500")}
                         />
-                        {formErrors.title && <p className="text-[10px] font-bold text-red-500 uppercase tracking-widest mt-1">{formErrors.title}</p>}
+                        <p className="text-xs text-[var(--crm-text-secondary)] mt-1.5">Maximum number of people that can book the exact same time slot.</p>
+                        {formErrors.max_invitees && <p className="text-[10px] font-semibold text-red-500 mt-1">{formErrors.max_invitees}</p>}
                       </div>
+                    )}
 
-                      <div>
-                        <Label htmlFor="description" className={cn(labelStyle, formErrors.description && "text-red-500")}>Description <span className="text-red-500">*</span></Label>
-                        <Textarea
-                          id="description"
-                          value={eventType.description}
-                          onChange={(e) => updateField({ description: e.target.value })}
-                          placeholder="Add a description for your event"
-                          className={cn(inputStyle, "min-h-[90px] py-2 resize-none", formErrors.description && "border-red-500")}
-                        />
-                        {formErrors.description && <p className="text-[10px] font-bold text-red-500 uppercase tracking-widest mt-1">{Array.isArray(formErrors.description) ? formErrors.description[0] : formErrors.description}</p>}
+                    <div>
+                      <Label htmlFor="redirect_url" className={labelStyle}>Redirect URL (optional)</Label>
+                      <Input
+                        id="redirect_url"
+                        value={eventType.redirect_url || ''}
+                        onChange={(e) => updateField({ redirect_url: e.target.value })}
+                        placeholder="https://yourwebsite.com/thank-you"
+                        className={inputStyle}
+                      />
+                      <p className="text-xs text-[var(--crm-text-secondary)] mt-1.5">Redirect invitees to this URL after they successfully book a meeting.</p>
+                    </div>
+
+                    <div>
+                      <Label className={labelStyle}>Event color</Label>
+                      <div className="flex flex-wrap gap-3">
+                        {COLOR_OPTIONS.map((color) => {
+                          const isSelected = (eventType.color || '#4f46e5') === color
+                          return (
+                            <button
+                              key={color}
+                              type="button"
+                              onClick={() => updateField({ color })}
+                              aria-label={`Select color ${color}`}
+                              aria-pressed={isSelected}
+                              className={cn(
+                                "w-8 h-8 rounded-full flex items-center justify-center transition-all focus:outline-none",
+                                isSelected
+                                  ? "ring-2 ring-offset-[3px] ring-[var(--crm-border)] shadow-[0_0_0_4px_color-mix(in_srgb,currentColor_40%,transparent)] scale-110"
+                                  : "opacity-75 hover:opacity-100 hover:scale-105"
+                              )}
+                              style={{ backgroundColor: color, color }}
+                            >
+                              {isSelected && (
+                                <span className="w-2.5 h-2.5 rounded-full bg-white/90 shadow-sm block" />
+                              )}
+                            </button>
+                          )
+                        })}
                       </div>
+                      <p className="text-xs text-[var(--crm-text-secondary)] mt-1.5">Helps you visually identify this event type on your calendar.</p>
+                    </div>
+                  </SectionContent>
+                )}
 
-                      <div className="grid sm:grid-cols-2 gap-4">
-                        <div>
-                          <Label className={cn(labelStyle, formErrors.duration && "text-red-500")}>Duration <span className="text-red-500">*</span></Label>
-                          <Select value={eventType.duration?.toString()} onValueChange={(v) => updateField({ duration: parseInt(v) })}>
-                            <SelectTrigger className={cn(inputStyle, formErrors.duration && "border-red-500")}><SelectValue placeholder="Select duration" /></SelectTrigger>
-                            <SelectContent className="rounded-xl">
-                              {[15, 30, 45, 60, 90, 120].map(d => <SelectItem key={d} value={d.toString()}>{d} minutes</SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                          {formErrors.duration && <p className="text-[10px] font-bold text-red-500 uppercase tracking-widest mt-1">{formErrors.duration}</p>}
-                        </div>
-                        <div>
-                          <Label className={labelStyle}>Meeting Type</Label>
-                          <Select
-                            value={eventType.type || 'one_on_one'}
-                            onValueChange={(v) => updateField({ type: v as EventType['type'], max_invitees: v === 'one_on_one' ? null : (eventType.max_invitees || 2) })}
-                          >
-                            <SelectTrigger className={inputStyle}><SelectValue placeholder="Select meeting type" /></SelectTrigger>
-                            <SelectContent className="rounded-xl">
-                              <SelectItem value="one_on_one">One-on-One</SelectItem>
-                              <SelectItem value="group">Group Meeting (Webinar/Class)</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
+                {/* ── Location ────────────────────────────────────────────── */}
+                {activeSection === 'location' && (() => {
+                  const isZoom = eventType.location === 'video' && eventType.video_platform === 'zoom'
+                  const isOtherProvider = eventType.location === 'video' && eventType.video_platform && eventType.video_platform !== 'zoom' && VIDEO_PROVIDERS.some(p => p.value === eventType.video_platform)
+                  const currentProvider = ALL_VIDEO_PROVIDERS.find(p => p.value === eventType.video_platform)
+                  const noLocationSet = eventType.location === 'video' && !eventType.video_platform
+                  return (
+                    <SectionContent className="space-y-4">
+                      <p className="text-sm text-[var(--crm-text-secondary)]">Where will this meeting happen?</p>
 
-                      {eventType.type === 'group' && (
-                        <div>
-                          <Label htmlFor="max_invitees" className={cn(labelStyle, formErrors.max_invitees && "text-red-500")}>Maximum Invitees <span className="text-red-500">*</span></Label>
-                          <Input
-                            id="max_invitees"
-                            type="number"
-                            min="2"
-                            value={eventType.max_invitees || 2}
-                            onChange={(e) => updateField({ max_invitees: parseInt(e.target.value) || 2 })}
-                            className={cn(inputStyle, "w-32", formErrors.max_invitees && "border-red-500")}
-                          />
-                          <p className="text-xs text-[var(--crm-text-secondary)] mt-1.5">Maximum number of people that can book the exact same time slot.</p>
-                          {formErrors.max_invitees && <p className="text-[10px] font-bold text-red-500 uppercase tracking-widest mt-1">{formErrors.max_invitees}</p>}
-                        </div>
+                      {noLocationSet && (
+                        <SectionWarning>No video provider selected — pick one below so invitees know how to join.</SectionWarning>
                       )}
 
                       <div>
-                        <Label htmlFor="redirect_url" className={labelStyle}>Redirect URL (Optional)</Label>
-                        <Input
-                          id="redirect_url"
-                          value={eventType.redirect_url || ''}
-                          onChange={(e) => updateField({ redirect_url: e.target.value })}
-                          placeholder="e.g., https://yourwebsite.com/thank-you"
-                          className={inputStyle}
-                        />
-                        <p className="text-xs text-[var(--crm-text-secondary)] mt-1.5">Redirect invitees to this URL after they successfully book a meeting.</p>
-                      </div>
-
-                      <div>
-                        <Label className={labelStyle}>Event Color</Label>
-                        <div className="flex flex-wrap gap-3">
-                          {COLOR_OPTIONS.map((color) => {
-                            const isSelected = (eventType.color || '#4f46e5') === color
+                        <Label className={labelStyle}>Location</Label>
+                        <div className="grid grid-cols-4 gap-2">
+                          {LOCATION_PILLS.map(pill => {
+                            const Icon = pill.icon
+                            const selected = pill.value === 'zoom' ? isZoom : eventType.location === pill.value
                             return (
                               <button
-                                key={color}
                                 type="button"
-                                onClick={() => updateField({ color })}
+                                key={pill.value}
+                                onClick={() => updateField(pill.value === 'zoom' ? { location: 'video', video_platform: 'zoom' } : { location: pill.value as EventType['location'] })}
                                 className={cn(
-                                  "w-8 h-8 rounded-full flex items-center justify-center transition-all",
-                                  isSelected ? "ring-2 ring-offset-2 ring-[var(--crm-accent)]" : "opacity-80 hover:opacity-100"
+                                  'flex flex-col items-center gap-1.5 rounded-lg border px-2 py-3 text-xs font-medium transition-all',
+                                  selected ? 'border-[var(--crm-accent)] ring-1 ring-[var(--crm-accent)] bg-[var(--crm-accent-soft)]' : 'border-[var(--crm-border)] hover:border-[var(--lb-navy)]/40'
                                 )}
-                                style={{ backgroundColor: color }}
                               >
-                                {isSelected && (
-                                  <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                  </svg>
-                                )}
+                                <Icon className="h-4 w-4" />
+                                {pill.label}
                               </button>
                             )
                           })}
-                        </div>
-                        <p className="text-xs text-[var(--crm-text-secondary)] mt-1.5">Helps you visually identify this event type on your meetings dashboard.</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {activeSection === 'location' && (() => {
-                    const isZoom = eventType.location === 'video' && eventType.video_platform === 'zoom'
-                    const isOtherProvider = eventType.location === 'video' && eventType.video_platform && eventType.video_platform !== 'zoom' && VIDEO_PROVIDERS.some(p => p.value === eventType.video_platform)
-                    const currentProvider = ALL_VIDEO_PROVIDERS.find(p => p.value === eventType.video_platform)
-                    return (
-                      <div className="space-y-4">
-                        <div>
-                          <Label className={labelStyle}>Location</Label>
-                          <div className="grid grid-cols-4 gap-2">
-                            {LOCATION_PILLS.map(pill => {
-                              const Icon = pill.icon
-                              const selected = pill.value === 'zoom' ? isZoom : eventType.location === pill.value
-                              return (
-                                <button
-                                  type="button"
-                                  key={pill.value}
-                                  onClick={() => updateField(pill.value === 'zoom' ? { location: 'video', video_platform: 'zoom' } : { location: pill.value as EventType['location'] })}
-                                  className={cn(
-                                    'flex flex-col items-center gap-1.5 rounded-lg border px-2 py-3 text-xs font-medium transition-all',
-                                    selected ? 'border-[var(--crm-accent)] ring-1 ring-[var(--crm-accent)] bg-[var(--crm-accent-soft)]' : 'border-[var(--crm-border)] hover:border-[var(--lb-navy)]/40'
-                                  )}
-                                >
-                                  <Icon className="h-4 w-4" />
-                                  {pill.label}
-                                </button>
-                              )
-                            })}
-                            <div className="relative">
-                              <button
-                                type="button"
-                                onClick={() => setLocationDropdownOpen(v => !v)}
-                                className={cn(
-                                  'w-full h-full flex flex-col items-center gap-1.5 rounded-lg border px-2 py-3 text-xs font-medium transition-all',
-                                  isOtherProvider ? 'border-[var(--crm-accent)] ring-1 ring-[var(--crm-accent)] bg-[var(--crm-accent-soft)]' : 'border-[var(--crm-border)] hover:border-[var(--lb-navy)]/40'
-                                )}
-                              >
-                                <ChevronDown className="h-4 w-4" />
-                                All options
-                              </button>
-                              {locationDropdownOpen && (
-                                <div className="absolute right-0 top-full mt-1 z-20 w-44 rounded-lg border border-[var(--crm-border)] bg-[var(--crm-surface-1)] shadow-lg p-1">
-                                  {VIDEO_PROVIDERS.map(p => (
-                                    <button
-                                      type="button"
-                                      key={p.value}
-                                      onClick={() => { updateField({ location: 'video', video_platform: p.value }); setLocationDropdownOpen(false) }}
-                                      className="w-full text-left px-2.5 py-1.5 text-xs rounded-md hover:bg-[var(--crm-surface-2)] text-[var(--crm-text-primary)]"
-                                    >
-                                      {p.label}
-                                    </button>
-                                  ))}
-                                </div>
+                          <div className="relative">
+                            <button
+                              type="button"
+                              onClick={() => setLocationDropdownOpen(v => !v)}
+                              className={cn(
+                                'w-full h-full flex flex-col items-center gap-1.5 rounded-lg border px-2 py-3 text-xs font-medium transition-all',
+                                isOtherProvider ? 'border-[var(--crm-accent)] ring-1 ring-[var(--crm-accent)] bg-[var(--crm-accent-soft)]' : 'border-[var(--crm-border)] hover:border-[var(--lb-navy)]/40'
                               )}
-                            </div>
+                            >
+                              <ChevronDown className="h-4 w-4" />
+                              All options
+                            </button>
+                            {locationDropdownOpen && (
+                              <div className="absolute right-0 top-full mt-1 z-20 w-44 rounded-lg border border-[var(--crm-border)] bg-[var(--crm-surface-1)] shadow-lg p-1">
+                                {VIDEO_PROVIDERS.map(p => (
+                                  <button
+                                    type="button"
+                                    key={p.value}
+                                    onClick={() => { updateField({ location: 'video', video_platform: p.value }); setLocationDropdownOpen(false) }}
+                                    className="w-full text-left px-2.5 py-1.5 text-xs rounded-md hover:bg-[var(--crm-surface-2)] text-[var(--crm-text-primary)]"
+                                  >
+                                    {p.label}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         </div>
-
-                        {eventType.location === 'video' && (
-                          <p className="text-xs text-[var(--crm-text-secondary)]">
-                            Provider: <span className="font-medium text-[var(--crm-text-primary)]">{currentProvider?.label || 'Not set — pick one above'}</span>
-                          </p>
-                        )}
-
-                        {eventType.location === 'in-person' && (
-                          <div>
-                            <Label className={labelStyle}>Location Details</Label>
-                            <Textarea
-                              value={eventType.location_details || ''}
-                              onChange={(e) => updateField({ location_details: e.target.value })}
-                              placeholder="Enter the meeting location details"
-                              className={cn(inputStyle, "min-h-[70px] py-2 resize-none")}
-                            />
-                          </div>
-                        )}
                       </div>
-                    )
-                  })()}
 
-                  {activeSection === 'availability' && (
-                    <div className="space-y-6">
-                      <div className="grid sm:grid-cols-2 gap-4">
+                      {eventType.location === 'video' && currentProvider && (
+                        <p className="text-xs text-[var(--crm-text-secondary)]">
+                          Provider: <span className="font-medium text-[var(--crm-text-primary)]">{currentProvider.label}</span>
+                        </p>
+                      )}
+
+                      {eventType.location === 'in-person' && (
                         <div>
-                          <Label className={labelStyle}>Minimum Notice</Label>
+                          <Label className={labelStyle}>Location details</Label>
+                          <Textarea
+                            value={eventType.location_details || ''}
+                            onChange={(e) => updateField({ location_details: e.target.value })}
+                            placeholder="Enter the meeting location address or details"
+                            className={cn(inputStyle, "min-h-[70px] py-2 resize-none")}
+                          />
+                        </div>
+                      )}
+
+                      {eventType.location === 'phone' && (
+                        <p className="text-xs text-[var(--crm-text-secondary)]">
+                          Invitees will provide their phone number at booking.
+                        </p>
+                      )}
+                    </SectionContent>
+                  )
+                })()}
+
+                {/* ── Availability ────────────────────────────────────────── */}
+                {activeSection === 'availability' && (() => {
+                  const hasNoSlots = !(eventType.scheduling.timeSlots?.length)
+                  return (
+                    <SectionContent className="space-y-6">
+                      {hasNoSlots && (
+                        <SectionWarning>
+                          No weekly hours set — add at least one time slot below so invitees can book.
+                        </SectionWarning>
+                      )}
+
+                      <div className="grid sm:grid-cols-2 gap-4 bg-[var(--crm-surface-1)]">
+                        <div>
+                          <Label className={labelStyle}>Minimum notice</Label>
                           <div className="flex items-center gap-2">
                             <Input type="number" min="0" value={eventType.scheduling.minimumNotice} onChange={(e) => updateScheduling('minimumNotice', parseInt(e.target.value) || 0)} className={cn(inputStyle, "w-20")} />
                             <span className="text-xs text-[var(--crm-text-secondary)]">hours before start time</span>
                           </div>
                         </div>
                         <div>
-                          <Label className={labelStyle}>Max Date Range</Label>
+                          <Label className={labelStyle}>Booking window</Label>
                           <div className="flex items-center gap-2">
                             <Input type="number" min="1" value={eventType.scheduling.dateRange} onChange={(e) => updateScheduling('dateRange', parseInt(e.target.value) || 1)} className={cn(inputStyle, "w-20")} />
                             <span className="text-xs text-[var(--crm-text-secondary)]">days into the future</span>
                           </div>
                         </div>
+                        <div className="sm:col-span-2">
+                          <Label className={labelStyle}>Time zone</Label>
+                          <Select value={eventType.scheduling.timezone} onValueChange={(v) => updateScheduling('timezone', v)}>
+                            <SelectTrigger className={inputStyle}><SelectValue placeholder="Select" /></SelectTrigger>
+                            <SelectContent className="rounded-xl max-h-[250px]">
+                              {Array.from(new Set([...(typeof Intl.supportedValuesOf === 'function' ? Intl.supportedValuesOf('timeZone') : []), eventType.scheduling.timezone || 'UTC'])).map((tz) => (
+                                <SelectItem key={tz} value={tz} className="text-xs">{tz}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
 
-                      <div>
-                        <Label className={labelStyle}>Time Zone</Label>
-                        <Select value={eventType.scheduling.timezone} onValueChange={(v) => updateScheduling('timezone', v)}>
-                          <SelectTrigger className={inputStyle}><SelectValue placeholder="Select" /></SelectTrigger>
-                          <SelectContent className="rounded-xl max-h-[250px]">
-                            {Array.from(new Set([...(typeof Intl.supportedValuesOf === 'function' ? Intl.supportedValuesOf('timeZone') : []), eventType.scheduling.timezone || 'UTC'])).map((tz) => (
-                              <SelectItem key={tz} value={tz} className="text-xs">{tz}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
+                      <TimeSlotManager
+                        slots={eventType.scheduling.timeSlots || []}
+                        onSlotsChange={(slots: any) => updateScheduling('timeSlots', slots)}
+                      />
 
-                      <div className="pt-4 border-t border-[var(--crm-border)]">
-                        <Label className={labelStyle}>Weekly Hours</Label>
-                        <p className="text-xs text-[var(--crm-text-secondary)] -mt-1 mb-2">Bookable every week on these days/hours.</p>
-                        <TimeSlotManager
-                          slots={eventType.scheduling.timeSlots || []}
-                          onSlotsChange={(slots: any) => updateScheduling('timeSlots', slots)}
-                        />
-                      </div>
+                      <SpecificDateManager
+                        slots={(eventType.scheduling as any).specificDates || []}
+                        onSlotsChange={(slots: any) => updateScheduling('specificDates', slots)}
+                      />
+                    </SectionContent>
+                  )
+                })()}
 
-                      <div className="pt-4 border-t border-[var(--crm-border)]">
-                        <Label className={labelStyle}>Date-Specific Hours</Label>
-                        <p className="text-xs text-[var(--crm-text-secondary)] -mt-1 mb-2">Give specific dates their own hours — these replace the weekly hours above for that date only.</p>
-                        <SpecificDateManager
-                          slots={(eventType.scheduling as any).specificDates || []}
-                          onSlotsChange={(slots: any) => updateScheduling('specificDates', slots)}
-                        />
+                {/* ── Limits ──────────────────────────────────────────────── */}
+                {activeSection === 'limits' && (
+                  <SectionContent className="space-y-5">
+                    <p className="text-sm text-[var(--crm-text-secondary)]">Control how many meetings can be booked and when.</p>
+
+                    <div>
+                      <Label className={labelStyle}>Padding around meetings</Label>
+                      <div className="grid sm:grid-cols-2 gap-4 mt-1.5">
+                        <div>
+                          <span className="text-xs text-[var(--crm-text-secondary)] mb-1 block">Before</span>
+                          <Select value={String(eventType.scheduling.bufferBefore ?? 0)} onValueChange={(v) => updateScheduling('bufferBefore', parseInt(v))}>
+                            <SelectTrigger className={inputStyle}><SelectValue /></SelectTrigger>
+                            <SelectContent className="rounded-xl">
+                              {[0, 5, 10, 15, 30, 45, 60].map(m => <SelectItem key={m} value={String(m)}>{m === 0 ? 'No buffer' : `${m} minutes`}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <span className="text-xs text-[var(--crm-text-secondary)] mb-1 block">After</span>
+                          <Select value={String(eventType.scheduling.bufferAfter ?? 0)} onValueChange={(v) => updateScheduling('bufferAfter', parseInt(v))}>
+                            <SelectTrigger className={inputStyle}><SelectValue /></SelectTrigger>
+                            <SelectContent className="rounded-xl">
+                              {[0, 5, 10, 15, 30, 45, 60].map(m => <SelectItem key={m} value={String(m)}>{m === 0 ? 'No buffer' : `${m} minutes`}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
                     </div>
-                  )}
 
-                  {activeSection === 'limits' && (
-                    <div className="grid sm:grid-cols-2 gap-x-6 gap-y-4">
+                    <div className="grid sm:grid-cols-2 gap-4">
                       <div>
-                        <Label className={labelStyle}>Buffer Before</Label>
-                        <Select value={String(eventType.scheduling.bufferBefore ?? 0)} onValueChange={(v) => updateScheduling('bufferBefore', parseInt(v))}>
-                          <SelectTrigger className={inputStyle}><SelectValue placeholder="Select buffer" /></SelectTrigger>
-                          <SelectContent className="rounded-xl">
-                            {[0, 5, 10, 15, 30, 45, 60].map(m => <SelectItem key={m} value={String(m)}>{m === 0 ? 'No buffer' : `${m} minutes`}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label className={labelStyle}>Buffer After</Label>
-                        <Select value={String(eventType.scheduling.bufferAfter ?? 0)} onValueChange={(v) => updateScheduling('bufferAfter', parseInt(v))}>
-                          <SelectTrigger className={inputStyle}><SelectValue placeholder="Select buffer" /></SelectTrigger>
-                          <SelectContent className="rounded-xl">
-                            {[0, 5, 10, 15, 30, 45, 60].map(m => <SelectItem key={m} value={String(m)}>{m === 0 ? 'No buffer' : `${m} minutes`}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label className={labelStyle}>Daily Limit</Label>
+                        <Label className={labelStyle}>Daily limit</Label>
                         <Input type="number" min="0" placeholder="No limit" value={eventType.scheduling.dailyLimit || ''} onChange={(e) => updateScheduling('dailyLimit', parseInt(e.target.value) || 0)} className={inputStyle} />
+                        <p className="text-xs text-[var(--crm-text-secondary)] mt-1.5">Max bookings accepted in a single day.</p>
                       </div>
                       <div>
-                        <Label className={labelStyle}>Weekly Limit</Label>
+                        <Label className={labelStyle}>Weekly limit</Label>
                         <Input type="number" min="0" placeholder="No limit" value={eventType.scheduling.weeklyLimit || ''} onChange={(e) => updateScheduling('weeklyLimit', parseInt(e.target.value) || 0)} className={inputStyle} />
-                      </div>
-                      <div>
-                        <Label className={labelStyle}>Per-Invitee Limit</Label>
-                        <Input
-                          type="number" min="1" placeholder="No limit"
-                          value={eventType.max_bookings_per_invitee || ''}
-                          onChange={(e) => updateField({ max_bookings_per_invitee: e.target.value ? parseInt(e.target.value) : null })}
-                          className={inputStyle}
-                        />
-                      </div>
-                      <div>
-                        <Label className={labelStyle}>Limit Timeframe</Label>
-                        <Select
-                          value={eventType.invitee_booking_limit_timeframe || 'ACTIVE'}
-                          onValueChange={(v) => updateField({ invitee_booking_limit_timeframe: v as EventType['invitee_booking_limit_timeframe'] })}
-                        >
-                          <SelectTrigger className={inputStyle}><SelectValue placeholder="Select" /></SelectTrigger>
-                          <SelectContent className="rounded-xl">
-                            <SelectItem value="ACTIVE">Active (at a time)</SelectItem>
-                            <SelectItem value="PER_DAY">Per day</SelectItem>
-                            <SelectItem value="PER_WEEK">Per week</SelectItem>
-                            <SelectItem value="PER_MONTH">Per month</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <p className="text-xs text-[var(--crm-text-secondary)] mt-1.5">Max bookings accepted in a single week.</p>
                       </div>
                     </div>
-                  )}
 
-                  {activeSection === 'questions' && (
+                    <div className="pt-2 border-t border-[var(--crm-border)]">
+                      <Label className={labelStyle}>Per-invitee limit</Label>
+                      <div className="grid sm:grid-cols-2 gap-4 mt-1.5">
+                        <div>
+                          <span className="text-xs text-[var(--crm-text-secondary)] mb-1 block">Max bookings</span>
+                          <Input
+                            type="number" min="1" placeholder="No limit"
+                            value={eventType.max_bookings_per_invitee || ''}
+                            onChange={(e) => updateField({ max_bookings_per_invitee: e.target.value ? parseInt(e.target.value) : null })}
+                            className={inputStyle}
+                          />
+                        </div>
+                        <div>
+                          <span className="text-xs text-[var(--crm-text-secondary)] mb-1 block">Timeframe</span>
+                          <Select
+                            value={eventType.invitee_booking_limit_timeframe || 'ACTIVE'}
+                            onValueChange={(v) => updateField({ invitee_booking_limit_timeframe: v as EventType['invitee_booking_limit_timeframe'] })}
+                          >
+                            <SelectTrigger className={inputStyle}><SelectValue /></SelectTrigger>
+                            <SelectContent className="rounded-xl">
+                              <SelectItem value="ACTIVE">Active (at a time)</SelectItem>
+                              <SelectItem value="PER_DAY">Per day</SelectItem>
+                              <SelectItem value="PER_WEEK">Per week</SelectItem>
+                              <SelectItem value="PER_MONTH">Per month</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <p className="text-xs text-[var(--crm-text-secondary)] mt-2">Limits how many times the same invitee can book this event type within the chosen timeframe.</p>
+                    </div>
+                  </SectionContent>
+                )}
+
+                {/* ── Questions ───────────────────────────────────────────── */}
+                {activeSection === 'questions' && (
+                  // QuestionsTab manages its own full-width layout (question cards
+                  // with drag handles need more horizontal room than 640px).
+                  // No SectionWarning here — zero custom questions is a valid state;
+                  // the three locked fields (Name, Email, Phone) are always present.
+                  <div>
+                    <p className="text-sm text-[var(--crm-text-secondary)] mb-4 max-w-[640px]">
+                      Collect information from invitees when they book. Name, email, and phone are always required.
+                    </p>
                     <Tabs defaultValue="questions">
                       <QuestionsTab
                         eventType={eventType}
@@ -786,15 +838,25 @@ export default function EventTypeForm() {
                         sensors={sensors}
                       />
                     </Tabs>
-                  )}
+                  </div>
+                )}
 
-                  {activeSection === 'team' && (
+                {/* ── Team ────────────────────────────────────────────────── */}
+                {activeSection === 'team' && (
+                  // TeamTab manages its own layout. No SectionWarning: the backend
+                  // defaults to the event-type creator as the implicit assignee,
+                  // so zero explicit team members is a valid state.
+                  <div>
+                    <p className="text-sm text-[var(--crm-text-secondary)] mb-4 max-w-[640px]">
+                      Assign team members who can host this event type. If no one is assigned, bookings go to you.
+                    </p>
                     <Tabs defaultValue="team">
                       <TeamTab eventType={eventType} toggleTeamMember={toggleTeamMember} availableMembers={availableMembers} />
                     </Tabs>
-                  )}
-                </CardContent>
-              </Card>
+                  </div>
+                )}
+
+              </div>
             )}
           </div>
         </div>

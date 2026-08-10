@@ -1014,6 +1014,16 @@ export default function MeetingsPage() {
   const { theme, resolvedTheme } = useTheme()
   const isDark = resolvedTheme === 'dark' || theme === 'dark'
   const [activeTab, setActiveTab] = useState<'upcoming' | 'history' | 'event-types'>('upcoming')
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const tab = params.get('tab')
+      if (tab === 'upcoming' || tab === 'history' || tab === 'event-types') {
+        setActiveTab(tab)
+      }
+    }
+  }, [])
   // Raw booking rows from the API, deduped by id. Meetings shown in the UI are
   // derived from these (grouped + mapped) so that pagination overlaps and group
   // events split across page boundaries can never render the same meeting twice.
@@ -1317,7 +1327,7 @@ export default function MeetingsPage() {
           )}
 
           {/* KPI Row — meeting-specific, so hidden on the Event types tab */}
-          {activeTab !== 'event-types' && (
+          {activeTab === 'upcoming' && (
             <div className="grid grid-cols-2 sm:flex sm:overflow-x-auto gap-2 sm:gap-3 shrink-0 pb-3 border-b border-[var(--crm-border)] no-scrollbar mb-2">
               {[
                 { label: 'Upcoming', value: totalUpcoming, color: 'text-primary dark:text-indigo-400', bg: 'bg-primary/10 dark:bg-primary/10 border-indigo-100 dark:border-primary/20' },
@@ -1338,27 +1348,29 @@ export default function MeetingsPage() {
 
         <div className="flex-1 flex flex-col min-h-0 overflow-hidden relative">
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)} className="flex-1 flex flex-col min-h-0">
-            <div className="flex items-center justify-between border-b border-[var(--crm-border)] shrink-0 bg-transparent">
-              <TabsList className="h-11 bg-transparent p-0 gap-2 sm:gap-4">
-                <TabsTrigger value="upcoming" className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-[var(--lb-navy)] data-[state=active]:text-[var(--lb-navy)] data-[state=active]:shadow-none data-[state=active]:bg-transparent px-1 sm:px-2 text-xs sm:text-sm font-semibold">
-                  <span className="hidden sm:inline">Upcoming Meetings</span>
-                  <span className="sm:hidden">Upcoming</span>
-                  {totalUpcoming > 0 && (
-                    <Badge variant="secondary" className="ml-1.5 px-1.5 py-0 text-[10px] bg-[var(--crm-accent)] text-white border-transparent">
-                      {totalUpcoming}
-                    </Badge>
-                  )}
-                </TabsTrigger>
-                <TabsTrigger value="history" className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-[var(--lb-navy)] data-[state=active]:text-[var(--lb-navy)] data-[state=active]:shadow-none data-[state=active]:bg-transparent px-1 sm:px-2 text-xs sm:text-sm font-semibold">
-                  <span className="hidden sm:inline">Past Meetings</span>
-                  <span className="sm:hidden">Past</span>
-                </TabsTrigger>
-                <TabsTrigger value="event-types" className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-[var(--lb-navy)] data-[state=active]:text-[var(--lb-navy)] data-[state=active]:shadow-none data-[state=active]:bg-transparent px-1 sm:px-2 text-xs sm:text-sm font-semibold">
-                  Event types
-                </TabsTrigger>
-              </TabsList>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[var(--crm-border)] shrink-0 bg-transparent">
+              <div className="overflow-x-auto custom-scrollbar">
+                <TabsList className="h-11 bg-transparent p-0 gap-2 sm:gap-4 w-max px-1">
+                  <TabsTrigger value="upcoming" className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-[var(--lb-navy)] data-[state=active]:text-[var(--lb-navy)] data-[state=active]:shadow-none data-[state=active]:bg-transparent px-2 text-[13px] sm:text-sm font-semibold whitespace-nowrap">
+                    <span className="hidden sm:inline">Upcoming Meetings</span>
+                    <span className="sm:hidden">Upcoming</span>
+                    {totalUpcoming > 0 && (
+                      <Badge variant="secondary" className="ml-1.5 px-1.5 py-0 text-[10px] bg-[var(--crm-accent)] text-white border-transparent">
+                        {totalUpcoming}
+                      </Badge>
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger value="history" className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-[var(--lb-navy)] data-[state=active]:text-[var(--lb-navy)] data-[state=active]:shadow-none data-[state=active]:bg-transparent px-2 text-[13px] sm:text-sm font-semibold whitespace-nowrap">
+                    <span className="hidden sm:inline">Past Meetings</span>
+                    <span className="sm:hidden">Past</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="event-types" className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-[var(--lb-navy)] data-[state=active]:text-[var(--lb-navy)] data-[state=active]:shadow-none data-[state=active]:bg-transparent px-2 text-[13px] sm:text-sm font-semibold whitespace-nowrap">
+                    Booking Links
+                  </TabsTrigger>
+                </TabsList>
+              </div>
               {activeTab !== 'event-types' && (
-                <div className="py-2 flex items-center gap-2">
+                <div className="py-2 flex items-center gap-2 overflow-x-auto custom-scrollbar px-1 pb-2 sm:pb-2">
                   <Select value={statusFilter} onValueChange={setStatusFilter}>
                     <SelectTrigger className="h-8 w-[110px] sm:w-[140px] border-[var(--crm-border)] bg-[var(--crm-surface-2)] text-xs sm:text-sm">
                       <SelectValue placeholder="Filter" />
@@ -1414,7 +1426,7 @@ export default function MeetingsPage() {
                       <CalendarCheck className="h-8 w-8 text-slate-400" />
                     </div>
                     <h3 className="text-lg font-semibold text-slate-900 dark:text-white">No upcoming meetings</h3>
-                    <p className="text-sm text-slate-500 mt-2 max-w-xs mx-auto">Meetings booked via your event types will appear here</p>
+                    <p className="text-sm text-slate-500 mt-2 max-w-xs mx-auto">Meetings booked via your booking links will appear here</p>
                   </div>
                 ) : (
                   <div className="space-y-6">
