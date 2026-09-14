@@ -87,8 +87,8 @@ export default function EmailMarketingPage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-full items-center justify-center bg-[var(--crm-bg)]">
-        <Loader2 className="h-8 w-8 animate-spin text-[var(--crm-text-tertiary)]" />
+      <div className="flex flex-1 min-h-[350px] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-slate-400 dark:text-slate-500" />
       </div>
     );
   }
@@ -334,6 +334,7 @@ export default function EmailMarketingPage() {
         email={testEmailAddress}
         setEmail={setTestEmailAddress}
         onSendTest={handleSendTestEmail}
+        isConnecting={isConnecting}
       />
     </div>
   );

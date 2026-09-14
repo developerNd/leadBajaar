@@ -27,6 +27,7 @@ import {
 // import '@/app/echo'
 import { format } from 'date-fns'
 import { RoleGuard } from '@/components/RoleGuard'
+import { getAgentColor } from '@/utils/agentColors'
 
 interface WhatsAppInteractive {
   type: string;
@@ -88,8 +89,10 @@ export default function LiveChatPage() {
   const [isLoadingMessages, setIsLoadingMessages] = useState(false)
   const [showUserDetails, setShowUserDetails] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [displayLimit, setDisplayLimit] = useState(25)
   const unreadMessages = chats.reduce((acc, chat) => acc + (chat.user.unread_count || 0), 0)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const isInitialScrollRef = useRef(true)
 
   const formatMessageTime = (timestamp: string | Date | undefined): string => {
     if (!timestamp) return ''
@@ -115,6 +118,8 @@ export default function LiveChatPage() {
   const fetchChatMessages = useCallback(async (chatId: string | number) => {
     try {
       setIsLoadingMessages(true)
+      setDisplayLimit(25)
+      isInitialScrollRef.current = true
       const response = await getConversationMessages(chatId)
 
       if (response?.messages && Array.isArray(response.messages)) {
@@ -233,7 +238,14 @@ export default function LiveChatPage() {
   }, [])
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (messagesEndRef.current) {
+      if (isInitialScrollRef.current) {
+        messagesEndRef.current.scrollIntoView({ behavior: 'instant', block: 'nearest' })
+        isInitialScrollRef.current = false
+      } else {
+        messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+      }
+    }
   }, [messages])
 
   const handleSend = async () => {
@@ -302,8 +314,8 @@ export default function LiveChatPage() {
 
   return (
     <RoleGuard allowedFeatures={['live_chat']}>
-      <div className="flex flex-col flex-1 overflow-hidden">
-        <div className="flex-1 flex flex-col lg:flex-row overflow-hidden bg-[var(--crm-surface-1)] rounded-[var(--r-sm)] border border-[var(--crm-border)] shadow-sm">
+      <div className="h-full w-full flex flex-col flex-1 min-h-0 overflow-hidden p-2 sm:p-3 lg:p-4">
+        <div className="h-full w-full flex-1 min-h-0 flex flex-col lg:flex-row overflow-hidden bg-[var(--crm-surface-1)] rounded-[var(--r-sm)] border border-[var(--crm-border)] shadow-sm">
 
         {/* ── Sidebar: Conversations ─────────────────────────────────────── */}
         <div className={cn(
@@ -368,30 +380,30 @@ export default function LiveChatPage() {
                       )}
                     >
                       <div className="relative shrink-0">
-                        <Avatar className="h-10 w-10 border border-[var(--crm-border)]">
-                          <AvatarImage src={chat.user.avatar} />
-                          <AvatarFallback className="bg-[var(--crm-surface-2)] font-bold text-xs uppercase text-[var(--crm-text-secondary)]">
-                            {chat.user.name.substring(0, 2)}
-                          </AvatarFallback>
-                        </Avatar>
+                        <div 
+                          className="h-10 w-10 rounded-full flex items-center justify-center text-white font-bold font-heading text-xs shadow-xs"
+                          style={{ backgroundColor: getAgentColor(chat.id).bg }}
+                        >
+                          {chat.user.name.substring(0, 2).toUpperCase()}
+                        </div>
                         {chat.priority === 'high' && (
-                          <div className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full bg-red-500 border-2 border-white dark:border-slate-900 animate-pulse" />
+                          <div className="absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full bg-red-500 border-2 border-white dark:border-slate-900" />
                         )}
                       </div>
 
                       <div className="flex-1 min-w-0 text-left overflow-hidden">
                         <div className="flex items-center gap-2 overflow-hidden">
                           <p className={cn(
-                            "text-sm font-bold truncate flex-1 min-w-0",
-                            activeChat?.id === chat.id ? "text-[var(--crm-accent)]" : "text-slate-900 dark:text-white"
+                            "text-sm font-semibold font-heading truncate flex-1 min-w-0",
+                            activeChat?.id === chat.id ? "text-[#FE4548]" : "text-slate-900 dark:text-white"
                           )}>
                             {chat.user.name}
                           </p>
-                          <span className="text-[10px] font-medium text-slate-400 whitespace-nowrap shrink-0">
+                          <span className="text-[10px] font-normal text-slate-400 whitespace-nowrap shrink-0">
                             {chat.lastActive}
                           </span>
                         </div>
-                        <p className="text-xs text-slate-500 line-clamp-1 mt-0.5 font-medium leading-relaxed break-all">
+                        <p className="text-xs text-slate-500 line-clamp-1 mt-0.5 font-normal leading-relaxed break-all">
                           {(() => {
                             const content = chat.user.last_message?.content;
                             if (!content) return 'Started a conversation';
@@ -510,8 +522,21 @@ export default function LiveChatPage() {
                         <p className="text-xs text-slate-500">Send a friendly greeting to {activeChat.user.name} to get things moving.</p>
                       </div>
                     ) : (
-                      <div className="space-y-8">
-                        {groupMessagesByDate(messages).map(([date, dateMessages]) => (
+                      <div className="min-h-full flex flex-col justify-end space-y-6">
+                        {messages.length > displayLimit && (
+                          <div className="flex justify-center pb-2 pt-1 sticky top-0 z-10">
+                            <button
+                              type="button"
+                              onClick={() => setDisplayLimit(prev => Math.min(messages.length, prev + 25))}
+                              className="px-3.5 py-1.5 rounded-full text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-100/95 dark:bg-slate-800/95 backdrop-blur-xs hover:bg-slate-200 dark:hover:bg-slate-700 transition-all flex items-center gap-1.5 shadow-xs border border-slate-200 dark:border-slate-700 cursor-pointer active:scale-95"
+                            >
+                              <Clock className="h-3.5 w-3.5 text-slate-400" />
+                              Load older messages ({messages.length - displayLimit} remaining)
+                            </button>
+                          </div>
+                        )}
+
+                        {groupMessagesByDate(messages.slice(-displayLimit)).map(([date, dateMessages]) => (
                           <div key={date} className="space-y-6">
                             <div className="relative flex justify-center">
                               <div className="absolute inset-0 flex items-center" aria-hidden="true">
@@ -694,7 +719,7 @@ export default function LiveChatPage() {
                             })}
                           </div>
                         ))}
-                        <div ref={messagesEndRef} className="h-4" />
+                        <div ref={messagesEndRef} className="h-2 shrink-0" />
                       </div>
                     )}
                   </ScrollArea>

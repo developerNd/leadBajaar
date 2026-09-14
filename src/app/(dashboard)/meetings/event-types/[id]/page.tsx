@@ -134,6 +134,7 @@ export default function EventTypeForm() {
   const [availableMembers, setAvailableMembers] = useState<TeamMember[]>([])
   const [activeSection, setActiveSection] = useState<SectionId>('basic')
   const [locationDropdownOpen, setLocationDropdownOpen] = useState(false)
+  const [showPreviewModal, setShowPreviewModal] = useState(false)
 
   const [eventType, setEventType] = useState<EventType>(() => {
     const base: EventType = {
@@ -179,25 +180,8 @@ export default function EventTypeForm() {
       redirect_url: '',
     }
 
-    // If the guided wizard just handed us a pre-filled draft, use it instead of
-    // the plain defaults above — the user still reviews everything here before saving.
-    if (isNew && typeof window !== 'undefined') {
-      const raw = sessionStorage.getItem(WIZARD_DRAFT_STORAGE_KEY)
-      if (raw) {
-        sessionStorage.removeItem(WIZARD_DRAFT_STORAGE_KEY)
-        try {
-          const draft = JSON.parse(raw)
-          return {
-            ...base,
-            ...draft,
-            scheduling: { ...base.scheduling, ...draft.scheduling },
-          }
-        } catch {
-          // Malformed/stale draft — fall through to the plain defaults.
-        }
-      }
-    }
-
+    // We only initialize with the base defaults here.
+    // The draft from sessionStorage must be loaded in useEffect to avoid SSR hydration mismatches.
     return base
   })
 
@@ -211,6 +195,22 @@ export default function EventTypeForm() {
 
   useEffect(() => {
     if (isNew) {
+      if (typeof window !== 'undefined') {
+        const raw = sessionStorage.getItem(WIZARD_DRAFT_STORAGE_KEY)
+        if (raw) {
+          sessionStorage.removeItem(WIZARD_DRAFT_STORAGE_KEY)
+          try {
+            const draft = JSON.parse(raw)
+            setEventType(prev => ({
+              ...prev,
+              ...draft,
+              scheduling: { ...prev.scheduling, ...draft.scheduling },
+            }))
+          } catch {
+            // Malformed/stale draft - stick to defaults
+          }
+        }
+      }
       setLoading(false)
       return
     }
@@ -342,20 +342,20 @@ export default function EventTypeForm() {
     }
   }
 
-  const openPreview = () => {
+  const getBookingUrl = (et: EventType) => {
     const username = user?.name?.toLowerCase().replace(/\s+/g, '-')
-    if (!username || typeof window === 'undefined') return
-    const identifier = eventType.slug || eventType.id
-    window.open(`${window.location.origin}/${username}/${identifier}`, '_blank')
+    if (!username || typeof window === 'undefined') return '#'
+    const identifier = et.slug || et.id
+    return `${window.location.origin}/${username}/${identifier}`
   }
 
-  const handleSave = async () => {
+  const handleSave = async (preventRedirect = false): Promise<string | null> => {
     // Basic frontend validation
     const errors: Record<string, string> = {}
     
     if (isNew && !user?.name) {
       toast({ title: "Error", description: "User profile name is required to create an event type.", variant: "destructive" })
-      return
+      return null
     }
 
     if (!eventType.title?.trim()) errors.title = 'Title is required'
@@ -369,19 +369,27 @@ export default function EventTypeForm() {
       setFormErrors(errors)
       setErrorMessage("Please fill in all mandatory fields highlighted in red (Title, Description, Duration).")
       setShowErrorDialog(true)
-      return
+      return null
     }
 
     try {
       setIsSaving(true)
       setFormErrors({})
+      let savedId = eventType.id
       if (isNew) {
-        await eventTypeService.create(eventType)
+        const res = await eventTypeService.create(eventType)
+        savedId = res.id
+        setEventType({ ...eventType, id: res.id, slug: res.slug })
       } else {
         await eventTypeService.update(params.id as string, eventType)
       }
       toast({ title: "Success", description: "Event type saved successfully" })
-      router.push('/meetings?tab=event-types')
+      if (!preventRedirect) {
+        router.push('/meetings?tab=event-types')
+      } else if (isNew) {
+        window.history.replaceState(null, '', `/meetings/event-types/${savedId}`)
+      }
+      return savedId !== null && savedId !== undefined ? String(savedId) : null
     } catch (error: any) {
       if (error.response?.status === 422) {
         const beErrors = error.response.data.errors || {}
@@ -394,11 +402,23 @@ export default function EventTypeForm() {
     } finally {
       setIsSaving(false)
     }
+    return null
+  }
+
+  const handlePreviewClick = async () => {
+    if (isNew) {
+      const savedId = await handleSave(true)
+      if (savedId) {
+        setShowPreviewModal(true)
+      }
+    } else {
+      setShowPreviewModal(true)
+    }
   }
 
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className="flex flex-col h-full overflow-hidden bg-[var(--crm-surface-1)]">
       {/* Header */}
       <div className="shrink-0 border-b border-[var(--crm-border)] bg-[var(--crm-surface-1)] shadow-sm z-50">
         <div className="px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
@@ -435,10 +455,10 @@ export default function EventTypeForm() {
                 </span>
               </button>
             )}
-            <Button variant="outline" size="sm" onClick={openPreview} disabled={isNew} className="h-8 gap-1.5 border-[var(--crm-border)] bg-[var(--crm-surface-2)] text-xs">
-              <Eye className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Preview</span>
+            <Button variant="outline" size="sm" onClick={handlePreviewClick} className="h-8 gap-1.5 border-[var(--crm-border)] bg-[var(--crm-surface-2)] text-xs shadow-sm transition-all hover:bg-[var(--crm-surface-3)] lg:hidden">
+              <Eye className="h-3.5 w-3.5 text-slate-500" /> <span className="hidden sm:inline font-semibold">Preview</span>
             </Button>
-            <Button onClick={handleSave} disabled={isSaving} className="h-8 bg-[var(--crm-accent)] hover:opacity-90 text-white rounded-lg font-bold text-xs px-4 gap-2 transition-all active:scale-95 shadow-sm">
+            <Button onClick={() => handleSave(false)} disabled={isSaving} className="h-8 bg-[var(--crm-accent)] hover:opacity-90 text-white rounded-lg font-bold text-xs px-4 gap-2 transition-all active:scale-95 shadow-sm">
               {isSaving ? <div className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" /> : <Save className="h-3.5 w-3.5" />}
               <span className="hidden sm:inline">{isSaving ? 'Saving...' : 'Save changes'}</span>
             </Button>
@@ -469,8 +489,9 @@ export default function EventTypeForm() {
           })}
         </div>
 
-        <div className="flex-1 overflow-y-auto no-scrollbar">
-          <div className="px-4 sm:px-6 py-6">
+        {/* Center: Form Fields */}
+        <div className="flex-1 lg:max-w-[700px] xl:max-w-[800px] overflow-y-auto no-scrollbar lg:border-r border-[var(--crm-border)]">
+          <div className="px-4 sm:px-6 py-6 max-w-3xl mx-auto">
             {loading ? (
               <div className="space-y-6">
                 <div className="space-y-2">
@@ -860,6 +881,39 @@ export default function EventTypeForm() {
             )}
           </div>
         </div>
+
+        {/* Right: Live Preview (Large screens only) */}
+        <div className="hidden lg:flex flex-col flex-1 bg-slate-50 dark:bg-slate-900/30 overflow-hidden relative">
+          <div className="absolute top-0 left-0 right-0 h-12 border-b border-[var(--crm-border)] bg-[var(--crm-surface-1)] flex items-center px-6 z-10">
+            <div className="flex items-center gap-2">
+              <Eye className="h-4 w-4 text-slate-400" />
+              <span className="text-[11px] font-bold text-[var(--crm-text-secondary)] tracking-wider uppercase">Live Preview</span>
+            </div>
+          </div>
+          <div className="flex-1 mt-12 p-6 flex flex-col items-center justify-center relative">
+            {eventType.id === 'new' || eventType.id === '' ? (
+              <div className="flex flex-col items-center justify-center text-center max-w-sm">
+                <div className="h-16 w-16 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4">
+                  <Eye className="h-8 w-8 text-slate-300 dark:text-slate-600" />
+                </div>
+                <h3 className="text-base font-bold text-[var(--crm-text-primary)]">Preview not available yet</h3>
+                <p className="text-sm text-[var(--crm-text-secondary)] mt-1 mb-6">Save your event type configuration first to generate a live preview of your booking page.</p>
+                <Button onClick={() => handleSave(true)} disabled={isSaving} className="bg-[var(--crm-accent)] hover:opacity-90 text-white rounded-lg font-bold text-xs px-6">
+                  {isSaving ? 'Saving...' : 'Save & Preview'}
+                </Button>
+              </div>
+            ) : (
+              <div className="w-full h-full max-w-[820px] rounded-2xl overflow-hidden border border-[var(--crm-border)] shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] bg-white dark:bg-slate-900 relative">
+                <iframe 
+                  src={`${getBookingUrl(eventType)}?embed=true`}
+                  className="w-full h-full border-0 absolute inset-0"
+                  title="Preview Booking Page"
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
       </div>
 
       {/* Error Modal */}
@@ -886,6 +940,26 @@ export default function EventTypeForm() {
                 Review Fields
               </Button>
             </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showPreviewModal} onOpenChange={setShowPreviewModal}>
+        <DialogContent className="w-full sm:max-w-4xl bg-[var(--crm-surface-1)] border-[var(--crm-border)] p-6 rounded-xl shadow-lg transition-all duration-300">
+          <DialogHeader className="text-left space-y-1 mb-2">
+            <DialogTitle className="text-lg font-bold text-[var(--crm-text-primary)]">Preview Booking Page</DialogTitle>
+            <DialogDescription className="text-sm text-[var(--crm-text-secondary)]">
+              This is exactly what your invitees will see.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-4 h-[65vh] min-h-[500px] bg-slate-50 dark:bg-slate-900 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-inner">
+            {eventType.id !== 'new' && eventType.id !== '' && (
+              <iframe 
+                src={`${getBookingUrl(eventType)}?embed=true`}
+                className="w-full h-full border-0"
+                title="Preview Booking Page"
+              />
+            )}
           </div>
         </DialogContent>
       </Dialog>

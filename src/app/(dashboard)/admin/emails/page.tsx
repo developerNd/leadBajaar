@@ -282,7 +282,7 @@ export default function AdminEmailPage() {
                           <TableCell className="text-right pr-6">
                              <div className="flex justify-end items-center gap-2" onClick={(e) => e.stopPropagation()}>
                                 {!company.is_email_enabled && (
-                                  <Badge variant="destructive" className="text-[9px] h-5 font-bold uppercase tracking-tighter">DISABLED</Badge>
+                                  <Badge variant="danger" className="text-[9px] h-5 font-bold uppercase tracking-tighter">DISABLED</Badge>
                                 )}
                                 <Button
                                   variant="ghost"

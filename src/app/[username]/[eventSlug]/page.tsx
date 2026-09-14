@@ -202,17 +202,18 @@ export default function BookingPage() {
 
   // Smoothly scroll to the slots section when a date is selected
   useEffect(() => {
-    if (selectedDate && slotsRef.current) {
+    if (!isEmbed && selectedDate && slotsRef.current) {
       slotsRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }
-  }, [selectedDate])
+  }, [selectedDate, isEmbed])
 
   // Smoothly scroll to the Next button when a time slot is selected
   useEffect(() => {
-    if (selectedTime && nextButtonRef.current) {
+    if (!isEmbed && selectedTime && nextButtonRef.current) {
       nextButtonRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' })
     }
-  }, [selectedTime])
+  }, [selectedTime, isEmbed])
+
 
   const fetchAvailableSlots = async (date: Date) => {
     setIsLoadingSlots(true);
@@ -639,7 +640,7 @@ export default function BookingPage() {
 
   if (error) {
     return (
-      <div className={cn(isEmbed ? "p-0 bg-transparent w-full" : "min-h-screen flex flex-col items-center justify-center bg-[var(--lb-bg)] py-6 px-4")}>
+      <div className={cn(isEmbed ? "p-0 bg-transparent w-full" : "min-h-[100dvh] flex flex-col items-center justify-center bg-[var(--lb-s2)] py-6 px-4")}>
         <div className="w-full max-w-md mx-auto text-center space-y-4">
           <div className="mx-auto w-16 h-16 bg-red-50 rounded-full flex items-center justify-center text-red-500">
             <AlertCircle className="w-8 h-8" />
@@ -652,7 +653,7 @@ export default function BookingPage() {
   }
 
   if (!eventType) return (
-    <div className={cn(isEmbed ? "p-0 bg-transparent w-full" : "min-h-screen flex flex-col items-center justify-center bg-[var(--lb-bg)] py-6 px-4")}>
+    <div className={cn(isEmbed ? "p-0 bg-transparent w-full" : "min-h-[100dvh] flex flex-col items-center justify-center bg-[var(--lb-s2)] py-6 px-4")}>
       <div className="w-full max-w-[820px] mx-auto">
         <Card className="border-[0.5px] border-[var(--lb-border)] bg-white shadow-sm rounded-[16px] overflow-hidden w-full">
           <CardContent className="p-0 relative overflow-hidden">
@@ -679,9 +680,12 @@ export default function BookingPage() {
   );
 
   return (
-    <div className={cn(isEmbed ? "p-0 bg-transparent w-full" : "min-h-[100dvh] flex flex-col items-center sm:justify-center bg-[var(--lb-s1)] sm:bg-[var(--lb-bg)] sm:py-6 sm:px-4")}>
+    <div className={cn(isEmbed ? "p-0 bg-[var(--lb-s1)] w-full min-h-[100dvh]" : "min-h-[100dvh] flex flex-col items-center sm:justify-center bg-[var(--lb-s1)] sm:bg-[var(--lb-s2)] sm:py-6 sm:px-4")}>
       <div className="w-full h-full sm:h-auto max-w-[700px] mx-auto flex flex-col flex-1 sm:flex-none">
-        <Card className="border-0 sm:border-[0.5px] border-[var(--lb-border)] bg-[var(--lb-s1)] shadow-none sm:shadow-sm rounded-none sm:rounded-[16px] overflow-hidden w-full flex-1 flex flex-col">
+        <Card className={cn(
+          "bg-[var(--lb-s1)] overflow-hidden w-full flex-1 flex flex-col",
+          isEmbed ? "border-0 rounded-none shadow-none" : "border-0 sm:border-[0.5px] border-[var(--lb-border)] shadow-none sm:shadow-sm rounded-none sm:rounded-[16px]"
+        )}>
           <CardContent className="p-0 relative flex-1 flex flex-col">
           <div className="grid grid-rows-[auto,1fr] sm:grid-rows-none sm:grid-cols-[220px,1fr] flex-1">
             <div className={cn("p-4 sm:p-[24px_20px] border-b sm:border-b-0 sm:border-r border-[var(--lb-border)] bg-[var(--lb-s1)] flex flex-row sm:flex-col items-center sm:items-center text-left sm:text-center gap-4 sm:gap-0")}>

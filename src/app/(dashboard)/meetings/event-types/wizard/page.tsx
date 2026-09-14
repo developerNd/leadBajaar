@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -13,6 +13,7 @@ import {
   NoticePeriod, BufferLength, DailyCap, ExtraQuestionKey,
   buildDraftFromWizardAnswers, WIZARD_DRAFT_STORAGE_KEY,
 } from '@/lib/eventTypeWizard'
+import { EVENT_TEMPLATES } from '@/constants/event-templates'
 
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const DAY_ORDER = [1, 2, 3, 4, 5, 6, 0] // Mon..Sun, a more natural work-week order
@@ -158,8 +159,19 @@ const ChoiceRow = <T,>({
 
 export default function EventTypeWizardPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const templateId = searchParams.get('templateId')
   const { user } = useUser()
-  const [answers, setAnswers] = useState<WizardAnswers>(DEFAULT_ANSWERS)
+  
+  const [answers, setAnswers] = useState<WizardAnswers>(() => {
+    if (templateId) {
+      const template = EVENT_TEMPLATES.find(t => t.id === templateId)
+      if (template) {
+        return { ...DEFAULT_ANSWERS, ...template.answers } as WizardAnswers
+      }
+    }
+    return DEFAULT_ANSWERS
+  })
   const [stepIndex, setStepIndex] = useState(0)
 
   const visibleSteps = getVisibleSteps(answers)

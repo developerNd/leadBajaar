@@ -18,11 +18,11 @@
 
 @layer base {
   :root {
-    /* ── Brand: Indigo / Violet ──────────────────────────── */
-    --primary:            239 84% 67%;     /* #6366F1 indigo-500  */
-    --primary-hover:      243 75% 59%;     /* #4F46E5 indigo-600  */
-    --primary-light:      238 100% 97%;    /* #EEF2FF indigo-50   */
-    --primary-foreground: 0 0% 100%;       /* white               */
+    /* ── Brand: LeadBajaar Coral / Deep Navy ──────────────── */
+    --primary:            359 99% 63%;     /* #FE4548 / #E84C3A coral */
+    --primary-hover:      359 90% 55%;     /* #E83B3E                 */
+    --primary-light:      359 100% 97%;    /* #FFF5F4                 */
+    --primary-foreground: 0 0% 100%;       /* white                   */
 
     /* ── Surfaces ────────────────────────────────────────── */
     --background:         210 20% 98%;     /* #F8FAFC slate-50    */
@@ -67,9 +67,9 @@
   }
 
   .dark {
-    --primary:            238 84% 67%;
-    --primary-hover:      239 72% 73%;
-    --primary-light:      238 40% 15%;
+    --primary:            359 99% 63%;
+    --primary-hover:      359 90% 55%;
+    --primary-light:      359 40% 15%;
     --primary-foreground: 0 0% 100%;
 
     --background:         222 47% 5%;      /* #060B18 very dark   */

@@ -258,14 +258,14 @@ export default function WebhooksPage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-full items-center justify-center bg-[var(--crm-bg)]">
-        <Loader2 className="h-8 w-8 animate-spin text-[var(--crm-text-tertiary)]" />
+      <div className="flex flex-1 min-h-[350px] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-slate-400 dark:text-slate-500" />
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col flex-1 gap-4 sm:gap-5">
+    <div className="flex flex-col flex-1 gap-4 sm:gap-5 pb-16">
       {/* ── Header ────────────────────────────────────────────────────────────── */}
       <div className="shrink-0">
         <div className="flex justify-between items-center">
@@ -322,7 +322,7 @@ export default function WebhooksPage() {
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
                         {webhook.events.map((event) => (
-                          <span key={event} className="text-[10px] font-mono tracking-wider px-1.5 py-0.5 rounded bg-[var(--crm-bg)] border border-[var(--crm-border)] text-[var(--crm-text-secondary)]">
+                          <span key={event} className="text-[10px] font-mono tracking-wider px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300">
                             {event}
                           </span>
                         ))}

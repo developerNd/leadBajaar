@@ -92,7 +92,7 @@ export default function EmployeesPage() {
   const openView = async (emp: any) => {
     setViewEmp(emp)
     const [hRes, rRes] = await Promise.all([
-      financeApi.getSalaryHistory(emp.id),
+      financeApi.getEmployeeSalaryHistory(emp.id),
       financeApi.getEmployeeRevisions(emp.id)
     ])
     setSalaryHistory(hRes.payouts?.data ?? [])
@@ -110,7 +110,7 @@ export default function EmployeesPage() {
       setShowRevModal(false)
       // Refresh view data
       const [hRes, rRes] = await Promise.all([
-        financeApi.getSalaryHistory(viewEmp.id),
+        financeApi.getEmployeeSalaryHistory(viewEmp.id),
         financeApi.getEmployeeRevisions(viewEmp.id)
       ])
       setSalaryHistory(hRes.payouts?.data ?? [])

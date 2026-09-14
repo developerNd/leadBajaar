@@ -68,7 +68,7 @@ interface AvailabilityEditorProps {
   onChange: (field: string, value: any) => void
 }
 
-const rowInputStyle = 'h-8 text-xs font-medium bg-[var(--crm-surface-2)] border-none rounded-md px-2 w-[104px] text-[var(--crm-text-primary)]'
+const rowInputStyle = 'h-8 text-xs font-semibold bg-white dark:bg-slate-900 border border-slate-350 dark:border-slate-750 rounded-md px-2.5 w-[104px] text-slate-800 dark:text-slate-100 shadow-sm'
 
 export const AvailabilityEditor = ({ scheduling, onChange }: AvailabilityEditorProps) => {
   const [editingRange, setEditingRange] = useState(false)
@@ -227,7 +227,7 @@ export const AvailabilityEditor = ({ scheduling, onChange }: AvailabilityEditorP
                   <div key={day} className="flex items-center gap-3">
                     <div className={cn(
                       'h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0',
-                      ranges.length > 0 ? 'bg-[var(--lb-navy)] text-white' : 'bg-[var(--crm-surface-3)] text-[var(--crm-text-tertiary)]'
+                      ranges.length > 0 ? 'bg-[#FE4548] text-white font-extrabold shadow-sm' : 'bg-[var(--crm-surface-3)] text-[var(--crm-text-tertiary)]'
                     )}>
                       {DAY_LETTERS[day]}
                     </div>
@@ -299,7 +299,7 @@ export const AvailabilityEditor = ({ scheduling, onChange }: AvailabilityEditorP
                 <div key={day} className="flex items-start gap-2">
                   <div className={cn(
                     'h-7 w-7 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 mt-0.5',
-                    ranges.length > 0 ? 'bg-[var(--lb-navy)] text-white' : 'bg-[var(--crm-surface-3)] text-[var(--crm-text-tertiary)]'
+                    ranges.length > 0 ? 'bg-[#FE4548] text-white font-extrabold shadow-sm' : 'bg-[var(--crm-surface-3)] text-[var(--crm-text-tertiary)]'
                   )}>
                     {DAY_LETTERS[day]}
                   </div>
@@ -456,12 +456,12 @@ export const AvailabilityEditor = ({ scheduling, onChange }: AvailabilityEditorP
                       onClick={() => toggleCalendarDate(key)}
                       className={cn(
                         'h-9 w-9 rounded-full flex items-center justify-center text-sm font-medium transition-colors',
-                        selected ? 'bg-[var(--lb-navy)] text-white' : 'bg-[var(--crm-accent-soft)] text-[var(--crm-accent)] hover:bg-[var(--crm-accent-soft)]/70'
+                        selected ? 'bg-[#FE4548] text-white font-bold shadow-sm' : 'bg-[var(--crm-accent-soft)] text-[#FE4548] hover:bg-[var(--crm-accent-soft)]/70'
                       )}
                     >
                       {day}
                     </button>
-                    <span className={cn('h-1 w-1 rounded-full mt-0.5', hasOverride ? 'bg-[var(--lb-navy)]' : 'bg-transparent')} />
+                    <span className={cn('h-1 w-1 rounded-full mt-0.5', hasOverride ? 'bg-[#FE4548]' : 'bg-transparent')} />
                   </div>
                 )
               })}
@@ -506,7 +506,7 @@ export const AvailabilityEditor = ({ scheduling, onChange }: AvailabilityEditorP
               size="sm"
               disabled={selectedCalendarDates.length === 0}
               onClick={applyOverrides}
-              className="bg-[var(--lb-navy)] hover:opacity-90 text-white disabled:opacity-40"
+              className="bg-[#FE4548] hover:bg-[#E03A3C] text-white disabled:opacity-40 font-extrabold rounded-full shadow-sm hover:scale-[1.03] active:scale-[0.97] transition-all cursor-pointer px-4 h-8"
             >
               Apply
             </Button>

@@ -43,11 +43,16 @@ export default function SettingsPage() {
   const { user } = useUser()
   const [activeTab, setActiveTab] = useState('profile')
 
-  // Honor deep links like /settings?tab=billing (used by the dashboard's
-  // Renew button and SubscriptionGuard's renew flow).
   useEffect(() => {
-    const tab = new URLSearchParams(window.location.search).get('tab')
-    if (tab && SECTIONS.some(s => s.id === tab)) setActiveTab(tab)
+    const params = new URLSearchParams(window.location.search)
+    const tab = params.get('tab')
+    if (tab && SECTIONS.some(s => s.id === tab)) {
+      setActiveTab(tab)
+      const amount = params.get('amount')
+      if (amount && tab === 'billing') {
+        setPaymentAmount(amount)
+      }
+    }
   }, [])
   const [isSaving, setIsSaving] = useState(false)
   const [profileSettings, setProfileSettings] = useState({
