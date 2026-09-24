@@ -222,13 +222,14 @@ export default function LeadDetailsPage() {
         {/* Clean Top Navigation Bar */}
         <div className="shrink-0 px-5 sm:px-8 py-3.5 flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-850/60">
           <div className="flex items-center gap-3">
-            <button
+            <Button
+              variant="outline"
               onClick={() => router.push('/leads')}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750 transition-all shadow-xs cursor-pointer active:scale-95"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750 transition-all shadow-xs h-auto w-auto"
             >
               <ChevronLeft className="h-4 w-4" />
               <span>Back to Leads</span>
-            </button>
+            </Button>
             <div className="hidden sm:flex items-center gap-2 border-l border-slate-200 dark:border-slate-700 pl-3">
               <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Lead ID</span>
               <span className="text-xs font-bold font-heading text-slate-800 dark:text-slate-200 bg-slate-200/70 dark:bg-slate-800 px-2 py-0.5 rounded-md">#{lead.id}</span>
@@ -242,26 +243,28 @@ export default function LeadDetailsPage() {
                 <>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <button 
+                      <Button 
+                        variant="default"
                         onClick={() => window.open(`https://wa.me/${toWhatsAppPhone(lead.phone)}`, '_blank')} 
-                        className="h-8 px-3.5 flex items-center justify-center gap-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                        className="h-8 px-3.5 flex items-center justify-center gap-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs transition-all hover:scale-[1.02] w-auto"
                       >
                         <i className="ti ti-brand-whatsapp text-[14px]" />
                         <span className="hidden md:inline">WhatsApp</span>
-                      </button>
+                      </Button>
                     </TooltipTrigger>
                     <TooltipContent className="text-[10px] font-medium">Send WhatsApp Message</TooltipContent>
                   </Tooltip>
 
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <button 
+                      <Button 
+                        variant="default"
                         onClick={handleCall} 
-                        className="h-8 px-3.5 flex items-center justify-center gap-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                        className="h-8 px-3.5 flex items-center justify-center gap-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs transition-all hover:scale-[1.02] w-auto"
                       >
                         <i className="ti ti-phone text-[14px]" />
                         <span className="hidden md:inline">Call</span>
-                      </button>
+                      </Button>
                     </TooltipTrigger>
                     <TooltipContent className="text-[10px] font-medium">Call Lead</TooltipContent>
                   </Tooltip>
@@ -270,26 +273,28 @@ export default function LeadDetailsPage() {
 
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button 
+                  <Button 
+                    variant="default"
                     onClick={() => handleEdit(lead)} 
-                    className="h-8 px-3.5 flex items-center justify-center gap-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                    className="h-8 px-3.5 flex items-center justify-center gap-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs transition-all hover:scale-[1.02] w-auto"
                   >
                     <i className="ti ti-edit text-[14px]" />
                     <span className="hidden md:inline">Edit</span>
-                  </button>
+                  </Button>
                 </TooltipTrigger>
                 <TooltipContent className="text-[10px] font-medium">Edit Lead Profile</TooltipContent>
               </Tooltip>
 
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button 
+                  <Button 
+                    variant="destructive"
                     onClick={() => setDeleteConfirmation({ isOpen: true })} 
-                    className="h-8 px-3.5 flex items-center justify-center gap-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-semibold shadow-xs transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                    className="h-8 px-3.5 flex items-center justify-center gap-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-semibold shadow-xs transition-all hover:scale-[1.02] w-auto"
                   >
                     <i className="ti ti-trash text-[14px]" />
                     <span className="hidden md:inline">Delete</span>
-                  </button>
+                  </Button>
                 </TooltipTrigger>
                 <TooltipContent className="text-[10px] font-medium">Delete Lead</TooltipContent>
               </Tooltip>
@@ -480,12 +485,13 @@ export default function LeadDetailsPage() {
                       </div>
                     </div>
                     {lead.phone && (
-                      <button 
+                      <Button 
+                        variant="ghost" size="icon"
                         onClick={() => copyToClipboard(lead.phone, 'Phone')} 
-                        className="h-7 w-7 rounded-md flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
+                        className="h-7 w-7 rounded-md flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all p-0"
                       >
                         {copiedField === 'Phone' ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
-                      </button>
+                      </Button>
                     )}
                   </div>
 
@@ -503,12 +509,13 @@ export default function LeadDetailsPage() {
                       </div>
                     </div>
                     {lead.email && (
-                      <button 
+                      <Button 
+                        variant="ghost" size="icon"
                         onClick={() => copyToClipboard(lead.email, 'Email')} 
-                        className="h-7 w-7 rounded-md flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
+                        className="h-7 w-7 rounded-md flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all p-0"
                       >
                         {copiedField === 'Email' ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
-                      </button>
+                      </Button>
                     )}
                   </div>
 
@@ -645,21 +652,23 @@ export default function LeadDetailsPage() {
         <div className="sm:hidden fixed bottom-4 left-4 right-4 z-40 flex items-center gap-2">
           {lead.phone && (
             <>
-              <button 
+              <Button 
+                variant="default"
                 onClick={() => window.open(`https://wa.me/${toWhatsAppPhone(lead.phone)}`, '_blank')} 
-                className="flex-1 h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-all cursor-pointer"
+                className="flex-1 h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs flex items-center justify-center gap-2 shadow-lg transition-all"
               >
                 <i className="ti ti-brand-whatsapp text-lg" />
                 <span>WhatsApp</span>
-              </button>
+              </Button>
 
-              <button 
+              <Button 
+                variant="default"
                 onClick={handleCall} 
-                className="flex-1 h-12 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-all cursor-pointer"
+                className="flex-1 h-12 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs flex items-center justify-center gap-2 shadow-lg transition-all"
               >
                 <i className="ti ti-phone text-lg" />
                 <span>Call</span>
-              </button>
+              </Button>
             </>
           )}
         </div>

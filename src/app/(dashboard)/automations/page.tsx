@@ -41,6 +41,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import GlobalAutomationsSettings from "@/components/automations/GlobalAutomationsSettings"
 import { RoleGuard } from '@/components/RoleGuard'
+import { PageHeader } from "@/components/page-header/PageHeader"
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -177,24 +178,23 @@ export default function AutomationsPage() {
     <RoleGuard allowedTypes={['agency', 'super_admin', 'individual']} allowedFeatures={['automations']}>
       <div className="flex flex-col gap-6 max-w-[1400px] mx-auto w-full pb-10 font-sans">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shrink-0">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold font-heading text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5">
-            <Zap className="h-6 w-6 text-[#FE4548]" />
-            Workflow Automations
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-normal mt-0.5">Manage automated drip sequences, instant follow-up triggers, and multi-channel messages</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button 
-            onClick={handleCreateNew}
-            className="px-4 py-2 bg-[#FE4548] hover:bg-[#FF6E54] text-white font-semibold text-xs rounded-xl shadow-xs transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2 cursor-pointer"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Create Sequence</span>
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        title="Workflow Automations"
+        description="Manage automated drip sequences, instant follow-up triggers, and multi-channel messages"
+        icon={<Zap className="h-6 w-6 text-[#FE4548]" />}
+        actions={
+          <div className="flex items-center gap-2">
+            {/* TODO: Migrate raw button to shared <Button> component later (complex styling) */}
+            <button 
+              onClick={handleCreateNew}
+              className="px-4 py-2 bg-[#FE4548] hover:bg-[#FF6E54] text-white font-semibold text-xs rounded-xl shadow-xs transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2 cursor-pointer"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Create Sequence</span>
+            </button>
+          </div>
+        }
+      />
 
       {/* Quick KPI Strip */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-4 shadow-sm">

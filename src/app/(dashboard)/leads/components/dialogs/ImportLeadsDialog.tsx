@@ -59,7 +59,7 @@ export const ImportLeadsDialog: React.FC<ImportLeadsDialogProps> = ({
               <FileSpreadsheet className="h-6 w-6" />
             </div>
             <div>
-              <DialogTitle className="text-xl font-bold text-slate-900 dark:text-white">Import Leads from CSV</DialogTitle>
+              <DialogTitle className="text-xl font-bold text-slate-900 dark:text-white">Import Leads</DialogTitle>
               <DialogDescription className="text-sm text-slate-500 font-medium mt-0.5">Map your CSV columns to LeadBajaar fields</DialogDescription>
             </div>
           </div>

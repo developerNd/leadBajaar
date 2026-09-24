@@ -7,65 +7,65 @@
  
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: var(--crm-surface-1);
+    --foreground: var(--crm-text-primary);
  
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: var(--crm-surface-1);
+    --card-foreground: var(--crm-text-primary);
  
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: var(--crm-surface-1);
+    --popover-foreground: var(--crm-text-primary);
  
-    --primary: 359 99% 63%;
-    --primary-foreground: 0 0% 100%;
+    --primary: var(--crm-accent);
+    --primary-foreground: #ffffff;
  
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: var(--crm-surface-3);
+    --secondary-foreground: var(--crm-text-primary);
  
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: var(--crm-surface-2);
+    --muted-foreground: var(--crm-text-tertiary);
  
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: var(--crm-surface-3);
+    --accent-foreground: var(--crm-text-primary);
  
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: var(--crm-red);
+    --destructive-foreground: #ffffff;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 217.2 91.2% 59.8%;
+    --border: var(--crm-border);
+    --input: var(--crm-border);
+    --ring: var(--crm-accent);
  
-    --radius: 0.5rem;
+    --radius: var(--r-md);
   }
  
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: var(--crm-surface-1);
+    --foreground: var(--crm-text-primary);
  
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: var(--crm-surface-1);
+    --card-foreground: var(--crm-text-primary);
  
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: var(--crm-surface-1);
+    --popover-foreground: var(--crm-text-primary);
  
-    --primary: 359 99% 63%;
-    --primary-foreground: 0 0% 100%;
+    --primary: var(--crm-accent);
+    --primary-foreground: #ffffff;
  
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: var(--crm-surface-3);
+    --secondary-foreground: var(--crm-text-primary);
  
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: var(--crm-surface-2);
+    --muted-foreground: var(--crm-text-tertiary);
  
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: var(--crm-surface-3);
+    --accent-foreground: var(--crm-text-primary);
  
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: var(--crm-red);
+    --destructive-foreground: #ffffff;
  
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 217.2 91.2% 59.8%;
+    --border: var(--crm-border);
+    --input: var(--crm-border);
+    --ring: var(--crm-accent);
   }
 }
  
@@ -584,119 +584,6 @@ body {
 .metric-value { font-size: 20px; font-weight: 500; color: var(--crm-text-primary); }
 .metric-up    { font-size: 10px; color: var(--crm-green); margin-top: 3px; }
 .metric-down  { font-size: 10px; color: var(--crm-red);   margin-top: 3px; }
-
-/* --- Modals --- */
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.55);
-  z-index: 200;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-}
-.modal {
-  background: var(--crm-surface-2);
-  border: 0.5px solid var(--crm-border-hover);
-  border-radius: var(--r-xl);
-  width: 100%;
-  max-width: 480px;
-  overflow: hidden;
-}
-.modal-sm { max-width: 360px; }
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 16px;
-  border-bottom: 0.5px solid var(--crm-border);
-}
-.modal-title {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--crm-text-primary);
-}
-.modal-body {
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.modal-footer {
-  display: flex;
-  gap: 8px;
-  padding: 12px 16px;
-  border-top: 0.5px solid var(--crm-border);
-}
-.modal-footer .btn { font-family: "Roboto", sans-serif;  flex: 1; justify-content: center; }
-.modal-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 10px;
-}
-.modal-icon-danger { background: var(--crm-red-soft); }
-
-/* --- Dropdowns --- */
-.dropdown {
-  position: relative;
-  display: inline-block;
-}
-.dropdown-menu {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  background: var(--crm-surface-2);
-  border: 0.5px solid var(--crm-border-hover);
-  border-radius: var(--r-lg);
-  min-width: 180px;
-  z-index: 50;
-  overflow: hidden;
-  padding: 4px;
-}
-.dropdown-item {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 7px 10px;
-  border-radius: var(--r-sm);
-  font-size: 12px;
-  color: var(--crm-text-primary);
-  cursor: pointer;
-  transition: background 0.1s;
-}
-.dropdown-item:hover           { background: var(--crm-surface-3); }
-.dropdown-item.danger          { color: var(--crm-red); }
-.dropdown-item.danger:hover    { background: var(--crm-red-soft); }
-.dropdown-item i               { font-size: 14px; color: var(--crm-text-secondary); }
-.dropdown-item.danger i        { color: var(--crm-red); }
-
-.dropdown-divider {
-  height: 0.5px;
-  background: var(--crm-border);
-  margin: 4px 0;
-}
-.dropdown-search {
-  padding: 8px 8px 4px;
-}
-.dropdown-option {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 8px;
-  border-radius: var(--r-sm);
-  font-size: 12px;
-  color: var(--crm-text-secondary);
-  cursor: pointer;
-  transition: background 0.1s;
-}
-.dropdown-option:hover    { background: var(--crm-surface-3); }
-.dropdown-option.selected { color: var(--crm-text-primary); }
-.dropdown-option-dot      { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 
 /* --- Tooltips --- */
 .tooltip-wrap {

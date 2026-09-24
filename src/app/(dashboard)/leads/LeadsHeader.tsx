@@ -58,11 +58,16 @@ export const LeadsHeader: React.FC<LeadsHeaderProps> = ({
           </Tooltip>
         </TooltipProvider>
 
-        <div className="h-7 px-2.5 flex items-center justify-center gap-1.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-[12px] font-extrabold rounded-[6px] border border-slate-300 dark:border-slate-650 whitespace-nowrap shadow-sm">
-          <i className="ti ti-download text-slate-600 dark:text-slate-400" />
-          <span onClick={() => setShowExportDialog(true)} className="cursor-pointer hover:text-slate-900 dark:hover:text-white transition-colors">Export</span>
+        <div className="h-7 px-2.5 flex items-center justify-center gap-2 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-[12px] font-extrabold rounded-[6px] border border-slate-300 dark:border-slate-650 whitespace-nowrap shadow-sm">
+          <span onClick={handleImportClick} className="cursor-pointer hover:text-slate-900 dark:hover:text-white transition-colors flex items-center gap-1">
+            <i className="ti ti-download text-slate-600 dark:text-slate-400" />
+            Import
+          </span>
           <span className="text-slate-300 dark:text-slate-650">/</span>
-          <span onClick={handleImportClick} className="cursor-pointer hover:text-slate-900 dark:hover:text-white transition-colors">Import</span>
+          <span onClick={() => setShowExportDialog(true)} className="cursor-pointer hover:text-slate-900 dark:hover:text-white transition-colors flex items-center gap-1">
+            <i className="ti ti-upload text-slate-600 dark:text-slate-400" />
+            Export
+          </span>
         </div>
 
         <button

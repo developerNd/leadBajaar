@@ -129,7 +129,7 @@ const NodeProperties = memo(({
       <div className="flex flex-col h-full space-y-4">
         {/* Node Tabs */}
         <div role="tablist" aria-label="Node editor panels" className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-900 rounded-xl">
-          <button
+          <button /* TODO: Segment Control */
             role="tab"
             aria-selected={activeTab === 'config'}
             aria-controls="node-panel-config"
@@ -144,7 +144,7 @@ const NodeProperties = memo(({
             <Sliders className="w-3.5 h-3.5" />
             <span>Config</span>
           </button>
-          <button
+          <button /* TODO: Segment Control */
             role="tab"
             aria-selected={activeTab === 'preview'}
             aria-controls="node-panel-preview"
@@ -198,20 +198,22 @@ const NodeProperties = memo(({
                 Quick Insert Helpers
               </span>
               <div className="flex flex-wrap gap-1.5">
-                <button
+                <Button
+                  variant="outline"
                   type="button"
                   onClick={() => insertVariable('{{name}}')}
-                  className="px-2 py-1 rounded-md bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-[10.5px] font-mono font-bold hover:bg-slate-100 transition-colors"
+                  className="px-2 py-1 rounded-md bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-[10.5px] font-mono font-bold hover:bg-slate-100 transition-colors h-auto w-auto"
                 >
                   + &#123;&#123;name&#125;&#125;
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="outline"
                   type="button"
                   onClick={() => insertVariable('[Hi|Hello|Hey]')}
-                  className="px-2 py-1 rounded-md bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-[10.5px] font-mono font-bold hover:bg-slate-100 transition-colors"
+                  className="px-2 py-1 rounded-md bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-[10.5px] font-mono font-bold hover:bg-slate-100 transition-colors h-auto w-auto"
                 >
                   + Spintax
-                </button>
+                </Button>
               </div>
             </div>
 

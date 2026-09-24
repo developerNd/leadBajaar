@@ -378,7 +378,16 @@ export default function LeadsPage() {
       const reader = new FileReader();
       reader.onload = async (event) => {
         try {
-          const csv = event.target?.result as string;
+          let csv = '';
+          if (file.name.match(/\.xlsx?$/i)) {
+             const XLSX = await import('xlsx');
+             const data = new Uint8Array(event.target?.result as ArrayBuffer);
+             const workbook = XLSX.read(data, { type: 'array' });
+             csv = XLSX.utils.sheet_to_csv(workbook.Sheets[workbook.SheetNames[0]]);
+          } else {
+             csv = event.target?.result as string;
+          }
+          
           const leads = prepareImportData(csv, columnMapping);
           
           if (leads.length === 0) {
@@ -419,7 +428,11 @@ export default function LeadsPage() {
         setShowGeneratingReport(false);
       };
 
-      reader.readAsText(file);
+      if (file.name.match(/\.xlsx?$/i)) {
+        reader.readAsArrayBuffer(file);
+      } else {
+        reader.readAsText(file);
+      }
 
     } catch (error: any) {
       console.error('Import failed:', error);
@@ -810,8 +823,9 @@ export default function LeadsPage() {
 
       <input
         type="file"
+        ref={fileInputRef}
         className="hidden"
-        accept=".csv"
+        accept=".csv,.xlsx,.xls"
         onChange={handleFileChange}
       />
 

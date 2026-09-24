@@ -125,7 +125,9 @@ export const AddLeadDialog: React.FC<AddLeadDialogProps> = ({
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="phone" className="text-xs font-bold uppercase tracking-wider text-[var(--crm-text-secondary)]">Phone</Label>
+              <Label htmlFor="phone" className="text-xs font-bold uppercase tracking-wider text-[var(--crm-text-secondary)]">
+                Phone <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="phone"
                 value={newLead.phone}

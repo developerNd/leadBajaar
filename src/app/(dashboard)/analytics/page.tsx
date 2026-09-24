@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { RoleGuard } from '@/components/RoleGuard'
+import { PageHeader } from '@/components/page-header/PageHeader'
 import { getAnalyticsData } from '@/lib/api'
 import { getAgentColor } from '@/utils/agentColors'
 
@@ -140,31 +141,30 @@ export default function AnalyticsPage() {
       <div className="flex flex-col flex-1 gap-6 font-sans max-w-[1400px] mx-auto w-full pb-10">
 
       {/* ── Header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold font-heading text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5">
-            <BarChart2 className="h-6 w-6 text-[#FE4548]" />
-            Analytics & Reports
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-normal mt-0.5">Track revenue performance and conversion metrics across your pipeline</p>
-        </div>
-        <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 rounded-xl p-1 w-full sm:w-auto overflow-x-auto no-scrollbar shrink-0 border border-slate-200 dark:border-slate-700">
-          {PERIODS.map(p => (
-            <button
-              key={p}
-              onClick={() => setPeriod(p)}
-              className={cn(
-                'px-3.5 py-1.5 rounded-lg text-xs font-semibold font-heading transition-all cursor-pointer',
-                period === p
-                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              )}
-            >
-              {p}
-            </button>
-          ))}
-        </div>
-      </div>
+      <PageHeader
+        title="Analytics & Reports"
+        description="Track revenue performance and conversion metrics across your pipeline"
+        icon={<BarChart2 className="h-6 w-6 text-[var(--crm-accent)]" />}
+        actions={
+          <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 rounded-xl p-1 w-full sm:w-auto overflow-x-auto no-scrollbar shrink-0 border border-slate-200 dark:border-slate-700">
+            {PERIODS.map(p => (
+              // TODO: Migrate raw button to shared <Button> component later (complex styling)
+              <button
+                key={p}
+                onClick={() => setPeriod(p)}
+                className={cn(
+                  'px-3.5 py-1.5 rounded-lg text-xs font-semibold font-heading transition-all cursor-pointer',
+                  period === p
+                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                )}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
+        }
+      />
 
       {/* ── Stat Cards ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

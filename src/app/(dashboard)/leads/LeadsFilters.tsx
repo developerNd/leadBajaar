@@ -86,21 +86,23 @@ export const LeadsFilters: React.FC<LeadsFiltersProps> = ({
               className="w-full pl-9 pr-8 h-8 text-xs rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-slate-800 dark:text-slate-200 placeholder:text-slate-400 outline-none transition-all shadow-xs"
             />
             {filters.search && (
-              <button
+              <Button
+                variant="ghost" size="icon"
                 onClick={() => handleFilterChange('search', '')}
                 aria-label="Clear search"
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors p-0"
               >
                 <X className="h-3 w-3" />
-              </button>
+              </Button>
             )}
           </div>
 
           {/* Mobile-only filter button */}
           <div className="sm:hidden flex items-center shrink-0">
-            <button
+            <Button
+              variant="outline" size="icon"
               onClick={() => onOpenMobileFilters?.()}
-              className="relative flex items-center justify-center w-8 h-8 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+              className="relative flex items-center justify-center w-8 h-8 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors p-0"
             >
               <SlidersHorizontal className="h-3.5 w-3.5" />
               {mobileActiveFiltersCount > 0 && (
@@ -108,7 +110,7 @@ export const LeadsFilters: React.FC<LeadsFiltersProps> = ({
                   {mobileActiveFiltersCount}
                 </span>
               )}
-            </button>
+            </Button>
           </div>
 
           {/* Desktop Actions */}
@@ -122,13 +124,14 @@ export const LeadsFilters: React.FC<LeadsFiltersProps> = ({
             )}
 
             {setShowStageManager && (
-              <button
+              <Button
+                variant="outline"
                 onClick={() => setShowStageManager(true)}
-                className="h-8 px-3 flex items-center justify-center gap-1.5 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 transition-all whitespace-nowrap shadow-xs cursor-pointer"
+                className="h-8 px-3 flex items-center justify-center gap-1.5 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 transition-all whitespace-nowrap shadow-xs w-auto"
               >
                 <i className="ti ti-settings text-slate-500 dark:text-slate-400" />
                 <span className="hidden lg:inline">Manage Stages</span>
-              </button>
+              </Button>
             )}
 
             {(() => {
@@ -142,9 +145,10 @@ export const LeadsFilters: React.FC<LeadsFiltersProps> = ({
               return (
                 <Popover>
                   <PopoverTrigger asChild>
-                    <button 
+                    <Button 
+                      variant="outline"
                       className={cn(
-                        "h-8 px-3 flex items-center justify-center gap-1.5 text-xs font-semibold rounded-xl border transition-all whitespace-nowrap shadow-xs cursor-pointer",
+                        "h-8 px-3 flex items-center justify-center gap-1.5 text-xs font-semibold rounded-xl border transition-all whitespace-nowrap shadow-xs w-auto",
                         activeFiltersCount > 0 
                           ? "bg-indigo-600 border-indigo-600 text-white hover:bg-indigo-700"
                           : "bg-white border-slate-200 text-slate-700 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-700"
@@ -166,18 +170,19 @@ export const LeadsFilters: React.FC<LeadsFiltersProps> = ({
                           <X className="h-3 w-3" />
                         </div>
                       )}
-                    </button>
+                    </Button>
                   </PopoverTrigger>
                   <PopoverContent align="end" className="w-80 p-4 rounded-2xl shadow-xl border-slate-200 dark:border-slate-800 font-sans">
                 <div className="space-y-4">
                   <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
                     <h4 className="font-semibold text-xs font-heading text-slate-900 dark:text-white">Filters</h4>
-                    <button
+                    <Button
+                      variant="ghost"
                       onClick={clearFilters}
-                      className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-medium cursor-pointer"
+                      className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-medium p-0 h-auto w-auto"
                     >
                       Clear All
-                    </button>
+                    </Button>
                   </div>
                   
                   <div className="space-y-4">
@@ -365,16 +370,16 @@ export const LeadsFilters: React.FC<LeadsFiltersProps> = ({
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="h-8 px-3 flex items-center justify-center gap-1.5 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 transition-all whitespace-nowrap shadow-xs cursor-pointer">
+                <Button variant="outline" className="h-8 px-3 flex items-center justify-center gap-1.5 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 transition-all whitespace-nowrap shadow-xs w-auto">
                   More Actions <i className="ti ti-chevron-down text-slate-500 dark:text-slate-400" />
-                </button>
+                </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-40 rounded-xl p-1 text-xs border-slate-200 dark:border-slate-800">
                 <DropdownMenuItem onClick={() => setShowExportDialog?.(true)} className="gap-2 cursor-pointer rounded-lg text-xs">
-                  <i className="ti ti-download text-[14px] text-slate-500" /> Export Leads
+                  <i className="ti ti-upload text-[14px] text-slate-500" /> Export Leads
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleImportClick?.()} className="gap-2 cursor-pointer rounded-lg text-xs">
-                  <i className="ti ti-upload text-[14px] text-slate-500" /> Import Leads
+                  <i className="ti ti-download text-[14px] text-slate-500" /> Import Leads
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => openFacebookRetrieval?.()} className="gap-2 cursor-pointer rounded-lg text-xs">
                   <i className="ti ti-brand-facebook text-[14px] text-primary" /> Sync Facebook
@@ -382,16 +387,17 @@ export const LeadsFilters: React.FC<LeadsFiltersProps> = ({
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <button
+            <Button
+              variant="default"
               onClick={() => setShowNewLead?.(true)}
-              className="h-8 px-3.5 flex items-center justify-center gap-1.5 bg-[#FE4548] hover:bg-[#FF6E54] text-white text-xs font-semibold rounded-xl shadow-xs transition-all whitespace-nowrap cursor-pointer"
+              className="h-8 px-3.5 flex items-center justify-center gap-1.5 bg-[#FE4548] hover:bg-[#FF6E54] text-white text-xs font-semibold rounded-xl shadow-xs transition-all whitespace-nowrap w-auto"
             >
               <Plus className="h-3.5 w-3.5" />
               Add Lead
-            </button>
+            </Button>
 
             <div className="flex bg-slate-100 dark:bg-slate-850 p-0.5 rounded-xl border border-slate-200/80 dark:border-slate-800">
-              <button
+              <button /* TODO: Segment control pattern */
                 onClick={() => setViewMode('table')}
                 className={cn(
                   "px-2.5 py-1 rounded-lg text-xs transition-all cursor-pointer",
@@ -403,7 +409,7 @@ export const LeadsFilters: React.FC<LeadsFiltersProps> = ({
                 <i className="ti ti-list mr-1" />
                 Table
               </button>
-              <button
+              <button /* TODO: Segment control pattern */
                 onClick={() => setViewMode('kanban')}
                 className={cn(
                   "px-2.5 py-1 rounded-lg text-xs transition-all cursor-pointer",
@@ -423,31 +429,34 @@ export const LeadsFilters: React.FC<LeadsFiltersProps> = ({
       {/* Mobile-only quick actions row */}
       <div className="sm:hidden flex items-center justify-between gap-2 px-4 pb-3 pt-1">
         {setShowExportDialog && (
-          <button
+          <Button
+            variant="outline"
             onClick={() => setShowExportDialog(true)}
-            className="flex-1 h-8 rounded-lg border border-[var(--crm-border)] bg-[var(--crm-surface-2)] hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-xs font-semibold text-[var(--crm-text-primary)] flex items-center justify-center gap-1.5 active:scale-[0.98] transition-all"
+            className="flex-1 h-8 rounded-lg border border-[var(--crm-border)] bg-[var(--crm-surface-2)] hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-xs font-semibold text-[var(--crm-text-primary)] flex items-center justify-center gap-1.5 transition-all w-auto"
           >
             <FileDown className="h-3.5 w-3.5 text-emerald-500" />
             Export
-          </button>
+          </Button>
         )}
         {handleImportClick && (
-          <button
+          <Button
+            variant="outline"
             onClick={() => handleImportClick()}
-            className="flex-1 h-8 rounded-lg border border-[var(--crm-border)] bg-[var(--crm-surface-2)] hover:bg-blue-50 dark:hover:bg-blue-900/20 text-xs font-semibold text-[var(--crm-text-primary)] flex items-center justify-center gap-1.5 active:scale-[0.98] transition-all"
+            className="flex-1 h-8 rounded-lg border border-[var(--crm-border)] bg-[var(--crm-surface-2)] hover:bg-blue-50 dark:hover:bg-blue-900/20 text-xs font-semibold text-[var(--crm-text-primary)] flex items-center justify-center gap-1.5 transition-all w-auto"
           >
             <FileUp className="h-3.5 w-3.5 text-blue-500" />
             Import
-          </button>
+          </Button>
         )}
         {setShowStageManager && (
-          <button
+          <Button
+            variant="outline"
             onClick={() => setShowStageManager(true)}
-            className="flex-1 h-8 rounded-lg border border-[var(--crm-border)] bg-[var(--crm-surface-2)] hover:bg-purple-50 dark:hover:bg-purple-900/20 text-xs font-semibold text-[var(--crm-text-primary)] flex items-center justify-center gap-1.5 active:scale-[0.98] transition-all"
+            className="flex-1 h-8 rounded-lg border border-[var(--crm-border)] bg-[var(--crm-surface-2)] hover:bg-purple-50 dark:hover:bg-purple-900/20 text-xs font-semibold text-[var(--crm-text-primary)] flex items-center justify-center gap-1.5 transition-all w-auto"
           >
             <Settings2 className="h-3.5 w-3.5 text-purple-500" />
             Stages
-          </button>
+          </Button>
         )}
       </div>
     </div>

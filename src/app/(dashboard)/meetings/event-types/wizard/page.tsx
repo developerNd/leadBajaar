@@ -139,14 +139,14 @@ const STEP_META: Record<StepId, { title: string; subtitle?: string }> = {
 const ChoiceRow = <T,>({
   option, selected, onClick,
 }: { option: ChoiceOption<T>; selected: boolean; onClick: () => void }) => (
-  <button
+  <Button variant="ghost"
     type="button"
     onClick={onClick}
     className={cn(
-      'w-full flex items-center gap-3 rounded-xl border px-4 py-3.5 text-left transition-all',
+      'w-full flex items-center gap-3 rounded-xl border px-4 py-3.5 text-left transition-all h-auto',
       selected
-        ? 'border-[var(--crm-accent)] bg-[var(--crm-accent-soft)]'
-        : 'border-[var(--crm-border)] bg-[var(--crm-surface-1)] hover:border-[var(--crm-accent)]/50'
+        ? 'border-[var(--crm-accent)] bg-[var(--crm-accent-soft)] hover:bg-[var(--crm-accent-soft)] hover:text-[var(--crm-accent)]'
+        : 'border-[var(--crm-border)] bg-[var(--crm-surface-1)] hover:border-[var(--crm-accent)]/50 hover:bg-transparent'
     )}
   >
     <div className="flex-1 min-w-0">
@@ -154,7 +154,7 @@ const ChoiceRow = <T,>({
       {option.sublabel && <p className="text-xs text-[var(--crm-text-secondary)] mt-0.5">{option.sublabel}</p>}
     </div>
     {selected && <Check className="h-5 w-5 text-[var(--crm-accent)] shrink-0" />}
-  </button>
+  </Button>
 )
 
 export default function EventTypeWizardPage() {
@@ -255,19 +255,19 @@ export default function EventTypeWizardPage() {
             {DAY_ORDER.map(day => {
               const selected = (answers.specificDays || []).includes(day)
               return (
-                <button
+                <Button variant="ghost"
                   type="button"
                   key={day}
                   onClick={() => toggleDay(day)}
                   className={cn(
-                    'h-11 rounded-xl border text-sm font-semibold transition-all',
+                    'h-11 rounded-xl border text-sm font-semibold transition-all w-auto p-0',
                     selected
-                      ? 'bg-[var(--crm-accent)] border-[var(--crm-accent)] text-white'
-                      : 'border-[var(--crm-border)] text-[var(--crm-text-secondary)] hover:border-[var(--crm-accent)]/50'
+                      ? 'bg-[var(--crm-accent)] border-[var(--crm-accent)] text-white hover:bg-[var(--crm-accent)] hover:text-white'
+                      : 'border-[var(--crm-border)] text-[var(--crm-text-secondary)] hover:border-[var(--crm-accent)]/50 hover:bg-transparent'
                   )}
                 >
                   {DAY_LABELS[day]}
-                </button>
+                </Button>
               )
             })}
           </div>
@@ -336,13 +336,13 @@ export default function EventTypeWizardPage() {
               style={{ width: `${((currentStepIndex + 1) / visibleSteps.length) * 100}%` }}
             />
           </div>
-          <button
+          <Button variant="ghost"
             type="button"
             onClick={() => router.push('/meetings/event-types/new')}
-            className="text-xs font-semibold text-[var(--crm-text-secondary)] hover:text-[var(--crm-text-primary)] shrink-0"
+            className="text-xs font-semibold text-[var(--crm-text-secondary)] hover:text-[var(--crm-text-primary)] shrink-0 h-auto w-auto p-0 hover:bg-transparent"
           >
             Skip
-          </button>
+          </Button>
         </div>
 
         <div className="flex-1 min-h-0 overflow-y-auto">

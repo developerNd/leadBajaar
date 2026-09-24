@@ -161,7 +161,7 @@ const SwipeableLeadCard = React.memo(({
         {/* Card content */}
         <div className="px-3 py-2.5">
           <div className="flex items-start gap-2.5">
-            <button
+            <button /* TODO: Selection toggle */
               onClick={(e) => { e.stopPropagation(); onSelect(); }}
               aria-label={isSelected ? 'Deselect lead' : 'Select lead'}
               className={cn(
@@ -200,13 +200,14 @@ const SwipeableLeadCard = React.memo(({
                  {/* Time + deal */}
                  <div className="flex items-center gap-2 text-[10px] text-[var(--crm-text-tertiary)] shrink-0">
                     {lead.deal_value > 0 && (
-                      <button
-                        className="inline-flex items-center gap-0.5 h-4 px-1.5 rounded-sm font-bold bg-[var(--crm-accent-soft)] text-[var(--crm-accent)]"
+                      <Button
+                        variant="ghost"
+                        className="inline-flex items-center gap-0.5 h-4 px-1.5 rounded-sm font-bold bg-[var(--crm-accent-soft)] text-[var(--crm-accent)] w-auto p-0"
                         onClick={(e) => { e.stopPropagation(); onDealValue(lead); }}
                       >
                         <IndianRupee className="h-2.5 w-2.5" />
                         {Number(lead.deal_value).toLocaleString('en-IN')}
-                      </button>
+                      </Button>
                     )}
                     <span className="flex items-center gap-0.5">
                       <Clock className="h-2.5 w-2.5" />
@@ -232,46 +233,51 @@ const SwipeableLeadCard = React.memo(({
         {/* Action Row - Integrated directly without divider */}
         <div className="px-2 pb-2 pt-0 flex items-center justify-between ml-5" onClick={(e) => e.stopPropagation()}>
           <div className="flex items-center gap-0.5">
-            <button
+            <Button
+              variant="ghost" size="icon"
               onClick={(e) => { e.stopPropagation(); if (lead.phone) onCall(lead); }}
               disabled={!lead.phone}
               className={cn(
-                "h-8 w-8 flex items-center justify-center rounded-md transition-colors",
+                "h-8 w-8 flex items-center justify-center rounded-md transition-colors p-0",
                 lead.phone ? "text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800" : "text-slate-300 dark:text-slate-700"
               )}
             >
               <Phone className="h-[15px] w-[15px]" />
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="ghost" size="icon"
               onClick={(e) => { e.stopPropagation(); if (lead.phone) onWhatsApp(lead); }}
               disabled={!lead.phone}
               className={cn(
-                "h-8 w-8 flex items-center justify-center rounded-md transition-colors",
+                "h-8 w-8 flex items-center justify-center rounded-md transition-colors p-0",
                 lead.phone ? "text-[#25D366] hover:bg-[#25D366]/10" : "text-slate-300 dark:text-slate-700"
               )}
             >
               <i className="ti ti-brand-whatsapp text-[17px] leading-none" />
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="ghost" size="icon"
               onClick={(e) => { e.stopPropagation(); onAssign(lead); }}
-              className="h-8 w-8 flex items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors relative"
+              className="h-8 w-8 flex items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors relative p-0"
             >
               <i className="ti ti-user-check text-[17px] leading-none" />
               {lead.agent && <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-orange-500" />}
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="ghost" size="icon"
               onClick={(e) => { e.stopPropagation(); onActionClick(lead); }}
-              className="h-8 w-8 flex items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="h-8 w-8 flex items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors p-0"
             >
               <i className="ti ti-edit text-[17px] leading-none" />
-            </button>
+            </Button>
           </div>
-          <button
+          <Button
+            variant="ghost" size="icon"
             onClick={(e) => { e.stopPropagation(); onDelete(lead); }}
-            className="h-8 w-8 flex items-center justify-center rounded-md text-red-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
+            className="h-8 w-8 flex items-center justify-center rounded-md text-red-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors p-0"
           >
             <Trash2 className="h-[15px] w-[15px]" />
-          </button>
+          </Button>
         </div>
       </div>
   );

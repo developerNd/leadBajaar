@@ -31,11 +31,15 @@ export const initializeChat = async (data: {
   return response.data;
 };
 
-export const getLeadsWithLatestMessages = async (): Promise<Conversation[]> => {
+export const getLeadsWithLatestMessages = async (page: number = 1, search: string = ''): Promise<any> => {
   try {
-    const response = await api.get<Conversation[]>('/conversations', {
+    const response = await api.get('/conversations', {
       headers: {
         Authorization: `Bearer ${localStorage.getItem('token')}`
+      },
+      params: {
+        page,
+        search
       }
     });
     return response.data;
@@ -45,14 +49,16 @@ export const getLeadsWithLatestMessages = async (): Promise<Conversation[]> => {
   }
 };
 
-export const getConversationMessages = async (conversationId: string | number, lastTimestamp?: string): Promise<ConversationMessagesResponse> => {
+export const getConversationMessages = async (conversationId: string | number, page: number = 1, lastTimestamp?: string): Promise<ConversationMessagesResponse> => {
   try {
     const response = await api.get<ConversationMessagesResponse>(`/conversations/${conversationId}/messages`, {
       headers: {
         Authorization: `Bearer ${localStorage.getItem('token')}`
       },
       params: {
-        after: lastTimestamp
+        after: lastTimestamp,
+        page,
+        limit: 25
       }
     });
     return response.data;

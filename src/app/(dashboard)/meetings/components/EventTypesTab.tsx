@@ -169,7 +169,7 @@ export const EventTypesTab = () => {
               className="w-full pl-10 pr-9 h-8 text-[12.5px] bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-full focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-slate-800 dark:text-slate-200 placeholder:text-slate-400 outline-none transition-all shadow-sm"
             />
           </div>
-          <button 
+          <Button variant="ghost"
             onClick={() => {
               if (!user?.name) { toast.error('User profile name is required to create an event.'); return }
               setIsTemplateModalOpen(true)
@@ -178,7 +178,7 @@ export const EventTypesTab = () => {
           >
             <Plus className="h-4 w-4" />
             <span>New event</span>
-          </button>
+          </Button>
         </div>
 
             <div className="flex-1 overflow-y-auto p-3 sm:p-4 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800">
@@ -236,7 +236,7 @@ export const EventTypesTab = () => {
                           className="flex flex-wrap items-center gap-1.5 shrink-0 pl-5 sm:pl-0"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          <button
+                          <Button variant="ghost"
                             disabled={isToggling}
                             onClick={() => toggleActive(eventType)}
                             className={cn(
@@ -247,38 +247,38 @@ export const EventTypesTab = () => {
                             )}
                           >
                             {isActive ? 'Turn off' : 'Turn on'}
-                          </button>
-                          <button
+                          </Button>
+                          <Button variant="ghost"
                             onClick={(e) => copyLink(eventType, e)}
                             title="Copy booking link"
                             className={cn(
-                              "h-7 w-7 flex items-center justify-center rounded-[6px] border transition-all hover:scale-[1.05] active:scale-[0.95] cursor-pointer shadow-sm",
+                              "h-7 w-7 flex items-center justify-center rounded-[6px] border transition-all hover:scale-[1.05] active:scale-[0.95] cursor-pointer shadow-sm p-0",
                               copiedId === eventType.id
                                 ? "bg-emerald-600 border-emerald-700 text-white hover:bg-emerald-700"
                                 : "bg-white border-slate-300 text-slate-800 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-650 dark:text-slate-200 dark:hover:bg-slate-700"
                             )}
                           >
                             {copiedId === eventType.id ? <Check className="h-3.5 w-3.5 text-white" /> : <Copy className="h-3.5 w-3.5" />}
-                          </button>
-                          <button
+                          </Button>
+                          <Button variant="ghost"
                             onClick={() => openShareDialog(eventType)}
                             title="Share / Embed"
-                            className="h-7 w-7 flex items-center justify-center rounded-[6px] border border-slate-300 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-650 dark:text-slate-200 dark:hover:bg-slate-700 transition-all hover:scale-[1.05] active:scale-[0.95] cursor-pointer shadow-sm"
+                            className="h-7 w-7 flex items-center justify-center rounded-[6px] border border-slate-300 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-650 dark:text-slate-200 dark:hover:bg-slate-700 transition-all hover:scale-[1.05] active:scale-[0.95] cursor-pointer shadow-sm p-0"
                           >
                             <Share2 className="h-3.5 w-3.5" />
-                          </button>
-                          <button
+                          </Button>
+                          <Button variant="ghost"
                             onClick={() => viewLandingPage(eventType)}
                             title="Preview booking page"
-                            className="h-7 w-7 flex items-center justify-center rounded-[6px] border border-slate-300 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-650 dark:text-slate-200 dark:hover:bg-slate-700 transition-all hover:scale-[1.05] active:scale-[0.95] cursor-pointer shadow-sm"
+                            className="h-7 w-7 flex items-center justify-center rounded-[6px] border border-slate-300 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-650 dark:text-slate-200 dark:hover:bg-slate-700 transition-all hover:scale-[1.05] active:scale-[0.95] cursor-pointer shadow-sm p-0"
                           >
                             <Eye className="h-3.5 w-3.5" />
-                          </button>
+                          </Button>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <button className="h-7 w-7 flex items-center justify-center rounded-[6px] border border-slate-300 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-650 dark:text-slate-200 dark:hover:bg-slate-700 transition-all hover:scale-[1.05] active:scale-[0.95] cursor-pointer shadow-sm">
+                              <Button variant="ghost" className="h-7 w-7 flex items-center justify-center rounded-[6px] border border-slate-300 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-650 dark:text-slate-200 dark:hover:bg-slate-700 transition-all hover:scale-[1.05] active:scale-[0.95] cursor-pointer shadow-sm p-0">
                                 <MoreHorizontal className="h-3.5 w-3.5" />
-                              </button>
+                              </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-48 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-md rounded-xl p-1.5">
                               <DropdownMenuItem onClick={() => router.push(`/meetings/event-types/${eventType.id}`)} className="cursor-pointer gap-2 rounded-lg py-2">

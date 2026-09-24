@@ -216,48 +216,51 @@ export default function EvolutionChatbotPage() {
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 py-2 border-b border-slate-200/80 dark:border-slate-800 pb-4">
           {/* Status Tabs */}
           <div role="tablist" aria-label="Filter flows by status" className="flex items-center gap-1.5 w-full sm:w-auto overflow-x-auto no-scrollbar">
-            <button
+            {/* TODO: Segment Control */}
+            <Button variant="ghost"
               role="tab"
               aria-selected={activeFilter === 'all'}
               aria-controls="filter-panel"
               onClick={() => setActiveFilter('all')}
               className={cn(
-                'px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap',
+                'px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap p-0 h-auto w-auto hover:bg-transparent',
                 activeFilter === 'all'
                   ? 'bg-crm-btn-primary text-white dark:bg-indigo-600 shadow-xs'
                   : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
               )}
             >
               All Flows ({flows.length})
-            </button>
-            <button
+            </Button>
+            {/* TODO: Segment Control */}
+            <Button variant="ghost"
               role="tab"
               aria-selected={activeFilter === 'active'}
               aria-controls="filter-panel"
               onClick={() => setActiveFilter('active')}
               className={cn(
-                'px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap',
+                'px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap p-0 h-auto w-auto hover:bg-transparent',
                 activeFilter === 'active'
                   ? 'bg-emerald-600 text-white shadow-xs'
                   : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
               )}
             >
               Active ({activeCount})
-            </button>
-            <button
+            </Button>
+            {/* TODO: Segment Control */}
+            <Button variant="ghost"
               role="tab"
               aria-selected={activeFilter === 'inactive'}
               aria-controls="filter-panel"
               onClick={() => setActiveFilter('inactive')}
               className={cn(
-                'px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap',
+                'px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap p-0 h-auto w-auto hover:bg-transparent',
                 activeFilter === 'inactive'
                   ? 'bg-slate-800 text-white dark:bg-slate-700 shadow-xs'
                   : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
               )}
             >
               Paused ({inactiveCount})
-            </button>
+            </Button>
           </div>
 
           {/* Search Input */}
@@ -347,13 +350,13 @@ export default function EvolutionChatbotPage() {
                           </div>
                           <div className="min-w-0">
                             <h3 className="m-0">
-                              <button
+                              <Button variant="ghost"
                                 onClick={() => router.push(`/evolution/chatbot/builder/${flow.id}`)}
-                                className="text-base font-bold text-slate-900 dark:text-white truncate cursor-pointer hover:text-crm-btn-primary dark:hover:text-indigo-400 transition-colors font-satoshi text-left w-full block"
+                                className="text-base font-bold text-slate-900 dark:text-white truncate cursor-pointer hover:text-crm-btn-primary dark:hover:text-indigo-400 transition-colors font-satoshi text-left w-full block h-auto p-0 hover:bg-transparent"
                                 aria-label={`Edit flow: ${flow.name}`}
                               >
                                 {flow.name}
-                              </button>
+                              </Button>
                             </h3>
                             <div className="flex items-center gap-1.5 text-[11px] text-slate-400 font-medium mt-0.5">
                               <Clock className="w-3 h-3" />

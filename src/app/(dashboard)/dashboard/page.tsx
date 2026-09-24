@@ -401,27 +401,27 @@ function MobileAppPromoCard({ onShowQR }: { onShowQR: () => void }) {
         
         {/* Buttons */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full">
-          <button 
+          <Button variant="ghost" 
             onClick={(e) => {
               e.stopPropagation();
               window.open(PLAY_STORE_URL, "_blank");
             }}
-            className="w-full sm:w-auto justify-center bg-gradient-to-r from-[#2A3ED6] to-[#4054E6] hover:opacity-95 text-white text-[13px] font-extrabold h-[44px] px-6 rounded-xl flex items-center gap-2.5 shadow-md shadow-blue-600/10 transition-all shrink-0 hover:scale-[1.02] active:scale-[0.98]"
+            className="w-full sm:w-[160px] justify-center bg-gradient-to-r from-[#2A3ED6] to-[#4054E6] hover:opacity-95 text-white text-[13px] font-extrabold h-[44px] px-6 rounded-xl flex items-center gap-2.5 shadow-md shadow-blue-600/10 transition-all shrink-0 hover:scale-[1.02] active:scale-[0.98]"
           >
             <Smartphone className="h-4.5 w-4.5 shrink-0" />
             Get the App
-          </button>
+          </Button>
           
-          <button 
+          <Button variant="ghost"
             onClick={(e) => {
               e.stopPropagation();
               onShowQR();
             }}
-            className="w-full sm:w-auto justify-center bg-white hover:bg-gray-50 text-slate-850 border border-gray-200 text-[13px] font-extrabold h-[44px] px-6 rounded-xl flex items-center gap-2.5 shadow-sm transition-all shrink-0 hover:scale-[1.02] active:scale-[0.98]"
+            className="w-full sm:w-[160px] justify-center bg-white hover:bg-gray-50 text-slate-850 border border-gray-200 text-[13px] font-extrabold h-[44px] px-6 rounded-xl flex items-center gap-2.5 shadow-sm transition-all shrink-0 hover:scale-[1.02] active:scale-[0.98]"
           >
             <QrCode className="h-4.5 w-4.5 text-slate-500 shrink-0" />
             Scan QR Code
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -572,13 +572,13 @@ function AccountInfoCard({ user }: { user: any }) {
               {expiryBadge.text}
            </span>
            {expiryBadge.isUrgent ? (
-             <button onClick={() => router.push('/settings')} className="px-3 py-1.5 bg-[#EF4444] hover:bg-[#DC2626] text-white text-[11px] font-bold rounded-md transition-all shadow-sm active:scale-95">
+             <Button variant="ghost" onClick={() => router.push('/settings')} className="px-3 py-1.5 bg-[#EF4444] hover:bg-[#DC2626] text-white text-[11px] font-bold rounded-md transition-all shadow-sm active:scale-95 h-auto w-auto">
                 Renew Now
-             </button>
+             </Button>
            ) : (
-             <button onClick={() => router.push('/settings')} className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold rounded-md transition-all shadow-sm active:scale-95 border border-slate-200/60">
+             <Button variant="ghost" onClick={() => router.push('/settings')} className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold rounded-md transition-all shadow-sm active:scale-95 border border-slate-200/60 h-auto w-auto">
                 Manage
-             </button>
+             </Button>
            )}
         </div>
       </div>

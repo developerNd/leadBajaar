@@ -18,6 +18,7 @@ import {
   Eye, Building2, ChevronRight, Mail, Phone, Calendar,
   TrendingUp, History, ArrowUpRight,
 } from 'lucide-react'
+import { PageHeader } from '@/components/page-header/PageHeader'
 
 const DEPTS = ['engineering','sales','marketing','ops','management','other']
 const EMP_TYPES = ['full_time','part_time','contract','freelancer']
@@ -122,15 +123,16 @@ export default function EmployeesPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold">Employees</h2>
-          <p className="text-sm text-muted-foreground">Manage team profiles and employment details</p>
-        </div>
-        <Button onClick={() => { resetForm(); setShowAdd(true) }} className="bg-primary hover:bg-primary/90 text-white gap-2">
-          <Plus className="h-4 w-4" /> Add Employee
-        </Button>
-      </div>
+      <PageHeader
+        title="Employees"
+        description="Manage team profiles and employment details"
+        icon={<Users className="h-6 w-6 text-primary" />}
+        actions={
+          <Button onClick={() => { resetForm(); setShowAdd(true) }} className="bg-primary hover:bg-primary/90 text-white gap-2">
+            <Plus className="h-4 w-4" /> Add Employee
+          </Button>
+        }
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4">

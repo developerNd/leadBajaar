@@ -11,46 +11,46 @@ export default {
 		extend: {
 			// ── All colors reference CSS variables defined in globals.css ──
 			colors: {
-				background: "hsl(var(--background))",
-				foreground: "hsl(var(--foreground))",
+				background: "var(--background)",
+				foreground: "var(--foreground)",
 
 				card: {
-					DEFAULT: "hsl(var(--card))",
-					foreground: "hsl(var(--card-foreground))",
+					DEFAULT: "var(--card)",
+					foreground: "var(--card-foreground)",
 				},
 				popover: {
-					DEFAULT: "hsl(var(--popover))",
-					foreground: "hsl(var(--popover-foreground))",
+					DEFAULT: "var(--popover)",
+					foreground: "var(--popover-foreground)",
 				},
 				primary: {
-					DEFAULT: "hsl(var(--primary))",
-					hover: "hsl(var(--primary-hover))",
-					light: "hsl(var(--primary-light))",
-					foreground: "hsl(var(--primary-foreground))",
+					DEFAULT: "var(--primary)",
+					hover: "var(--primary-hover)",
+					light: "var(--primary-light)",
+					foreground: "var(--primary-foreground)",
 				},
 				secondary: {
-					DEFAULT: "hsl(var(--secondary))",
-					foreground: "hsl(var(--secondary-foreground))",
+					DEFAULT: "var(--secondary)",
+					foreground: "var(--secondary-foreground)",
 				},
 				muted: {
-					DEFAULT: "hsl(var(--muted))",
-					foreground: "hsl(var(--muted-foreground))",
+					DEFAULT: "var(--muted)",
+					foreground: "var(--muted-foreground)",
 				},
 				accent: {
-					DEFAULT: "hsl(var(--accent))",
-					foreground: "hsl(var(--accent-foreground))",
+					DEFAULT: "var(--accent)",
+					foreground: "var(--accent-foreground)",
 				},
 				destructive: {
-					DEFAULT: "hsl(var(--destructive))",
-					foreground: "hsl(var(--destructive-foreground))",
+					DEFAULT: "var(--destructive)",
+					foreground: "var(--destructive-foreground)",
 					// crm-red-soft/-border are the real, theme-reactive tint pair
 					// already used by Badge/Button — not an hsl() var, so no wrapper.
 					bg: "var(--crm-red-soft)",
 					border: "var(--crm-red-border)",
 				},
-				border: "hsl(var(--border))",
-				input: "hsl(var(--input))",
-				ring: "hsl(var(--ring))",
+				border: "var(--border)",
+				input: "var(--input)",
+				ring: "var(--ring)",
 
 				// ── Text hierarchy ──
 				// Corrected: aliases the real, already-wired --crm-text-secondary

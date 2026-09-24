@@ -10,6 +10,7 @@ import { Plus, Edit, Trash2, Video, Loader2 } from 'lucide-react'
 import { tutorialApi } from '@/lib/api'
 import { useUser } from '@/contexts/UserContext'
 import { toast } from 'sonner'
+import { PageHeader } from "@/components/page-header/PageHeader"
 
 type Tutorial = {
   id: number
@@ -116,20 +117,18 @@ export default function TutorialsPage() {
 
   return (
     <div className="flex flex-col h-full space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
-            <Video className="h-6 w-6 text-[var(--lb-navy)]" />
-            Tutorials & Training
-          </h1>
-          <p className="text-slate-500 text-sm mt-1">Watch video tutorials to master the platform.</p>
-        </div>
-        {isAdmin && (
-          <Button onClick={() => handleOpenDialog()} className="bg-[var(--lb-navy)] hover:opacity-90">
-            <Plus className="mr-2 h-4 w-4" /> Add Tutorial
-          </Button>
-        )}
-      </div>
+      <PageHeader
+        title="Tutorials & Training"
+        description="Watch video tutorials to master the platform."
+        icon={<Video className="h-6 w-6 text-[var(--lb-navy)]" />}
+        actions={
+          isAdmin && (
+            <Button onClick={() => handleOpenDialog()} className="bg-[var(--lb-navy)] hover:opacity-90">
+              <Plus className="mr-2 h-4 w-4" /> Add Tutorial
+            </Button>
+          )
+        }
+      />
 
       {tutorials.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-64 border border-dashed rounded-xl border-slate-200 dark:border-slate-800">

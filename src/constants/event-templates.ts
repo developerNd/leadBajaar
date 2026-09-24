@@ -47,7 +47,7 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
         },
         questions: [
             { id: 'invitee_name', question: 'Name', type: 'text', required: true, isLocked: true },
-            { id: 'invitee_email', question: 'Email', type: 'email', required: true, isLocked: true },
+            { id: 'invitee_email', question: 'Email', type: 'email', required: false, isLocked: true },
             { id: 'invitee_phone', question: 'Phone Number', type: 'phone', required: true, isLocked: true },
             { id: 'q_reason', question: 'What is the reason for the call?', type: 'text', required: true },
             { id: 'q_tried', question: 'Have you tried anything before for your weight loss/weight gain?', type: 'radio', required: true, options: ['Yes', 'No'] },

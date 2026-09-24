@@ -151,7 +151,7 @@ export default function EventTypeForm() {
       max_invitees: (isNew && defaultType === 'group') ? 2 : null,
       questions: isNew ? [
         { id: 'invitee_name', question: 'Name', type: 'text', required: true, isLocked: true },
-        { id: 'invitee_email', question: 'Email', type: 'email', required: true, isLocked: true },
+        { id: 'invitee_email', question: 'Email', type: 'email', required: false, isLocked: true },
         { id: 'invitee_phone', question: 'Phone Number', type: 'phone', required: true, isLocked: true },
       ] as Question[] : [] as Question[],
       scheduling: {
@@ -443,17 +443,17 @@ export default function EventTypeForm() {
 
           <div className="flex items-center gap-2 shrink-0">
             {!isNew && !loading && (
-              <button
+              <Button variant="ghost"
                 type="button"
                 onClick={handleToggleActive}
                 disabled={isTogglingActive}
-                className="flex items-center gap-1.5 h-8 px-2.5 rounded-lg border border-[var(--crm-border)] bg-[var(--crm-surface-2)] text-xs font-semibold text-[var(--crm-text-secondary)] disabled:opacity-60"
+                className="flex items-center gap-1.5 h-8 px-2.5 rounded-lg border border-[var(--crm-border)] bg-[var(--crm-surface-2)] text-xs font-semibold text-[var(--crm-text-secondary)] disabled:opacity-60 p-0"
               >
                 {eventType.active !== false ? 'On' : 'Off'}
                 <span className={cn('relative inline-flex h-4 w-7 items-center rounded-full transition-colors', eventType.active !== false ? 'bg-[var(--crm-accent)]' : 'bg-[var(--crm-surface-4)]')}>
                   <span className={cn('inline-block h-3 w-3 transform rounded-full bg-white transition-transform', eventType.active !== false ? 'translate-x-3.5' : 'translate-x-0.5')} />
                 </span>
-              </button>
+              </Button>
             )}
             <Button variant="outline" size="sm" onClick={handlePreviewClick} className="h-8 gap-1.5 border-[var(--crm-border)] bg-[var(--crm-surface-2)] text-xs shadow-sm transition-all hover:bg-[var(--crm-surface-3)] lg:hidden">
               <Eye className="h-3.5 w-3.5 text-slate-500" /> <span className="hidden sm:inline font-semibold">Preview</span>
@@ -473,18 +473,18 @@ export default function EventTypeForm() {
             const Icon = section.icon
             const isActive = activeSection === section.id
             return (
-              <button
+              <Button variant="ghost"
                 key={section.id}
                 type="button"
                 onClick={() => setActiveSection(section.id)}
                 className={cn(
-                  'whitespace-nowrap shrink-0 w-auto md:w-full flex items-center gap-2 px-3 md:px-3 py-1.5 md:py-2 rounded-lg text-[13px] md:text-sm font-semibold text-left transition-colors',
+                  'whitespace-nowrap shrink-0 w-auto md:w-full flex items-center gap-2 px-3 md:px-3 py-1.5 md:py-2 rounded-lg text-[13px] md:text-sm font-semibold text-left transition-colors p-0 h-auto',
                   isActive ? 'bg-[var(--crm-accent-soft)] text-[var(--crm-accent)]' : 'text-[var(--crm-text-secondary)] hover:bg-[var(--crm-surface-2)] hover:text-[var(--crm-text-primary)]'
                 )}
               >
                 <Icon className="h-4 w-4 shrink-0" />
                 {section.label}
-              </button>
+              </Button>
             )
           })}
         </div>
@@ -593,14 +593,14 @@ export default function EventTypeForm() {
                         {COLOR_OPTIONS.map((color) => {
                           const isSelected = (eventType.color || '#4f46e5') === color
                           return (
-                            <button
+                            <Button variant="ghost"
                               key={color}
                               type="button"
                               onClick={() => updateField({ color })}
                               aria-label={`Select color ${color}`}
                               aria-pressed={isSelected}
                               className={cn(
-                                "w-8 h-8 rounded-full flex items-center justify-center transition-all focus:outline-none",
+                                "w-8 h-8 rounded-full flex items-center justify-center transition-all focus:outline-none p-0",
                                 isSelected
                                   ? "ring-2 ring-offset-[3px] ring-[var(--crm-border)] shadow-[0_0_0_4px_color-mix(in_srgb,currentColor_40%,transparent)] scale-110"
                                   : "opacity-75 hover:opacity-100 hover:scale-105"
@@ -610,7 +610,7 @@ export default function EventTypeForm() {
                               {isSelected && (
                                 <span className="w-2.5 h-2.5 rounded-full bg-white/90 shadow-sm block" />
                               )}
-                            </button>
+                            </Button>
                           )
                         })}
                       </div>
@@ -640,43 +640,43 @@ export default function EventTypeForm() {
                             const Icon = pill.icon
                             const selected = pill.value === 'zoom' ? isZoom : eventType.location === pill.value
                             return (
-                              <button
+                              <Button variant="ghost"
                                 type="button"
                                 key={pill.value}
                                 onClick={() => updateField(pill.value === 'zoom' ? { location: 'video', video_platform: 'zoom' } : { location: pill.value as EventType['location'] })}
                                 className={cn(
-                                  'flex flex-col items-center gap-1.5 rounded-lg border px-2 py-3 text-xs font-medium transition-all',
+                                  'flex flex-col items-center gap-1.5 rounded-lg border px-2 py-3 text-xs font-medium transition-all p-0 h-auto',
                                   selected ? 'border-[var(--crm-accent)] ring-1 ring-[var(--crm-accent)] bg-[var(--crm-accent-soft)]' : 'border-[var(--crm-border)] hover:border-[var(--lb-navy)]/40'
                                 )}
                               >
                                 <Icon className="h-4 w-4" />
                                 {pill.label}
-                              </button>
+                              </Button>
                             )
                           })}
                           <div className="relative">
-                            <button
+                            <Button variant="ghost"
                               type="button"
                               onClick={() => setLocationDropdownOpen(v => !v)}
                               className={cn(
-                                'w-full h-full flex flex-col items-center gap-1.5 rounded-lg border px-2 py-3 text-xs font-medium transition-all',
+                                'w-full h-full flex flex-col items-center gap-1.5 rounded-lg border px-2 py-3 text-xs font-medium transition-all p-0',
                                 isOtherProvider ? 'border-[var(--crm-accent)] ring-1 ring-[var(--crm-accent)] bg-[var(--crm-accent-soft)]' : 'border-[var(--crm-border)] hover:border-[var(--lb-navy)]/40'
                               )}
                             >
                               <ChevronDown className="h-4 w-4" />
                               All options
-                            </button>
+                            </Button>
                             {locationDropdownOpen && (
                               <div className="absolute right-0 top-full mt-1 z-20 w-44 rounded-lg border border-[var(--crm-border)] bg-[var(--crm-surface-1)] shadow-lg p-1">
                                 {VIDEO_PROVIDERS.map(p => (
-                                  <button
+                                  <Button variant="ghost"
                                     type="button"
                                     key={p.value}
                                     onClick={() => { updateField({ location: 'video', video_platform: p.value }); setLocationDropdownOpen(false) }}
-                                    className="w-full text-left px-2.5 py-1.5 text-xs rounded-md hover:bg-[var(--crm-surface-2)] text-[var(--crm-text-primary)]"
+                                    className="w-full text-left px-2.5 py-1.5 text-xs rounded-md hover:bg-[var(--crm-surface-2)] text-[var(--crm-text-primary)] p-0 h-auto"
                                   >
                                     {p.label}
-                                  </button>
+                                  </Button>
                                 ))}
                               </div>
                             )}

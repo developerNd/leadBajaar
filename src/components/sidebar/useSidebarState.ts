@@ -47,6 +47,13 @@ export const sidebarSections: NavSection[] = [
     ],
   },
   {
+    label: 'Meta Ads',
+    items: [
+      { name: 'Campaigns', href: '/ads/campaigns', iconClass: 'ti ti-ad', roles: ['Super Admin', 'Admin', 'Manager', 'Agent'], types: ['agency', 'super_admin', 'individual'] },
+      { name: 'Performance', href: '/ads/performance', iconClass: 'ti ti-chart-bar', roles: ['Super Admin', 'Admin', 'Manager', 'Agent'], types: ['agency', 'super_admin', 'individual'] },
+    ],
+  },
+  {
     label: 'Integrations',
     items: [
       { name: 'LB Forms', href: '/lb-forms', iconClass: 'ti ti-file-description', roles: ['Super Admin', 'Admin', 'Manager'], types: ['agency', 'super_admin', 'individual'], feature: 'integrations' },

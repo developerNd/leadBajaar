@@ -10,6 +10,7 @@ import { useToast } from '@/components/ui/use-toast'
 import { Badge } from '@/components/ui/badge'
 import { RoleGuard } from '@/components/RoleGuard'
 import { cn } from '@/lib/utils'
+import { PageHeader } from '@/components/page-header/PageHeader'
 
 import { TemplateSelectionModal } from '@/components/chatbot/TemplateSelectionModal'
 import { ChatbotTemplate } from '@/constants/chatbot-templates'
@@ -105,24 +106,21 @@ export default function ChatbotPage() {
       <div className="flex flex-col gap-6 max-w-[1400px] mx-auto w-full pb-10">
           
           {/* Page Header */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-200 dark:border-slate-800 pb-6 mb-2">
-            <div className="flex items-center gap-4">
-              <div className="h-12 w-12 rounded-xl bg-[#1e2d6b]/10 dark:bg-indigo-500/15 flex items-center justify-center shrink-0 border border-[#1e2d6b]/15 dark:border-indigo-500/20">
-                <Workflow className="h-6 w-6 text-[#1e2d6b] dark:text-indigo-400" />
-              </div>
-              <div>
-                <h1 className="text-[20px] font-bold text-slate-800 dark:text-slate-100">Chatbot Flows</h1>
-                <p className="text-[13px] text-slate-500 dark:text-slate-400 mt-0.5 font-medium">Automate conversations and build interactive funnels.</p>
-              </div>
-            </div>
-            <button 
-              onClick={() => setIsTemplateModalOpen(true)}
-              className="w-full sm:w-auto bg-[#1e2d6b] hover:bg-[#162152] text-white text-[12.5px] font-extrabold rounded-full shadow-sm shadow-[#1e2d6b]/20 hover:scale-[1.03] active:scale-[0.97] transition-all h-10 px-5 flex items-center justify-center gap-2 shrink-0 cursor-pointer"
-            >
-              <PlusCircle className="w-4 h-4" /> 
-              Create Flow
-            </button>
-          </div>
+          <PageHeader
+            title="Chatbot Flows"
+            description="Automate conversations and build interactive funnels."
+            icon={<Workflow className="h-5 w-5 text-[#1e2d6b] dark:text-indigo-400" />}
+            actions={
+              <Button 
+                variant="default"
+                onClick={() => setIsTemplateModalOpen(true)}
+                className="w-full sm:w-auto bg-[#1e2d6b] hover:bg-[#162152] text-white text-[12.5px] font-extrabold rounded-full shadow-sm shadow-[#1e2d6b]/20 transition-all h-10 px-5 flex items-center justify-center gap-2 shrink-0 h-auto w-auto"
+              >
+                <PlusCircle className="w-4 h-4" /> 
+                Create Flow
+              </Button>
+            }
+          />
 
           {/* Content area */}
           {loading ? (
@@ -155,12 +153,13 @@ export default function ChatbotPage() {
                   <p className="text-[14px] text-slate-500 dark:text-slate-450 mb-8 text-center max-w-md mt-2 leading-relaxed font-medium">
                     Automate your inbound conversations, qualify leads, and provide instant support by building your first chatbot flow.
                   </p>
-                  <button 
+                  <Button 
+                    variant="default"
                     onClick={() => router.push('/chatbot/builder/new')}
-                    className="bg-gradient-to-r from-[#FE4548] to-[#FF6E54] hover:from-[#FF6E54] hover:to-[#FE4548] text-white text-[13px] font-extrabold rounded-full h-11 px-6 shadow-md shadow-rose-500/25 hover:scale-[1.05] active:scale-[0.95] transition-all border border-[#FE4548]/10 flex items-center justify-center gap-2 cursor-pointer"
+                    className="bg-gradient-to-r from-[#FE4548] to-[#FF6E54] hover:from-[#FF6E54] hover:to-[#FE4548] text-white text-[13px] font-extrabold rounded-full h-11 px-6 shadow-md shadow-rose-500/25 transition-all border border-[#FE4548]/10 flex items-center justify-center gap-2 h-auto w-auto"
                   >
                     <PlusCircle className="w-4 h-4" /> Create First Flow
-                  </button>
+                  </Button>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
@@ -219,24 +218,27 @@ export default function ChatbotPage() {
 
                       {/* Actions */}
                       <div className="flex border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 divide-x divide-slate-200 dark:divide-slate-800">
-                        <button
-                          className="flex-1 flex items-center justify-center gap-1.5 py-3 text-[12px] font-bold text-slate-750 dark:text-slate-300 hover:text-indigo-650 dark:hover:text-indigo-400 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20 transition-all cursor-pointer"
+                        <Button
+                          variant="ghost"
+                          className="flex-1 flex items-center justify-center gap-1.5 py-3 text-[12px] font-bold text-slate-750 dark:text-slate-300 hover:text-indigo-650 dark:hover:text-indigo-400 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20 transition-all rounded-none h-auto"
                           onClick={() => router.push(`/chatbot/builder/${flow.id}`)}
                         >
                           <Edit2 className="w-3.5 h-3.5" /> Edit
-                        </button>
-                        <button
-                          className="flex-1 flex items-center justify-center gap-1.5 py-3 text-[12px] font-bold text-slate-750 dark:text-slate-300 hover:text-emerald-650 dark:hover:text-emerald-400 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/20 transition-all cursor-pointer"
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          className="flex-1 flex items-center justify-center gap-1.5 py-3 text-[12px] font-bold text-slate-750 dark:text-slate-300 hover:text-emerald-650 dark:hover:text-emerald-400 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/20 transition-all rounded-none h-auto"
                           onClick={() => handleDuplicate(flow.id)}
                         >
                           <Copy className="w-3.5 h-3.5" /> Copy
-                        </button>
-                        <button
-                          className="flex-1 flex items-center justify-center gap-1.5 py-3 text-[12px] font-bold text-rose-600 dark:text-rose-400 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-all cursor-pointer"
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          className="flex-1 flex items-center justify-center gap-1.5 py-3 text-[12px] font-bold text-rose-600 dark:text-rose-400 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-all rounded-none h-auto"
                           onClick={() => handleDelete(flow.id)}
                         >
                           <Trash className="w-3.5 h-3.5" /> Delete
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   ))}

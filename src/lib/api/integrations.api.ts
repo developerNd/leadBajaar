@@ -1,7 +1,7 @@
 import api from './client';
 import { IntegrationConfig } from './types/integrations.types';
 
-const formatMetaErrorMessage = (error: any, defaultMessage: string): string => {
+export const formatMetaErrorMessage = (error: any, defaultMessage: string): string => {
   try {
     const errorData = error.response?.data?.error || error.response?.data;
 
@@ -790,68 +790,7 @@ export const integrationApi = {
     }
   },
 
-  duplicateMetaCampaign: async (campaignId: string, options?: { status?: 'PAUSED' | 'ACTIVE'; rename_suffix?: string }): Promise<any> => {
-    try {
-      const response = await api.post(`/meta/ads/campaigns/${campaignId}/duplicate`, options);
-      return response.data;
-    } catch (error: any) {
-      throw new Error(formatMetaErrorMessage(error, 'Failed to duplicate Meta campaign'));
-    }
-  },
 
-  duplicateMetaObject: async (objectId: string): Promise<any> => {
-    try {
-      const response = await api.post(`/meta/ads/${objectId}/duplicate`);
-      return response.data;
-    } catch (error: any) {
-      throw new Error(formatMetaErrorMessage(error, 'Failed to duplicate Meta object'));
-    }
-  },
-
-  getMetaOfflineEventSets: async (objectId: string): Promise<any> => {
-    try {
-      const response = await api.get(`/meta/ads/offline-event-sets/${objectId}`);
-      return response.data;
-    } catch (error: any) {
-      throw new Error(formatMetaErrorMessage(error, 'Failed to fetch offline event sets'));
-    }
-  },
-
-  createMetaOfflineEventSet: async (businessId: string, data: { name: string; description?: string }): Promise<any> => {
-    try {
-      const response = await api.post(`/meta/ads/offline-event-sets/${businessId}`, data);
-      return response.data;
-    } catch (error: any) {
-      throw new Error(formatMetaErrorMessage(error, 'Failed to create offline event set'));
-    }
-  },
-
-  getMetaAutomatedRules: async (adAccountId: string): Promise<any> => {
-    try {
-      const response = await api.get(`/meta/ads/adaccounts/${adAccountId}/adrules`);
-      return response.data;
-    } catch (error: any) {
-      throw new Error(formatMetaErrorMessage(error, 'Failed to fetch automated rules'));
-    }
-  },
-
-  createMetaAutomatedRule: async (adAccountId: string, data: { name: string; filters?: any[]; execution_options?: any[] }): Promise<any> => {
-    try {
-      const response = await api.post(`/meta/ads/adaccounts/${adAccountId}/adrules`, data);
-      return response.data;
-    } catch (error: any) {
-      throw new Error(formatMetaErrorMessage(error, 'Failed to create automated rule'));
-    }
-  },
-
-  deleteMetaAutomatedRule: async (ruleId: string): Promise<any> => {
-    try {
-      const response = await api.delete(`/meta/ads/adrules/${ruleId}`);
-      return response.data;
-    } catch (error: any) {
-      throw new Error(formatMetaErrorMessage(error, 'Failed to delete automated rule'));
-    }
-  },
 
   getMetaFormDetails: async (formId: string): Promise<any> => {
     try {
@@ -890,34 +829,7 @@ export const integrationApi = {
     }
   },
 
-  getMetaDeliveryEstimate: async (adAccountId: string, targetingSpec: any): Promise<any> => {
-    try {
-      const response = await api.get(`/meta/ads/adaccounts/${adAccountId}/delivery-estimate`, {
-        params: { targeting_spec: targetingSpec }
-      });
-      return response.data;
-    } catch (error: any) {
-      throw new Error(formatMetaErrorMessage(error, 'Failed to fetch delivery estimate'));
-    }
-  },
 
-  getMetaAccountAds: async (adAccountId: string): Promise<any> => {
-    try {
-      const response = await api.get(`/meta/ads/adaccounts/${adAccountId}/ads`);
-      return response.data;
-    } catch (error: any) {
-      throw new Error(formatMetaErrorMessage(error, 'Failed to fetch account ads'));
-    }
-  },
-
-  getMetaCampaignAds: async (campaignId: string): Promise<any> => {
-    try {
-      const response = await api.get(`/meta/ads/campaigns/${campaignId}/ads`);
-      return response.data;
-    } catch (error: any) {
-      throw new Error(formatMetaErrorMessage(error, 'Failed to fetch campaign ads'));
-    }
-  },
 
   updateMetaAd: async (adId: string, data: any): Promise<any> => {
     try {

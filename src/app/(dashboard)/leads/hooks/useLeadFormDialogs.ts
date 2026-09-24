@@ -84,12 +84,12 @@ export function useLeadFormDialogs({
     if (!newLead.name?.trim()) {
       errors.name = 'Name is required';
     }
-    if (!newLead.email?.trim()) {
-      errors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newLead.email)) {
+    if (newLead.email?.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newLead.email)) {
       errors.email = 'Invalid email format';
     }
-    if (newLead.phone && !/^\+?[\d\s-]{10,}$/.test(newLead.phone)) {
+    if (!newLead.phone?.trim()) {
+      errors.phone = 'Phone number is required';
+    } else if (!/^\+?[\d\s-]{10,}$/.test(newLead.phone)) {
       errors.phone = 'Invalid phone number format';
     }
     if (Object.keys(errors).length > 0) {

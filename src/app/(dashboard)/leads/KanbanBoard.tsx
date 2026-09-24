@@ -260,46 +260,46 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                                     <TooltipProvider>
                                       <Tooltip>
                                         <TooltipTrigger asChild>
-                                          <button 
+                                          <Button variant="ghost"
                                             onClick={(e) => { e.stopPropagation(); handleWhatsAppClick(lead); }} 
-                                            className="h-6 w-6 rounded-[6px] flex items-center justify-center bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-600 dark:hover:bg-emerald-700 transition-all hover:scale-[1.08] active:scale-[0.92] shadow-sm cursor-pointer border border-emerald-700/10"
+                                            className="h-6 w-6 rounded-[6px] flex items-center justify-center bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-600 dark:hover:bg-emerald-700 transition-all hover:scale-[1.08] active:scale-[0.92] shadow-sm cursor-pointer border border-emerald-700/10 p-0"
                                           >
                                             <i className="ti ti-brand-whatsapp text-[13px]" />
-                                          </button>
+                                          </Button>
                                         </TooltipTrigger>
                                         <TooltipContent className="text-[10px]">WhatsApp</TooltipContent>
                                       </Tooltip>
 
                                       <Tooltip>
                                         <TooltipTrigger asChild>
-                                          <button 
+                                          <Button variant="ghost"
                                             onClick={(e) => { e.stopPropagation(); handleCallClick(lead); }} 
-                                            className="h-6 w-6 rounded-[6px] flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-600 dark:hover:bg-blue-700 transition-all hover:scale-[1.08] active:scale-[0.92] shadow-sm cursor-pointer border border-blue-700/10"
+                                            className="h-6 w-6 rounded-[6px] flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-600 dark:hover:bg-blue-700 transition-all hover:scale-[1.08] active:scale-[0.92] shadow-sm cursor-pointer border border-blue-700/10 p-0"
                                           >
                                             <i className="ti ti-phone text-[13px]" />
-                                          </button>
+                                          </Button>
                                         </TooltipTrigger>
                                         <TooltipContent className="text-[10px]">Call</TooltipContent>
                                       </Tooltip>
 
                                       <Tooltip>
                                         <TooltipTrigger asChild>
-                                          <button 
+                                          <Button variant="ghost"
                                             onClick={(e) => { e.stopPropagation(); handleDealValueClick(lead); }} 
-                                            className="h-6 w-6 rounded-[6px] flex items-center justify-center bg-amber-500 hover:bg-amber-600 text-white dark:bg-amber-500 dark:hover:bg-amber-600 transition-all hover:scale-[1.08] active:scale-[0.92] shadow-sm cursor-pointer border border-amber-600/10"
+                                            className="h-6 w-6 rounded-[6px] flex items-center justify-center bg-amber-500 hover:bg-amber-600 text-white dark:bg-amber-500 dark:hover:bg-amber-600 transition-all hover:scale-[1.08] active:scale-[0.92] shadow-sm cursor-pointer border border-amber-600/10 p-0"
                                           >
                                             <i className="ti ti-currency-rupee text-[13px]" />
-                                          </button>
+                                          </Button>
                                         </TooltipTrigger>
                                         <TooltipContent className="text-[10px]">Deal Value</TooltipContent>
                                       </Tooltip>
 
                                       <Tooltip>
                                         <TooltipTrigger asChild>
-                                          <button 
+                                          <Button variant="ghost"
                                             onClick={(e) => { e.stopPropagation(); handleAssignAgentClick(lead); }} 
                                             className={cn(
-                                              "h-6 w-6 rounded-[6px] flex items-center justify-center transition-all hover:scale-[1.08] active:scale-[0.92] shadow-sm cursor-pointer",
+                                              "h-6 w-6 rounded-[6px] flex items-center justify-center transition-all hover:scale-[1.08] active:scale-[0.92] shadow-sm cursor-pointer p-0",
                                               lead.agent 
                                                 ? "border border-purple-700/15" 
                                                 : "bg-purple-600 hover:bg-purple-700 text-white border border-purple-700/10"
@@ -321,7 +321,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                                             ) : (
                                               <i className="ti ti-user-plus text-[12px]" />
                                             )}
-                                          </button>
+                                          </Button>
                                         </TooltipTrigger>
                                         <TooltipContent className="text-[10px]">
                                           {lead.agent ? `Assigned to: ${lead.agent.name}` : 'Assign Agent'}
@@ -330,12 +330,12 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
                                       <Tooltip>
                                         <TooltipTrigger asChild>
-                                          <button 
+                                          <Button variant="ghost"
                                             onClick={(e) => { e.stopPropagation(); handleEdit(lead); }} 
-                                            className="h-6 w-6 rounded-[6px] flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 text-white dark:bg-indigo-600 dark:hover:bg-indigo-700 transition-all hover:scale-[1.08] active:scale-[0.92] shadow-sm cursor-pointer border border-indigo-700/10"
+                                            className="h-6 w-6 rounded-[6px] flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 text-white dark:bg-indigo-600 dark:hover:bg-indigo-700 transition-all hover:scale-[1.08] active:scale-[0.92] shadow-sm cursor-pointer border border-indigo-700/10 p-0"
                                           >
                                             <i className="ti ti-edit text-[13px]" />
-                                          </button>
+                                          </Button>
                                         </TooltipTrigger>
                                         <TooltipContent className="text-[10px]">Edit Lead</TooltipContent>
                                       </Tooltip>

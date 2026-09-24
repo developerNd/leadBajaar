@@ -3423,7 +3423,7 @@ export default function SuperAdminPage() {
                             .filter(tag => !editingUser?.tags?.includes(tag))
                             .slice(0, 10)
                             .map((tag) => (
-                              <button
+                              <Button variant="ghost"
                                 key={tag}
                                 type="button"
                                 onClick={() => {
@@ -3432,10 +3432,10 @@ export default function SuperAdminPage() {
                                     setEditingUser({ ...editingUser, tags: [...tags, tag] });
                                   }
                                 }}
-                                className="text-[9px] px-2.5 py-1 rounded-lg bg-[var(--crm-accent-soft)]/50 text-[var(--crm-accent)] border border-indigo-100/50 hover:bg-primary/20:bg-indigo-900/40 transition-all font-black uppercase"
+                                className="text-[9px] px-2.5 py-1 rounded-lg bg-[var(--crm-accent-soft)]/50 text-[var(--crm-accent)] border border-indigo-100/50 hover:bg-primary/20:bg-indigo-900/40 transition-all font-black uppercase h-auto p-0 hover:bg-transparent"
                               >
                                 + {tag}
-                              </button>
+                              </Button>
                             ))}
                         </div>
                       </div>

@@ -15,6 +15,7 @@ import {
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { DeleteConfirmationModal } from "@/components/shared/DeleteConfirmationModal";
+import { PageHeader } from "@/components/page-header/PageHeader";
 
 import { EventTemplateSelectionModal } from "@/components/meetings/EventTemplateSelectionModal";
 import {
@@ -126,8 +127,11 @@ export default function EventTypesPage() {
     <div className="flex flex-col flex-1 h-full overflow-hidden gap-4 sm:gap-5">
 
       {/* ── Header ───────────────────────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between shrink-0 gap-4 sm:gap-0">
-        <div className="flex items-center gap-3 sm:gap-4">
+      <PageHeader
+        title="Event Types"
+        description="Configure your availability and booking page settings"
+        icon={<Zap className="h-4 w-4 sm:h-5 sm:w-5 text-[var(--crm-accent)] fill-[var(--crm-accent)]" />}
+        breadcrumbs={
           <Button 
             variant="outline" 
             size="icon" 
@@ -136,44 +140,33 @@ export default function EventTypesPage() {
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <div className="hidden sm:block">
-            <h1 className="text-xl sm:text-2xl font-bold text-[var(--crm-text-primary)] flex items-center gap-2 sm:gap-3">
-              Event Types
-              <Zap className="h-4 w-4 sm:h-5 sm:w-5 text-[var(--crm-accent)] fill-[var(--crm-accent)]" />
-            </h1>
-            <p className="text-xs sm:text-sm text-[var(--crm-text-secondary)] mt-1">Configure your availability and booking page settings</p>
-          </div>
-          <div className="sm:hidden flex-1">
-            <h1 className="text-lg font-bold text-[var(--crm-text-primary)] flex items-center gap-2">
-              Event Types
-              <Zap className="h-4 w-4 text-[var(--crm-accent)] fill-[var(--crm-accent)]" />
-            </h1>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => window.location.href = '/api/auth/google'}
-            className="flex-1 sm:flex-none h-9 border-[var(--crm-border)] bg-[var(--crm-surface-2)] text-[var(--crm-text-primary)] hover:bg-[var(--crm-surface-3)] gap-1.5 px-2 sm:px-4"
-          >
-            <Calendar className="h-4 w-4 text-[var(--crm-text-secondary)]" />
-            <span className="hidden sm:inline">Connect Google Calendar</span>
-            <span className="sm:hidden">Calendar</span>
-          </Button>
-          <button 
-            onClick={() => {
-              if (!user?.name) { toast.error("User profile name is required to create an event type."); return; }
-              setIsTemplateModalOpen(true)
-            }}
-            className="flex-1 sm:flex-none h-9 bg-gradient-to-r from-[#FE4548] to-[#FF6E54] hover:from-[#FF6E54] hover:to-[#FE4548] text-white gap-1.5 shadow-sm px-3.5 sm:px-4 rounded-full font-extrabold shadow-rose-500/15 border border-[#FE4548]/10 hover:scale-[1.05] active:scale-[0.95] transition-all cursor-pointer flex items-center justify-center"
-          >
-            <Plus className="h-4 w-4" />
-            <span className="hidden sm:inline ml-1.5">New Event Type</span>
-            <span className="sm:hidden ml-1.5">New Event</span>
-          </button>
-        </div>
-      </div>
+        }
+        actions={
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.location.href = '/api/auth/google'}
+              className="flex-1 sm:flex-none h-9 border-[var(--crm-border)] bg-[var(--crm-surface-2)] text-[var(--crm-text-primary)] hover:bg-[var(--crm-surface-3)] gap-1.5 px-2 sm:px-4"
+            >
+              <Calendar className="h-4 w-4 text-[var(--crm-text-secondary)]" />
+              <span className="hidden sm:inline">Connect Google Calendar</span>
+              <span className="sm:hidden">Calendar</span>
+            </Button>
+            <Button variant="ghost"
+              onClick={() => {
+                if (!user?.name) { toast.error("User profile name is required to create an event type."); return; }
+                setIsTemplateModalOpen(true)
+              }}
+              className="flex-1 sm:flex-none h-9 bg-gradient-to-r from-[#FE4548] to-[#FF6E54] hover:from-[#FF6E54] hover:to-[#FE4548] text-white gap-1.5 shadow-sm px-3.5 sm:px-4 rounded-full font-extrabold shadow-rose-500/15 border border-[#FE4548]/10 hover:scale-[1.05] active:scale-[0.95] transition-all cursor-pointer flex items-center justify-center w-auto"
+            >
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline ml-1.5">New Event Type</span>
+              <span className="sm:hidden ml-1.5">New Event</span>
+            </Button>
+          </>
+        }
+      />
 
       {/* ── Content ──────────────────────────────────────────────────────────── */}
       <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin scrollbar-thumb-[var(--crm-border)] pb-10 px-1">
@@ -207,10 +200,10 @@ export default function EventTypesPage() {
             </p>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="h-10 bg-gradient-to-r from-[#FE4548] to-[#FF6E54] hover:from-[#FF6E54] hover:to-[#FE4548] text-white gap-2 px-6 shadow-md shadow-rose-500/20 rounded-full font-extrabold hover:scale-[1.05] active:scale-[0.95] transition-all cursor-pointer flex items-center justify-center">
+                <Button variant="ghost" className="h-10 bg-gradient-to-r from-[#FE4548] to-[#FF6E54] hover:from-[#FF6E54] hover:to-[#FE4548] text-white gap-2 px-6 shadow-md shadow-rose-500/20 rounded-full font-extrabold hover:scale-[1.05] active:scale-[0.95] transition-all cursor-pointer flex items-center justify-center w-auto">
                   <Plus className="h-4 w-4" />
                   Create your first event
-                </button>
+                </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="center" className="w-64 bg-[var(--crm-surface-1)]">
                 <DropdownMenuItem onClick={() => {
@@ -303,13 +296,13 @@ export default function EventTypesPage() {
                     </div>
 
                     <div className="mt-4 pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between relative z-10">
-                      <button
+                      <Button variant="ghost"
                         onClick={() => { setSelectedEventType(eventType); setShowShareDialog(true); }}
-                        className="text-xs font-extrabold text-[#FE4548] flex items-center gap-1.5 hover:underline cursor-pointer"
+                        className="text-xs font-extrabold text-[#FE4548] flex items-center gap-1.5 hover:underline cursor-pointer p-0 h-auto w-auto"
                       >
                         <Share2 className="h-3.5 w-3.5" />
                         Share / Embed
-                      </button>
+                      </Button>
 
                       <Link href={`/meetings/event-types/${eventType.id}`}>
                         <Button
@@ -414,13 +407,13 @@ export default function EventTypesPage() {
                 </div>
 
                 <div className="flex gap-3">
-                  <button
-                    className="flex-1 bg-gradient-to-r from-[#FE4548] to-[#FF6E54] hover:from-[#FF6E54] hover:to-[#FE4548] text-white rounded-2xl h-12 font-extrabold shadow-md shadow-rose-500/15 border border-[#FE4548]/10 hover:scale-[1.03] active:scale-[0.97] transition-all cursor-pointer flex items-center justify-center gap-2"
+                  <Button variant="ghost"
+                    className="flex-1 bg-gradient-to-r from-[#FE4548] to-[#FF6E54] hover:from-[#FF6E54] hover:to-[#FE4548] text-white rounded-2xl h-12 font-extrabold shadow-md shadow-rose-500/15 border border-[#FE4548]/10 hover:scale-[1.03] active:scale-[0.97] transition-all cursor-pointer flex items-center justify-center gap-2 w-auto"
                     onClick={() => openPreview(selectedEventType)}
                   >
                     <ExternalLink className="h-4 w-4" />
                     Preview Booking Page
-                  </button>
+                  </Button>
                   <Button
                     variant="outline"
                     className="h-12 w-12 rounded-2xl p-0 border-slate-300 bg-white hover:bg-slate-50 dark:border-slate-750 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-extrabold"

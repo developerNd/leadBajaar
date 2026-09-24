@@ -566,13 +566,14 @@ export default function IntegrationsPage() {
                 <strong>Your Facebook connection has expired.</strong> Reconnect to continue receiving leads and ad data.
               </span>
             </div>
-            <button
+            <Button
+              variant="default"
               onClick={handleReconnectMeta}
               disabled={isReconnecting}
-              className="shrink-0 rounded-xl bg-orange-500 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-orange-600 disabled:opacity-50 transition-colors"
+              className="shrink-0 rounded-xl bg-orange-500 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-orange-600 disabled:opacity-50 transition-colors h-auto w-auto"
             >
               {isReconnecting ? 'Connecting...' : 'Reconnect'}
-            </button>
+            </Button>
           </div>
         )}
 
@@ -607,20 +608,22 @@ export default function IntegrationsPage() {
               Popular Integrations
             </h2>
             <div className="flex items-center gap-1.5">
-              <button
+              <Button
+                variant="outline" size="icon"
                 onClick={() => scrollPopular("left")}
-                className="w-7 h-7 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:text-slate-900 dark:hover:text-white transition-all shadow-2xs cursor-pointer active:scale-95"
+                className="w-7 h-7 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:text-slate-900 dark:hover:text-white transition-all shadow-2xs p-0"
                 title="Scroll left"
               >
                 <ChevronLeft className="h-4 w-4" />
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="outline" size="icon"
                 onClick={() => scrollPopular("right")}
-                className="w-7 h-7 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:text-slate-900 dark:hover:text-white transition-all shadow-2xs cursor-pointer active:scale-95"
+                className="w-7 h-7 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:text-slate-900 dark:hover:text-white transition-all shadow-2xs p-0"
                 title="Scroll right"
               >
                 <ChevronRight className="h-4 w-4" />
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -643,9 +646,9 @@ export default function IntegrationsPage() {
 
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <button className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                          <Button variant="ghost" size="icon" className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 p-1.5 h-auto w-auto rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
                             <MoreVertical className="h-4 w-4" />
-                          </button>
+                          </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-40">
                           <DropdownMenuItem onClick={() => handleIntegrationCardAction(item)}>
@@ -685,19 +688,21 @@ export default function IntegrationsPage() {
                     )}
 
                     {isConnected ? (
-                      <button
+                      <Button
+                        variant="outline"
                         onClick={() => handleIntegrationCardAction(item)}
-                        className="text-slate-700 dark:text-slate-200 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/80 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer active:scale-95"
+                        className="text-slate-700 dark:text-slate-200 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/80 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 px-3.5 py-1.5 rounded-lg text-xs font-semibold h-auto w-auto transition-colors"
                       >
                         Manage
-                      </button>
+                      </Button>
                     ) : (
-                      <button
+                      <Button
+                        variant="outline"
                         onClick={() => handleIntegrationCardAction(item)}
-                        className="text-blue-600 dark:text-blue-400 bg-blue-50/70 hover:bg-blue-100/80 dark:bg-blue-950/40 dark:hover:bg-blue-900/50 border border-blue-200/80 dark:border-blue-800/60 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer active:scale-95"
+                        className="text-blue-600 dark:text-blue-400 bg-blue-50/70 hover:bg-blue-100/80 dark:bg-blue-950/40 dark:hover:bg-blue-900/50 border border-blue-200/80 dark:border-blue-800/60 px-3.5 py-1.5 rounded-lg text-xs font-bold h-auto w-auto transition-colors"
                       >
                         Connect +
-                      </button>
+                      </Button>
                     )}
                   </div>
                 </div>
@@ -717,7 +722,7 @@ export default function IntegrationsPage() {
             {categoryTabs.map((tab) => {
               const isActive = activeCategory === tab.id;
               return (
-                <button
+                <button /* TODO: Segmented control */
                   key={tab.id}
                   onClick={() => setActiveCategory(tab.id)}
                   className={cn(
@@ -750,9 +755,9 @@ export default function IntegrationsPage() {
 
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <button className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                          <Button variant="ghost" size="icon" className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 p-1.5 h-auto w-auto rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
                             <MoreVertical className="h-4 w-4" />
-                          </button>
+                          </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-40">
                           <DropdownMenuItem onClick={() => handleIntegrationCardAction(item)}>
@@ -792,19 +797,21 @@ export default function IntegrationsPage() {
                     )}
 
                     {isConnected ? (
-                      <button
+                      <Button
+                        variant="outline"
                         onClick={() => handleIntegrationCardAction(item)}
-                        className="text-slate-700 dark:text-slate-200 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/80 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer active:scale-95"
+                        className="text-slate-700 dark:text-slate-200 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/80 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 px-3.5 py-1.5 rounded-lg text-xs font-semibold h-auto w-auto transition-colors"
                       >
                         Manage
-                      </button>
+                      </Button>
                     ) : (
-                      <button
+                      <Button
+                        variant="outline"
                         onClick={() => handleIntegrationCardAction(item)}
-                        className="text-blue-600 dark:text-blue-400 bg-blue-50/70 hover:bg-blue-100/80 dark:bg-blue-950/40 dark:hover:bg-blue-900/50 border border-blue-200/80 dark:border-blue-800/60 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer active:scale-95"
+                        className="text-blue-600 dark:text-blue-400 bg-blue-50/70 hover:bg-blue-100/80 dark:bg-blue-950/40 dark:hover:bg-blue-900/50 border border-blue-200/80 dark:border-blue-800/60 px-3.5 py-1.5 rounded-lg text-xs font-bold h-auto w-auto transition-colors"
                       >
                         Connect +
-                      </button>
+                      </Button>
                     )}
                   </div>
                 </div>

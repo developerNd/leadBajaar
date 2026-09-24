@@ -41,6 +41,7 @@ import {
 import { PixelTestConsole } from '@/components/meta-capi/PixelTestConsole';
 import { ManualPixelDialog } from '@/components/meta-capi/ManualPixelDialog';
 import { useRouter } from 'next/navigation';
+import { PageHeader } from '@/components/page-header/PageHeader';
 
 interface CAPIMetrics {
   total_events: number;
@@ -121,31 +122,21 @@ export default function MetaCapiHubPage() {
 
   return (
     <div className="flex flex-col flex-1 gap-4 sm:gap-5">
-      <div className="shrink-0">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold text-[var(--crm-text-primary)] flex items-center gap-2.5">
-              <div className="h-8 w-8 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-900/30 flex items-center justify-center">
-                <Zap className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-              </div>
-              Meta Conversions API Hub
-            </h1>
-            <p className="text-sm text-[var(--crm-text-secondary)] mt-1.5">
-              Monitor server-side events, verify tracking accuracy, and optimize your Meta Ad performance.
-            </p>
-          </div>
-          <div className="flex items-center gap-3 shrink-0">
-            <Button 
-              variant="outline" 
-              onClick={fetchData}
-              className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white rounded-lg font-semibold h-9 px-4 shadow-sm"
-            >
-              <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-              Refresh Data
-            </Button>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        title="Meta Conversions API Hub"
+        description="Monitor server-side events, verify tracking accuracy, and optimize your Meta Ad performance."
+        icon={<Zap className="h-6 w-6 text-primary" />}
+        actions={
+          <Button 
+            variant="outline" 
+            onClick={fetchData}
+            className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white rounded-lg font-semibold h-9 px-4 shadow-sm"
+          >
+            <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            Refresh Data
+          </Button>
+        }
+      />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {/* Stat 1: Total Events */}

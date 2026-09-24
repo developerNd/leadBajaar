@@ -49,17 +49,26 @@ export function useDataDialogs({ fetchLeads, handleError }: UseDataDialogsProps)
       return
     }
 
-    if (!selectedFile.name.endsWith('.csv')) {
-      setImportError('Please select a CSV file')
+    if (!selectedFile.name.match(/\.(csv|xlsx?)$/i)) {
+      setImportError('Please select a CSV or Excel file')
       return
     }
 
     setFile(selectedFile)
     const reader = new FileReader()
 
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       try {
-        const csv = event.target?.result as string
+        let csv = '';
+        if (selectedFile.name.match(/\.xlsx?$/i)) {
+          const XLSX = await import('xlsx');
+          const data = new Uint8Array(event.target?.result as ArrayBuffer);
+          const workbook = XLSX.read(data, { type: 'array' });
+          csv = XLSX.utils.sheet_to_csv(workbook.Sheets[workbook.SheetNames[0]]);
+        } else {
+          csv = event.target?.result as string;
+        }
+        
         const { headers, preview } = parseCSVContent(csv)
 
         setPreview(preview)
@@ -71,8 +80,8 @@ export function useDataDialogs({ fetchLeads, handleError }: UseDataDialogsProps)
         })))
         setShowMapping(true)
       } catch (err: any) {
-        console.error('Failed to read CSV file:', err)
-        setImportError(err.message || 'Failed to read CSV file. Please check the file format.')
+        console.error('Failed to read file:', err)
+        setImportError(err.message || 'Failed to read file. Please check the file format.')
       }
     }
 
@@ -80,7 +89,11 @@ export function useDataDialogs({ fetchLeads, handleError }: UseDataDialogsProps)
       setImportError('Failed to read the file')
     }
 
-    reader.readAsText(selectedFile)
+    if (selectedFile.name.match(/\.xlsx?$/i)) {
+      reader.readAsArrayBuffer(selectedFile)
+    } else {
+      reader.readAsText(selectedFile)
+    }
   }
 
   const handleColumnMapChange = (csvHeader: string, leadField: string) => {

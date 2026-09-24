@@ -13,6 +13,7 @@ import { useErrorHandler } from "@/utils/useErrorHandler";
 import { useUser } from "@/contexts/UserContext";
 import { WebhookConfigDialog } from "@/components/integrations/WebhookConfigDialog";
 import { cn } from "@/lib/utils";
+import { PageHeader } from "@/components/page-header/PageHeader";
 
 interface WebhookConfig {
   id: string;
@@ -267,17 +268,11 @@ export default function WebhooksPage() {
   return (
     <div className="flex flex-col flex-1 gap-4 sm:gap-5 pb-16">
       {/* ── Header ────────────────────────────────────────────────────────────── */}
-      <div className="shrink-0">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            
-            <div>
-              <h1 className="text-2xl font-bold text-[var(--crm-text-primary)]">Webhooks</h1>
-              <p className="text-sm text-[var(--crm-text-secondary)] mt-1">
-                Manage your incoming and outgoing webhooks
-              </p>
-            </div>
-          </div>
+      <PageHeader
+        title="Webhooks"
+        description="Manage your incoming and outgoing webhooks"
+        icon={<Webhook className="h-6 w-6 text-primary" />}
+        actions={
           <Button
             onClick={() => {
               setNewWebhook({ name: "", url: "", events: [], mapping: [] });
@@ -289,8 +284,8 @@ export default function WebhooksPage() {
             <Plus className="h-4 w-4 mr-2" />
             Add Webhook
           </Button>
-        </div>
-      </div>
+        }
+      />
 
       {/* ── Content ──────────────────────────────────────────────────────────── */}
       <div className="w-full">

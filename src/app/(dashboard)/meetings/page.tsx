@@ -480,13 +480,13 @@ function MeetingDetailDialog({
                     <FileText className="h-4 w-4 text-slate-500" /> Meeting Notes
                   </h4>
                   {editingField !== 'notes' && (
-                    <button
+                    <Button variant="ghost" size="icon"
                       onClick={() => startEdit('notes')}
-                      className="h-6 w-6 rounded-md flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all shrink-0"
+                      className="h-6 w-6 rounded-md flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all shrink-0 p-0"
                       title="Edit notes"
                     >
                       <Edit className="h-3 w-3" />
-                    </button>
+                    </Button>
                   )}
                 </div>
                 <div className="p-4 space-y-3">
@@ -529,13 +529,13 @@ function MeetingDetailDialog({
                     <CheckCircle2 className="h-4 w-4 text-slate-500" /> Outcome
                   </h4>
                   {editingField !== 'outcome' && (
-                    <button
+                    <Button variant="ghost" size="icon"
                       onClick={() => startEdit('outcome')}
-                      className="h-6 w-6 rounded-md flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all shrink-0"
+                      className="h-6 w-6 rounded-md flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all shrink-0 p-0"
                       title="Edit outcome"
                     >
                       <Edit className="h-3 w-3" />
-                    </button>
+                    </Button>
                   )}
                 </div>
                 <div className="p-4 space-y-3">
@@ -650,13 +650,13 @@ function MeetingDetailDialog({
                             {assignedTo && assignedTo.id !== 0 ? assignedTo.role : 'Waiting for host'}
                           </p>
                         </div>
-                        <button
+                        <Button variant="ghost" size="icon"
                           onClick={() => startEdit('host')}
-                          className="h-7 w-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/10 transition-all shrink-0"
+                          className="h-7 w-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/10 transition-all shrink-0 p-0"
                           title="Change host"
                         >
                           <Edit className="h-3.5 w-3.5" />
-                        </button>
+                        </Button>
                       </div>
                     )}
                   </div>
@@ -1112,23 +1112,23 @@ function MeetingCard({
           ) : null}
 
           {/* Calendar / Detail View Action */}
-          <button
+          <Button variant="outline" size="icon"
             onClick={() => onSelect(meeting)}
-            className="h-8 w-8 sm:h-9 sm:w-9 rounded-lg sm:rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 flex items-center justify-center transition-colors shadow-2xs cursor-pointer active:scale-95"
+            className="h-8 w-8 sm:h-9 sm:w-9 rounded-lg sm:rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 flex items-center justify-center transition-colors shadow-2xs cursor-pointer active:scale-95 p-0"
             title="View Details & Reschedule"
           >
             <CalendarIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-          </button>
+          </Button>
 
           {/* More Actions Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button
-                className="h-9 w-9 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-white flex items-center justify-center transition-colors shadow-2xs cursor-pointer active:scale-95"
+              <Button variant="outline" size="icon"
+                className="h-9 w-9 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-white flex items-center justify-center transition-colors shadow-2xs cursor-pointer active:scale-95 p-0"
                 title="More Actions"
               >
                 <MoreHorizontal className="h-4 w-4" />
-              </button>
+              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48 z-[200]">
               <DropdownMenuItem onClick={() => onSelect(meeting)} className="cursor-pointer">
@@ -1721,14 +1721,14 @@ export default function MeetingsPage() {
                           ))}
                         </SelectContent>
                       </Select>
-                      <button
+                      <Button variant="outline" size="sm"
                         onClick={exportHistoryCsv}
                         disabled={filteredHistory.length === 0}
                         className="h-8 px-3 gap-1.5 flex items-center justify-center bg-white hover:bg-slate-50 disabled:opacity-40 disabled:hover:bg-white text-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700/80 dark:text-slate-200 text-[12px] font-extrabold rounded-[6px] border border-slate-300 dark:border-slate-650 hover:scale-[1.02] active:scale-[0.98] disabled:scale-100 transition-all shadow-sm cursor-pointer disabled:cursor-not-allowed"
                       >
                         <Download className="h-3.5 w-3.5 text-slate-600 dark:text-slate-400" />
                         <span className="hidden sm:inline">Export</span>
-                      </button>
+                      </Button>
                     </>
                   )}
                 </div>

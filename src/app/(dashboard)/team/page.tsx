@@ -18,6 +18,7 @@ import { teamApi } from '@/lib/api'
 import { RoleGuard } from '@/components/RoleGuard'
 import { handleError } from '@/utils/handleError'
 import { getAgentColor } from '@/utils/agentColors'
+import { PageHeader } from '@/components/page-header/PageHeader'
 
 type Role = 'Admin' | 'Manager' | 'Agent'
 
@@ -168,23 +169,17 @@ export default function TeamManagementPage() {
       <div className="flex flex-col gap-6 max-w-[1400px] mx-auto w-full pb-10 font-sans">
         
         {/* Header Bar */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shrink-0">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-bold font-heading text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5">
-              <Users className="h-6 w-6 text-[#E84C3A]" />
-              Team Management
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-normal mt-0.5">
-              Manage organization members, assign roles, and configure access permissions
-            </p>
-          </div>
-          
-          <div className="flex justify-start sm:justify-end items-center gap-3 w-full sm:w-auto">
+        <PageHeader
+          title="Team Management"
+          description="Manage organization members, assign roles, and configure access permissions"
+          icon={<Users className="h-6 w-6 text-[var(--crm-accent)]" />}
+          actions={
             <Dialog open={isInviteModalOpen} onOpenChange={(v) => {
               setIsInviteModalOpen(v)
               if (!v) setError(null)
             }}>
               <DialogTrigger asChild>
+                {/* TODO: Migrate raw button to shared <Button> component later (complex styling) */}
                 <button className="w-full sm:w-auto px-4 py-2 bg-[#E84C3A] hover:bg-[#d8402f] text-white font-semibold text-xs rounded-xl shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer">
                   <UserPlus className="h-4 w-4 shrink-0" />
                   <span>Invite Member</span>
@@ -264,8 +259,8 @@ export default function TeamManagementPage() {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
-          </div>
-        </div>
+          }
+        />
 
         {/* Quick KPI Strip (Unified Summary Bar) */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-4 shadow-sm">

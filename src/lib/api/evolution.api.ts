@@ -29,12 +29,16 @@ export const evolutionApi = {
     const response = await api.delete(`/evolution/accounts/${instanceName}`);
     return response.data;
   },
-  getConversations: async (): Promise<any> => {
-    const response = await api.get('/evolution/inbox/conversations');
+  getConversations: async (page: number = 1, search: string = ''): Promise<any> => {
+    const response = await api.get('/evolution/inbox/conversations', {
+      params: { page, search }
+    });
     return response.data;
   },
-  getMessages: async (conversationId: number): Promise<any> => {
-    const response = await api.get(`/evolution/inbox/conversations/${conversationId}/messages`);
+  getMessages: async (conversationId: number, page: number = 1): Promise<any> => {
+    const response = await api.get(`/evolution/inbox/conversations/${conversationId}/messages`, {
+      params: { page, limit: 25 }
+    });
     return response.data;
   },
   sendMessage: async (conversationId: number, message: string): Promise<any> => {

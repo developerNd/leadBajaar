@@ -159,22 +159,24 @@ export function AssignAgentDialog({
                 className="h-9 pl-9 pr-8 bg-slate-50 dark:bg-slate-850 border-slate-200 dark:border-slate-750 rounded-xl text-xs font-medium focus-visible:ring-2 focus-visible:ring-blue-500/20 focus-visible:border-blue-500"
               />
               {searchQuery && (
-                <button
+                <Button 
+                  variant="ghost"
+                  size="icon"
                   type="button"
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 h-auto w-auto p-0.5"
                 >
                   <X className="h-3.5 w-3.5" />
-                </button>
+                </Button>
               )}
             </div>
 
             {/* Unassign quick button */}
-            <button
+            <Button variant="ghost" /* TODO: Toggle/Selection element */
               type="button"
               onClick={() => handleSelect('unassign')}
               className={cn(
-                "h-9 px-3 rounded-xl border text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer shrink-0 shadow-xs",
+                "h-9 px-3 rounded-xl border text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer shrink-0 shadow-xs p-0 w-auto",
                 selectedAgent === 'unassign'
                   ? "bg-rose-50 dark:bg-rose-950/40 border-rose-500 text-rose-700 dark:text-rose-300 ring-1 ring-rose-500/20"
                   : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-750 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
@@ -184,65 +186,65 @@ export function AssignAgentDialog({
               <UserX className="h-3.5 w-3.5 text-rose-500" />
               <span>Unassign</span>
               {selectedAgent === 'unassign' && <Check className="h-3 w-3 ml-0.5 text-rose-600 dark:text-rose-400 stroke-[3]" />}
-            </button>
+            </Button>
           </div>
 
           {/* Role Filter Tabs (Ideal for 15+ agents) */}
           {activeMembers.length > 5 && (
             <div className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar pb-0.5 pt-0.5">
-              <button
+              <Button variant="ghost" /* TODO: Segmented control */
                 type="button"
                 onClick={() => setRoleFilter('all')}
                 className={cn(
-                  "px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer shrink-0",
+                  "px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer shrink-0 h-auto p-0",
                   roleFilter === 'all'
                     ? "bg-indigo-600 text-white shadow-xs"
                     : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200/70 dark:hover:bg-slate-700"
                 )}
               >
                 All ({roleCounts.all})
-              </button>
+              </Button>
               {roleCounts.agent > 0 && (
-                <button
+                <Button variant="ghost" /* TODO: Segmented control */
                   type="button"
                   onClick={() => setRoleFilter('agent')}
                   className={cn(
-                    "px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer shrink-0",
+                    "px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer shrink-0 h-auto p-0",
                     roleFilter === 'agent'
                       ? "bg-blue-600 text-white shadow-xs"
                       : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200/70 dark:hover:bg-slate-700"
                   )}
                 >
                   Agents ({roleCounts.agent})
-                </button>
+                </Button>
               )}
               {roleCounts.manager > 0 && (
-                <button
+                <Button variant="ghost" /* TODO: Segmented control */
                   type="button"
                   onClick={() => setRoleFilter('manager')}
                   className={cn(
-                    "px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer shrink-0",
+                    "px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer shrink-0 h-auto p-0",
                     roleFilter === 'manager'
                       ? "bg-amber-600 text-white shadow-xs"
                       : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200/70 dark:hover:bg-slate-700"
                   )}
                 >
                   Managers ({roleCounts.manager})
-                </button>
+                </Button>
               )}
               {roleCounts.admin > 0 && (
-                <button
+                <Button variant="ghost" /* TODO: Segmented control */
                   type="button"
                   onClick={() => setRoleFilter('admin')}
                   className={cn(
-                    "px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer shrink-0",
+                    "px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer shrink-0 h-auto p-0",
                     roleFilter === 'admin'
                       ? "bg-purple-600 text-white shadow-xs"
                       : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200/70 dark:hover:bg-slate-700"
                   )}
                 >
                   Admins ({roleCounts.admin})
-                </button>
+                </Button>
               )}
             </div>
           )}
@@ -263,12 +265,12 @@ export function AssignAgentDialog({
                   .join('') || 'A';
 
                 return (
-                  <button
+                  <Button variant="ghost" /* TODO: Toggle/Selection element */
                     key={member.id}
                     type="button"
                     onClick={() => handleSelect(member.id.toString())}
                     className={cn(
-                      "group relative flex items-center justify-between p-2.5 rounded-xl border transition-all cursor-pointer text-left",
+                      "group relative flex items-center justify-between p-2.5 rounded-xl border transition-all cursor-pointer text-left h-auto w-full",
                       isSelected
                         ? "bg-indigo-50/80 dark:bg-indigo-950/50 border-indigo-500 ring-2 ring-indigo-500/20 shadow-xs"
                         : "bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-50/80 dark:hover:bg-slate-800/50"
@@ -306,7 +308,7 @@ export function AssignAgentDialog({
                         <Check className="h-3 w-3 stroke-[3]" />
                       </div>
                     )}
-                  </button>
+                  </Button>
                 );
               })}
             </div>

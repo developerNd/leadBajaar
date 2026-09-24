@@ -1,5 +1,6 @@
 import React from 'react'
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 interface PaginationControlsProps {
   totalItems: number;
@@ -46,38 +47,38 @@ export function PaginationControls({
           Page <span className="font-bold text-slate-900 dark:text-white">{currentPage}</span> of <span className="font-bold text-slate-900 dark:text-white">{totalPages || 1}</span>
         </span>
         <div className="flex items-center gap-1.5">
-          <button
-            className="h-8 w-8 flex items-center justify-center rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-xs cursor-pointer active:scale-90"
+          <Button variant="ghost"
+            className="h-8 w-8 flex items-center justify-center rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-xs cursor-pointer active:scale-90 p-0"
             onClick={() => setCurrentPage(1)}
             disabled={currentPage === 1}
             title="First Page"
           >
             <ChevronsLeft className="h-4 w-4" />
-          </button>
-          <button
-            className="h-8 w-8 flex items-center justify-center rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-xs cursor-pointer active:scale-90"
+          </Button>
+          <Button variant="ghost"
+            className="h-8 w-8 flex items-center justify-center rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-xs cursor-pointer active:scale-90 p-0"
             onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
             disabled={currentPage === 1}
             title="Previous Page"
           >
             <ChevronLeft className="h-4 w-4" />
-          </button>
-          <button
-            className="h-8 w-8 flex items-center justify-center rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-xs cursor-pointer active:scale-90"
+          </Button>
+          <Button variant="ghost"
+            className="h-8 w-8 flex items-center justify-center rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-xs cursor-pointer active:scale-90 p-0"
             onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
             disabled={currentPage === totalPages || totalPages === 0}
             title="Next Page"
           >
             <ChevronRight className="h-4 w-4" />
-          </button>
-          <button
-            className="h-8 w-8 flex items-center justify-center rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-xs cursor-pointer active:scale-90"
+          </Button>
+          <Button variant="ghost"
+            className="h-8 w-8 flex items-center justify-center rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-xs cursor-pointer active:scale-90 p-0"
             onClick={() => setCurrentPage(totalPages)}
             disabled={currentPage === totalPages || totalPages === 0}
             title="Last Page"
           >
             <ChevronsRight className="h-4 w-4" />
-          </button>
+          </Button>
         </div>
       </div>
     </div>

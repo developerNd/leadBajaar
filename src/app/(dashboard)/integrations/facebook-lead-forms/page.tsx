@@ -21,6 +21,7 @@ import { integrationApi } from "@/lib/api";
 import { useErrorHandler } from "@/utils/useErrorHandler";
 import { useUser } from "@/contexts/UserContext";
 import { cn } from "@/lib/utils";
+import { PageHeader } from "@/components/page-header/PageHeader";
 
 export default function FacebookLeadFormsPage() {
   const router = useRouter();
@@ -144,15 +145,12 @@ export default function FacebookLeadFormsPage() {
   return (
     <div className="flex flex-col flex-1 gap-4 sm:gap-5">
       {/* ── Header ────────────────────────────────────────────────────────────── */}
-      <div className="shrink-0">
-        <div className="flex items-center gap-4">
-          
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold text-[var(--crm-text-primary)]">Facebook Lead Forms</h1>
-            <p className="text-sm text-[var(--crm-text-secondary)] mt-1">
-              Configure and sync Facebook Lead Form submissions automatically.
-            </p>
-          </div>
+      {/* ── Header ────────────────────────────────────────────────────────────── */}
+      <PageHeader
+        title="Facebook Lead Forms"
+        description="Configure and sync Facebook Lead Form submissions automatically."
+        icon={<Globe className="h-6 w-6 text-primary" />}
+        actions={
           <Button
             className="bg-primary hover:bg-primary/90 text-white rounded-md font-semibold h-9 px-4 shadow-sm"
             onClick={() => {
@@ -164,8 +162,8 @@ export default function FacebookLeadFormsPage() {
           >
             <Plus className="mr-2 h-4 w-4" /> Add New Form
           </Button>
-        </div>
-      </div>
+        }
+      />
 
       {/* ── Content ──────────────────────────────────────────────────────────── */}
       <div className="w-full">

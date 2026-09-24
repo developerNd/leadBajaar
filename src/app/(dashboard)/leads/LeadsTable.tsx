@@ -201,74 +201,74 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
                               <TooltipProvider>
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    <button 
+                                    <Button variant="ghost"
                                       onClick={() => handleWhatsAppClick(lead)} 
-                                      className="h-6 w-6 flex items-center justify-center rounded-[6px] bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-600 dark:hover:bg-emerald-700 transition-all hover:scale-[1.08] active:scale-[0.92] border border-emerald-700/10 shadow-sm cursor-pointer"
+                                      className="h-6 w-6 flex items-center justify-center rounded-[6px] bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-600 dark:hover:bg-emerald-700 transition-all hover:scale-[1.08] active:scale-[0.92] border border-emerald-700/10 shadow-sm cursor-pointer p-0"
                                       aria-label="WhatsApp lead"
                                     >
                                       <i className="ti ti-brand-whatsapp text-[13px]" />
-                                    </button>
+                                    </Button>
                                   </TooltipTrigger>
                                   <TooltipContent className="text-[10px]">WhatsApp</TooltipContent>
                                 </Tooltip>
 
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    <button 
+                                    <Button variant="ghost"
                                       onClick={() => handleCallClick(lead)} 
-                                      className="h-6 w-6 flex items-center justify-center rounded-[6px] bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-600 dark:hover:bg-blue-700 transition-all hover:scale-[1.08] active:scale-[0.92] border border-blue-700/10 shadow-sm cursor-pointer"
+                                      className="h-6 w-6 flex items-center justify-center rounded-[6px] bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-600 dark:hover:bg-blue-700 transition-all hover:scale-[1.08] active:scale-[0.92] border border-blue-700/10 shadow-sm cursor-pointer p-0"
                                       aria-label="Call lead"
                                     >
                                       <i className="ti ti-phone text-[13px]" />
-                                    </button>
+                                    </Button>
                                   </TooltipTrigger>
                                   <TooltipContent className="text-[10px]">Call</TooltipContent>
                                 </Tooltip>
 
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    <button 
+                                    <Button variant="ghost"
                                       onClick={() => handleDealValueClick(lead)} 
-                                      className="h-6 w-6 flex items-center justify-center rounded-[6px] bg-amber-500 hover:bg-amber-600 text-white dark:bg-amber-500 dark:hover:bg-amber-600 transition-all hover:scale-[1.08] active:scale-[0.92] border border-amber-600/10 shadow-sm cursor-pointer"
+                                      className="h-6 w-6 flex items-center justify-center rounded-[6px] bg-amber-500 hover:bg-amber-600 text-white dark:bg-amber-500 dark:hover:bg-amber-600 transition-all hover:scale-[1.08] active:scale-[0.92] border border-amber-600/10 shadow-sm cursor-pointer p-0"
                                       aria-label="Edit deal value"
                                     >
                                       <i className="ti ti-currency-rupee text-[13px]" />
-                                    </button>
+                                    </Button>
                                   </TooltipTrigger>
                                   <TooltipContent className="text-[10px]">Deal Value</TooltipContent>
                                 </Tooltip>
 
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    <button 
+                                    <Button variant="ghost"
                                       onClick={() => handleEdit(lead)} 
-                                      className="h-6 w-6 flex items-center justify-center rounded-[6px] bg-indigo-600 hover:bg-indigo-700 text-white dark:bg-indigo-600 dark:hover:bg-indigo-700 transition-all hover:scale-[1.08] active:scale-[0.92] border border-indigo-700/10 shadow-sm cursor-pointer"
+                                      className="h-6 w-6 flex items-center justify-center rounded-[6px] bg-indigo-600 hover:bg-indigo-700 text-white dark:bg-indigo-600 dark:hover:bg-indigo-700 transition-all hover:scale-[1.08] active:scale-[0.92] border border-indigo-700/10 shadow-sm cursor-pointer p-0"
                                       aria-label="Edit lead"
                                     >
                                       <i className="ti ti-edit text-[13px]" />
-                                    </button>
+                                    </Button>
                                   </TooltipTrigger>
                                   <TooltipContent className="text-[10px]">Edit Lead</TooltipContent>
                                 </Tooltip>
 
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    <button 
+                                    <Button variant="ghost"
                                       onClick={() => handleDelete(lead)} 
-                                      className="h-6 w-6 flex items-center justify-center rounded-[6px] bg-rose-500 hover:bg-rose-600 text-white dark:bg-rose-500 dark:hover:bg-rose-600 transition-all hover:scale-[1.08] active:scale-[0.92] border border-rose-600/10 shadow-sm cursor-pointer"
+                                      className="h-6 w-6 flex items-center justify-center rounded-[6px] bg-rose-500 hover:bg-rose-600 text-white dark:bg-rose-500 dark:hover:bg-rose-600 transition-all hover:scale-[1.08] active:scale-[0.92] border border-rose-600/10 shadow-sm cursor-pointer p-0"
                                       aria-label="Delete lead"
                                     >
                                       <i className="ti ti-trash text-[13px]" />
-                                    </button>
+                                    </Button>
                                   </TooltipTrigger>
                                   <TooltipContent className="text-[10px]">Delete</TooltipContent>
                                 </Tooltip>
                               </TooltipProvider>
                             </div>
                           ) : column.id === 'agent' ? (
-                            <button
+                            <Button variant="ghost"
                               onClick={() => handleAssignAgentClick(lead)}
-                              className="group/agent flex items-center justify-between gap-1.5 py-1 px-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-all text-left cursor-pointer border border-transparent hover:border-slate-200 dark:hover:border-slate-750 max-w-[165px]"
+                              className="group/agent flex items-center justify-between gap-1.5 py-1 px-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-all text-left cursor-pointer border border-transparent hover:border-slate-200 dark:hover:border-slate-750 max-w-[165px] h-auto w-auto"
                               title={lead.agent ? `Assigned to ${lead.agent.name} (click to change)` : 'Click to assign agent'}
                             >
                               {lead.agent ? (
@@ -295,7 +295,7 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
                                   <Pencil className="h-2.5 w-2.5 text-slate-400 group-hover/agent:text-indigo-600 transition-colors shrink-0 ml-0.5" />
                                 </div>
                               )}
-                            </button>
+                            </Button>
                           ) : column.id === 'name' ? (
                             <div className="flex flex-col min-w-0">
                               <span className="font-semibold text-[13px] text-slate-900 dark:text-slate-100 truncate flex items-center gap-1.5 leading-snug">
