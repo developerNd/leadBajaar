@@ -287,6 +287,7 @@ export function MetaAuthContainer() {
   const handleDisconnectAccount = async () => {
     await integrationApi.disconnectMeta();
     await loadStatus();
+    window.dispatchEvent(new Event('integrationsUpdated'));
   };
 
   const isConnected = Boolean(statusData?.connected);

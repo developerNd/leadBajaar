@@ -19,6 +19,7 @@ export default function FacebookAuthPage() {
     // We use localStorage to reliably broadcast success back to the main window.
     if (metaStatus === "success") {
       localStorage.setItem('META_OAUTH_SUCCESS', Date.now().toString());
+      window.dispatchEvent(new Event('integrationsUpdated'));
       
       // Close the popup automatically
       setTimeout(() => {
